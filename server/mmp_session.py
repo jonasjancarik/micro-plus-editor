@@ -129,6 +129,19 @@ class MicroPlusSession:
             except Exception:
                 raise self.unconfirmed('amplifier or effect change') from None
 
+    async def saved_copy(self, slot, revision):
+        # Only reads, so a failure here says nothing about the connection and must not reset it.
+        async with self.lock:
+            controller = self.require_editor(slot, revision)
+            try:
+                document = await controller.read_preset(slot)
+            except ValueError:
+                raise
+            except Exception as error:
+                raise RuntimeError('The Micro Plus did not send the saved preset.') from error
+            self.require_editor(slot, revision)
+            return {'preset': slot, 'revision': revision, 'saved_document': document}
+
     def backup(self, slot, document):
         self.backup_dir.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')
@@ -156,6 +169,8 @@ class MicroPlusSession:
                 self.last_save = {'preset': target, 'name': name, 'backup': backup,
                                   'verified': True, 'time': time.time()}
                 return self.snapshot()
+            except TimeoutError:  # An OSError, but the amp not answering is not a failed backup.
+                raise self.unconfirmed('save') from None
             except (ValueError, OSError):
                 raise
             except Exception:
@@ -183,6 +198,8 @@ class MicroPlusSession:
                 self.last_save = None
                 self.last_undo = {'preset': target, 'backup': safety, 'time': time.time()}
                 return self.snapshot()
+            except TimeoutError:
+                raise self.unconfirmed('undo') from None
             except (ValueError, OSError):
                 raise
             except Exception:

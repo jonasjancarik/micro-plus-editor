@@ -141,6 +141,14 @@ class MockSession:
             snapshot['limited'] = {'node': node, 'parameter': parameter, 'requested': value, 'stored': stored}
         return snapshot
 
+    async def saved_copy(self, slot, revision):
+        self.require_editor(slot, revision)
+        await asyncio.sleep(self.delay)
+        if not self.connected or self.mode == 'fail':
+            raise RuntimeError('The Micro Plus did not send the saved preset.')
+        self.require_editor(slot, revision)
+        return {'preset': slot, 'revision': revision, 'saved_document': self.read(slot)}
+
     async def replace(self, slot, revision, node, model):
         self.require_editor(slot, revision)
         await self.begin('model', {'node': node, 'model': model})

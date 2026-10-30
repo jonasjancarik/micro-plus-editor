@@ -57,6 +57,8 @@ async def dispatch(method, path, headers, body, session, allowed_hosts=None):
                                                request['target'], request['name'])
                 elif action == 'undo-save' and set(request) == common:
                     state = await session.undo_save(request['preset'], request['revision'])
+                elif action == 'saved-copy' and set(request) == common:
+                    state = await session.saved_copy(request['preset'], request['revision'])
                 else:
                     raise ValueError('Choose a parameter, model, save or undo operation.')
         except EditorConflict as error:

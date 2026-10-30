@@ -59,6 +59,49 @@ class EditorTests(unittest.IsolatedAsyncioTestCase):
             self.assertIn('parameter change not confirmed', log.getvalue())
             self.assertIn('TimeoutError', log.getvalue())
 
+    async def test_saved_copy_reads_the_stored_preset_and_writes_nothing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            session = self.session(directory)
+            result = await session.saved_copy(100, '2:4')
+            nodes = result['saved_document']['audioGraph']['nodes']
+            self.assertEqual(nodes[0]['dspUnitParameters']['gain'], 0.5)
+            self.assertEqual((result['preset'], result['revision']), (100, '2:4'))
+            session.controller.read_preset.assert_awaited_once_with(100)
+            session.controller.save_current.assert_not_awaited()
+            session.controller.set_parameter.assert_not_awaited()
+            self.assertEqual(list(Path(directory).glob('*.json')), [])
+
+    async def test_failed_saved_copy_keeps_the_connection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            session = self.session(directory)
+            session.controller.read_preset = AsyncMock(side_effect=TimeoutError())
+            with self.assertRaisesRegex(RuntimeError, 'did not send the saved preset'):
+                await session.saved_copy(100, '2:4')
+            self.assertIsNotNone(session.controller)
+            self.assertFalse(session.reset.is_set())
+            self.assertIsNone(session.error)
+
+    async def test_amp_timeout_during_save_is_not_reported_as_a_failed_backup(self):
+        # TimeoutError is an OSError, and a save that timed out may still have reached the amp.
+        with tempfile.TemporaryDirectory() as directory:
+            session = self.session(directory)
+            session.controller.save_current = AsyncMock(side_effect=TimeoutError())
+            log = io.StringIO()
+            with contextlib.redirect_stderr(log), self.assertRaisesRegex(RuntimeError, 'could not be verified'):
+                await session.save(100, '2:4', 100, 'Edited')
+            self.assertTrue(session.reset.is_set())
+
+    async def test_saved_copy_is_refused_for_a_stale_editor_and_routed_over_http(self):
+        with tempfile.TemporaryDirectory() as directory:
+            session = self.session(directory)
+            with self.assertRaises(EditorConflict):
+                await session.saved_copy(100, '2:3')
+            headers = {'host': 'localhost:8080', 'origin': 'http://localhost:8080', 'content-type': 'application/json'}
+            body = json.dumps({'action': 'saved-copy', 'preset': 100, 'revision': '2:4'}).encode()
+            status, _kind, reply = await dispatch('POST', '/api/micro-plus/editor', headers, body, session)
+            self.assertEqual(status, 200)
+            self.assertIn('saved_document', json.loads(reply))
+
     async def test_backup_failure_prevents_hardware_save(self):
         with tempfile.TemporaryDirectory() as directory:
             session = self.session(directory)
