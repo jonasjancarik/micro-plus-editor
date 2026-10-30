@@ -2,6 +2,8 @@
 const $ = id => document.getElementById(id);
 const API = '/api/micro-plus';
 const EDITOR_API = '/api/micro-plus/editor';
+const MESSAGE_SECONDS = 8;
+const DOUBLE_TAP_MS = 350;
 
 let state = { connected: false, presets: [], models: {} }; // Latest server reply.
 let known = null; // Latest connected reply; stays on screen while the amp is away.
@@ -11,6 +13,7 @@ let exclusive = false; // A switch, save or model change owns the amp.
 let switchingTo = null;
 let epoch = 0; // Discards polls that started before a write.
 let reconnectNotice = false;
+let checkingAfterNoReply = false;
 
 const pendingEdits = new Map(); // "node/parameter" → newest value not yet sent.
 let inFlightKey = null;
@@ -48,31 +51,67 @@ function guard() { return { preset: state.preset, revision: state.revision }; }
 function documentName() { return known?.document?.info.displayName.trim() ?? ''; }
 function nameChanged() { return Boolean(known?.document) && nameInput.value.trim() !== documentName(); }
 function editsWaiting() { return sending || pendingEdits.size > 0; }
-function hasChanges() { return Boolean(state.dirty) || nameChanged() || editsWaiting(); }
+// The amp keeps calling a preset edited even after every setting is back to its saved value.
+function edited() { return Boolean(known?.dirty) && !(baseline() && changesFromSaved().length === 0); }
+function hasChanges() { return edited() || nameChanged() || editsWaiting(); }
 
 // Messages -----------------------------------------------------------------
+let messageTimer;
 function showMessage(text, kind = '') {
   const message = $('message');
   message.hidden = !text;
   message.dataset.kind = kind;
   setText(message, text);
+  clearTimeout(messageTimer);
+  // Problems stay until they're dealt with; good news shouldn't sit there for the rest of the session.
+  if (text && kind !== 'error') messageTimer = setTimeout(clearOldNews, MESSAGE_SECONDS * 1000);
+}
+function clearOldNews() {
+  if (exclusive) return; // Still the progress of a running operation, which replaces it when done.
+  showMessage('');
+  renderStatus();
 }
 
 // Talking to the server ----------------------------------------------------
 function adopt(next) {
   if (next.connected) {
     const reconnected = known && known.revision?.split(':')[0] !== next.revision?.split(':')[0];
-    if (reconnected && known.dirty) reconnectNotice = true;
+    if (reconnected && edited()) reconnectNotice = true;
     // A failure message like "reconnecting to check" is out of date once the amp is back.
     if (reconnected && $('message').dataset.kind === 'error') showMessage(`Reconnected. The amp is on preset ${next.preset}.`);
     // The document is briefly missing while the amp changes preset; keep showing the last one.
     known = next.document || !known ? next : { ...next, document: known.document };
     if (next.document && !next.dirty) baselines.set(baselineKey(next), next.document);
+    if (checkingAfterNoReply) {
+      checkingAfterNoReply = false;
+      if (!reconnected) showMessage('The amp is responding. The controls show what it has now.');
+    }
+    fetchSavedCopy();
   }
   state = next;
 }
 
 function baselineKey(snapshot) { return `${snapshot.revision?.split(':')[0]}:${snapshot.preset}`; }
+
+// A page opened after edits never saw the preset clean, so it asks the amp for the saved one.
+// Without it the page still works and only can't list the changes, so a few tries are enough.
+const savedCopyTries = new Map();
+let savedCopyRunning = false;
+async function fetchSavedCopy() {
+  if (savedCopyRunning || !known?.dirty || !known.document || baseline()) return;
+  const key = baselineKey(known);
+  const tries = savedCopyTries.get(key) ?? 0;
+  if (tries >= 3) return;
+  savedCopyTries.set(key, tries + 1);
+  savedCopyRunning = true;
+  try {
+    const reply = await post(EDITOR_API, { action: 'saved-copy', preset: known.preset, revision: known.revision });
+    baselines.set(key, reply.saved_document);
+    render();
+  } catch { /* The next poll tries again. */ } finally {
+    savedCopyRunning = false;
+  }
+}
 
 async function readState() {
   if (requestRunning || exclusive || editsWaiting() || document.hidden) return;
@@ -100,9 +139,9 @@ async function post(url, body) {
 }
 
 function failureText(error) {
-  return error instanceof TypeError || error.name === 'TimeoutError'
-    ? 'No reply from the Maneline app, so this change may or may not have reached the amp. Checking…'
-    : error.message;
+  if (!(error instanceof TypeError || error.name === 'TimeoutError')) return error.message;
+  checkingAfterNoReply = true;
+  return 'No reply from the Maneline app, so this change may or may not have reached the amp. Checking…';
 }
 
 // Live edits: the newest value per control wins, and controls stay usable while one is being sent.
@@ -516,10 +555,21 @@ function bindKnobs(root, node) {
     const spec = specFor(node, parameter, node.dspUnitParameters[parameter]);
     input.addEventListener('input', () => queueEdit(node.nodeId, parameter, Number(input.value) / spec.scale));
     const dial = input.closest('.knob').querySelector('.dial');
-    dial.addEventListener('pointerdown', () => { dragging = input; });
-    dial.addEventListener('dblclick', () => {
+    let downX = 0;
+    let downY = 0;
+    let lastTap = 0;
+    dial.addEventListener('pointerdown', event => {
+      dragging = input;
+      downX = event.clientX;
+      downY = event.clientY;
+    });
+    // Counted by hand because not every phone browser reports a double tap, and a knob swallows the gesture anyway.
+    dial.addEventListener('pointerup', event => {
+      if (Math.hypot(event.clientX - downX, event.clientY - downY) > 5) { lastTap = 0; return; }
+      const second = event.timeStamp - lastTap < DOUBLE_TAP_MS;
+      lastTap = second ? 0 : event.timeStamp;
       const saved = baselineValue(node.nodeId, parameter);
-      if (saved !== undefined && !input.disabled) resetToSaved(node.nodeId, parameter, saved);
+      if (second && saved !== undefined && !input.disabled) resetToSaved(node.nodeId, parameter, saved);
     });
   }
 }
@@ -612,6 +662,16 @@ function resetToSaved(nodeId, parameter, saved) {
   for (const control of controlsFor(`${nodeId}/${parameter}`)) writeControl(control, saved);
 }
 
+// Changing the model replaces the pedal's settings, so the saved model goes back first and its settings after it.
+async function restorePedal(nodeId) {
+  const model = changesFromSaved().find(change => change.nodeId === nodeId && change.savedModel);
+  if (model && !await exclusiveOperation(EDITOR_API, { action: 'model', ...guard(), node: nodeId, model: model.savedModel },
+    'Changing model…')) return;
+  for (const change of changesFromSaved()) {
+    if (change.nodeId === nodeId && change.parameter) resetToSaved(nodeId, change.parameter, change.saved);
+  }
+}
+
 function buildModelPicker(node) {
   const label = document.createElement('label');
   label.className = 'model-picker';
@@ -665,20 +725,12 @@ function buildCloseup() {
     if (knobs.length) {
       const tip = document.createElement('p');
       tip.className = 'knob-tip';
-      tip.textContent = 'Drag a knob up or down, or select it and use the arrow keys. Double-click a knob to put it back to its saved setting.';
+      tip.textContent = window.matchMedia('(pointer: coarse)').matches
+        ? 'Drag a knob up or down. Double-tap a knob to put it back to its saved setting.'
+        : 'Drag a knob up or down, or select it and use the arrow keys. Double-click a knob to put it back to its saved setting.';
       body.append(tip);
     }
-    const undo = document.createElement('button');
-    undo.type = 'button';
-    undo.id = 'closeup-undo';
-    undo.hidden = true;
-    undo.textContent = node.nodeId === 'amp' ? 'Undo my changes to the amp' : 'Undo my changes to this pedal';
-    undo.addEventListener('click', () => {
-      for (const change of changesFromSaved()) {
-        if (change.nodeId === node.nodeId && change.parameter) resetToSaved(node.nodeId, change.parameter, change.saved);
-      }
-    });
-    body.append(undo);
+    body.append(buildUndoButton(node));
     if (extras.length) {
       const details = document.createElement('details');
       details.id = 'advanced';
@@ -693,8 +745,18 @@ function buildCloseup() {
       body.append(details);
     }
   } else {
-    body.append(buildModelPicker(node));
+    body.append(buildModelPicker(node), buildUndoButton(node));
   }
+}
+
+function buildUndoButton(node) {
+  const undo = document.createElement('button');
+  undo.type = 'button';
+  undo.id = 'closeup-undo';
+  undo.hidden = true;
+  undo.textContent = node.nodeId === 'amp' ? 'Undo my changes to the amp' : 'Undo my changes to this pedal';
+  undo.addEventListener('click', () => restorePedal(node.nodeId));
+  return undo;
 }
 
 function openCloseup(nodeId) {
@@ -783,14 +845,16 @@ function changesFromSaved() {
     if (!before) continue;
     if (before.FenderId !== node.FenderId) {
       const name = id => (known.models[node.nodeId] || []).find(model => model.id === id)?.name || 'Other';
-      changes.push({ nodeId: node.nodeId, text: `${nodeTitle(node)} model: ${name(before.FenderId)} → ${name(node.FenderId)}` });
+      changes.push({ nodeId: node.nodeId, savedModel: before.FenderId,
+        text: `${nodeTitle(node)} model: ${name(before.FenderId)} → ${name(node.FenderId)}` });
       continue;
     }
     for (const [parameter, value] of Object.entries(node.dspUnitParameters)) {
       if (parameter === 'bypassType' || !(parameter in before.dspUnitParameters)
         || sameValue(before.dspUnitParameters[parameter], value)) continue;
+      const what = parameter === 'bypass' ? nodeTitle(node) : `${nodeTitle(node)} · ${parameterLabel(parameter)}`;
       changes.push({ nodeId: node.nodeId, parameter, saved: before.dspUnitParameters[parameter],
-        text: `${nodeTitle(node)} · ${parameterLabel(parameter)}: ${describeValue(node, parameter, before.dspUnitParameters[parameter])} → ${describeValue(node, parameter, value)}` });
+        text: `${what}: ${describeValue(node, parameter, before.dspUnitParameters[parameter])} → ${describeValue(node, parameter, value)}` });
     }
   }
   return changes;
@@ -825,18 +889,16 @@ function renderChanges(changes) {
     const text = document.createElement('span');
     text.textContent = change.text;
     item.append(text);
-    if (change.parameter) {
-      const reset = document.createElement('button');
-      reset.type = 'button';
-      reset.className = 'reset';
-      reset.textContent = 'Reset';
-      reset.setAttribute('aria-label', `Reset ${change.text}`);
-      reset.addEventListener('click', () => {
-        queueEdit(change.nodeId, change.parameter, change.saved);
-        for (const control of controlsFor(`${change.nodeId}/${change.parameter}`)) writeControl(control, change.saved);
-      });
-      item.append(reset);
-    }
+    const reset = document.createElement('button');
+    reset.type = 'button';
+    reset.className = 'reset';
+    reset.textContent = 'Reset';
+    reset.setAttribute('aria-label', `Reset ${change.text}`);
+    reset.addEventListener('click', () => {
+      if (change.parameter) resetToSaved(change.nodeId, change.parameter, change.saved);
+      else restorePedal(change.nodeId);
+    });
+    item.append(reset);
     list.append(item);
   }
 }
@@ -890,7 +952,7 @@ function renderEditor() {
     slot.classList.toggle('has-changes', edited);
   }
   const undo = $('closeup-undo');
-  if (undo) undo.hidden = !changes.some(change => change.nodeId === selectedNode && change.parameter);
+  if (undo) undo.hidden = !changes.some(change => change.nodeId === selectedNode);
   renderChanges(changes);
   renderCloseupSteps();
   setText($('name-count'), `${nameInput.value.length}/16`);
@@ -915,6 +977,7 @@ function renderStatus() {
   $('save-copy').disabled = !usable;
   $('discard').disabled = !usable || !hasChanges();
   $('prev').disabled = $('next').disabled = !usable;
+  if (known?.preset) document.title = `${unsaved ? '• ' : ''}${known.preset} · ${known.name || 'Unnamed preset'} · Maneline`;
 }
 
 function renderConnection() {
@@ -934,7 +997,7 @@ function renderConnection() {
     label = 'Reconnecting…';
     // Don't repeat what the message under the top bar already says.
     const reason = state.error && state.error !== $('message').textContent ? `${state.error} ` : '';
-    const edits = known.dirty || nameChanged() ? ' Your unsaved changes may not survive this.' : '';
+    const edits = edited() || nameChanged() ? ' Your unsaved changes may not survive this.' : '';
     banner = `Lost the connection to your Micro Plus. ${reason}This page shows the last settings it read and will reconnect by itself.${edits}`;
   } else {
     connection.dataset.state = 'connecting';
@@ -948,7 +1011,6 @@ function renderConnection() {
   if (known?.preset) {
     setText($('current-number'), state.connected ? `Preset ${known.preset}` : `Preset ${known.preset} (last known)`);
     setText($('current-name'), known.name || 'Unnamed preset');
-    document.title = `${known.preset} · ${known.name || 'Unnamed preset'} · Maneline`;
   }
 }
 

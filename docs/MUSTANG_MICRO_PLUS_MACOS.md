@@ -60,7 +60,7 @@ turns it on or off from the board. Hover over a knob on the board to read its va
 a pedal with no knobs, such as the compressor, shows its main setting instead. Select
 a pedal or the amp to open a close-up with its knobs and their values; select an empty
 position to add an effect. Drag a knob up or down, or select it and use the arrow keys,
-and double-click it to put it back to its saved setting. A model
+and double-click or double-tap it to put it back to its saved setting. A model
 with more than six knobs spreads them over pages, and less common settings are
 under **More settings**. The arrows at the top of the close-up move to the previous or
 next position on the board. To close the close-up, choose **Done**, press Escape or
@@ -74,10 +74,15 @@ writing, distinguishing continuous float controls from integer choices.
 
 The top bar counts unsaved changes. A pedal with changes is outlined on the board,
 changed knobs are marked with a dot, and the close-up offers to undo that pedal's
-changes. The list under the board shows each change from the saved preset, with a
-**Reset** button for each one.
-That comparison is held by the page for the current connection, so a page opened
-after edits were made can show "Unsaved changes" without listing them.
+changes, including a changed model. The list under the board shows each change from
+the saved preset, with a **Reset** button for each one, and the browser tab's title
+starts with a dot while anything is unsaved. A page opened after edits were made asks
+the amp for the saved preset, which only reads it, and lists the same changes. If the
+amp doesn't send it, the page still says "Unsaved changes" but can't list them.
+
+The amp keeps reporting a preset as edited even after every setting is put back, so
+the page goes by the comparison instead: once nothing differs from the saved preset,
+it shows no unsaved changes and switching presets doesn't ask first.
 
 Normalized values appear as 0–10. Knobs for values the amp stores in real units
 (dB, Hz and seconds) use ranges chosen from saved presets with some room on each
