@@ -54,7 +54,8 @@ destinations use the same write path but were not overwritten during testing.
 
 Choose a preset and it appears as a pedalboard: stompbox, modulation, amp, delay
 and reverb, joined by a cable, with each knob labelled. It runs across the screen in
-a wide window and snakes down in a narrow one or on a phone. Each pedal's footswitch
+a wide window, and in a narrow one or on a phone it stacks in rows that each read
+left to right, with the cable dropping through the amp. Each pedal's footswitch
 turns it on or off from the board. Select
 a pedal or the amp to open a close-up with its knobs; select an empty position to
 add an effect. Drag a knob up or down, or select it and use the arrow keys. A model
