@@ -464,7 +464,13 @@ function buildBoard() {
       dial.className = 'mini-dial';
       dial.dataset.mini = `${node.nodeId}/${parameter}`;
       dial.innerHTML = partImage('knob', 'body') + partImage('pointer', 'pointer');
-      dials.append(dial);
+      const label = document.createElement('span');
+      label.className = 'mini-label';
+      label.textContent = knobLabel(parameter);
+      const knob = document.createElement('span');
+      knob.className = 'mini-knob';
+      knob.append(dial, label);
+      dials.append(knob);
     }
     const light = document.createElement('span');
     light.className = 'light';

@@ -53,8 +53,9 @@ Saving was tested only against disposable slot 100 on firmware 1.1.11. Other
 destinations use the same write path but were not overwritten during testing.
 
 Choose a preset and it appears as a pedalboard: stompbox, modulation, amp, delay
-and reverb, joined by a cable. It runs across the screen on a computer and snakes
-down on a phone. Each pedal's footswitch turns it on or off from the board. Select
+and reverb, joined by a cable, with each knob labelled. It runs across the screen in
+a wide window and snakes down in a narrow one or on a phone. Each pedal's footswitch
+turns it on or off from the board. Select
 a pedal or the amp to open a close-up with its knobs; select an empty position to
 add an effect. Drag a knob up or down, or select it and use the arrow keys. A model
 with more than six knobs spreads them over pages, and less common settings are
