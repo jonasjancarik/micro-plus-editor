@@ -56,12 +56,16 @@ Choose a preset and it appears as a pedalboard: stompbox, modulation, amp, delay
 and reverb, joined by a cable, with each knob labelled. It runs across the screen in
 a wide window, and in a narrow one or on a phone it stacks in rows that each read
 left to right, with the cable dropping through the amp. Each pedal's footswitch
-turns it on or off from the board. Select
-a pedal or the amp to open a close-up with its knobs; select an empty position to
-add an effect. Drag a knob up or down, or select it and use the arrow keys. A model
+turns it on or off from the board. Hover over a knob on the board to read its value;
+a pedal with no knobs, such as the compressor, shows its main setting instead. Select
+a pedal or the amp to open a close-up with its knobs and their values; select an empty
+position to add an effect. Drag a knob up or down, or select it and use the arrow keys,
+and double-click it to put it back to its saved setting. A model
 with more than six knobs spreads them over pages, and less common settings are
-under **More settings**. To close the close-up, choose **Done**, press Escape or
+under **More settings**. The arrows at the top of the close-up move to the previous or
+next position on the board. To close the close-up, choose **Done**, press Escape or
 select outside it. Changes are sent to the active sound while you make them.
+Ctrl+S or ⌘+S asks to save over the current preset, as **Save** does.
 Controls stay usable during a send: the amp takes about a second per change, so
 only the newest value of each control is sent and a knob drag is heard in steps.
 A parameter change is acknowledged and its updated preset is read back before the

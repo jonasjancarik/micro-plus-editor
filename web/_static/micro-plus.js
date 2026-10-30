@@ -389,8 +389,8 @@ function renderPresets() {
   $('empty').hidden = visible > 0;
 }
 
-function scrollToActive() {
-  grid.querySelector('[aria-current="true"]')?.scrollIntoView({ block: 'nearest' });
+function scrollToActive(block = 'nearest') {
+  grid.querySelector('[aria-current="true"]')?.scrollIntoView({ block });
 }
 
 // Editor: building controls --------------------------------------------------
@@ -458,7 +458,14 @@ function buildBoard() {
     open.setAttribute('aria-label', `Open ${modelName(node)}, ${nodeTitle(node)}`);
     const dials = document.createElement('span');
     dials.className = 'mini-dials';
-    const { knobs } = splitParameters(node, specOfNode(node));
+    const { knobs, main } = splitParameters(node, specOfNode(node));
+    if (!knobs.length && main.length) {
+      // A pedal with no knobs shows its main setting instead, so you can still read it from the board.
+      const setting = document.createElement('span');
+      setting.className = 'mini-setting';
+      setting.dataset.setting = `${node.nodeId}/${main[0]}`;
+      dials.append(setting);
+    }
     for (const parameter of knobs.slice(0, node.nodeId === 'amp' ? 5 : 3)) {
       const dial = document.createElement('span');
       dial.className = 'mini-dial';
@@ -508,7 +515,12 @@ function bindKnobs(root, node) {
     const parameter = input.dataset.key.split('/')[1];
     const spec = specFor(node, parameter, node.dspUnitParameters[parameter]);
     input.addEventListener('input', () => queueEdit(node.nodeId, parameter, Number(input.value) / spec.scale));
-    input.closest('.knob').querySelector('.dial').addEventListener('pointerdown', () => { dragging = input; });
+    const dial = input.closest('.knob').querySelector('.dial');
+    dial.addEventListener('pointerdown', () => { dragging = input; });
+    dial.addEventListener('dblclick', () => {
+      const saved = baselineValue(node.nodeId, parameter);
+      if (saved !== undefined && !input.disabled) resetToSaved(node.nodeId, parameter, saved);
+    });
   }
 }
 
@@ -643,7 +655,7 @@ function buildCloseup() {
     const stage = document.createElement('div');
     stage.className = 'closeup-stage';
     stage.append(pedal);
-    body.append(stage);
+    body.append(stage, buildModelPicker(node));
     if (main.length) {
       const fields = document.createElement('div');
       fields.className = 'fields';
@@ -653,7 +665,7 @@ function buildCloseup() {
     if (knobs.length) {
       const tip = document.createElement('p');
       tip.className = 'knob-tip';
-      tip.textContent = 'Drag a knob up or down, or select it and use the arrow keys.';
+      tip.textContent = 'Drag a knob up or down, or select it and use the arrow keys. Double-click a knob to put it back to its saved setting.';
       body.append(tip);
     }
     const undo = document.createElement('button');
@@ -667,7 +679,6 @@ function buildCloseup() {
       }
     });
     body.append(undo);
-    body.append(buildModelPicker(node));
     if (extras.length) {
       const details = document.createElement('details');
       details.id = 'advanced';
@@ -693,6 +704,25 @@ function openCloseup(nodeId) {
   renderStatus();
   const dialog = $('closeup');
   if (!dialog.open) dialog.showModal();
+  dialog.scrollTop = 0;
+  renderCloseupSteps();
+}
+
+// Previous and next follow the signal chain, so you can work through the board without closing the close-up.
+function closeupNeighbour(direction) {
+  const nodes = currentNodes();
+  return nodes[(nodes.findIndex(node => node.nodeId === selectedNode) + direction + nodes.length) % nodes.length];
+}
+
+function renderCloseupSteps() {
+  if (!selectedNode || !nodeById(selectedNode)) return;
+  for (const [button, direction, word] of [[$('closeup-prev'), -1, 'Previous'], [$('closeup-next'), 1, 'Next']]) {
+    const neighbour = closeupNeighbour(direction);
+    const text = isEmptyNode(neighbour) ? `${word}: empty ${nodeTitle(neighbour).toLowerCase()} position`
+      : `${word}: ${modelName(neighbour)}`;
+    button.setAttribute('aria-label', text);
+    button.title = text;
+  }
 }
 
 // Editor: keeping controls in step with the amp ------------------------------
@@ -848,6 +878,12 @@ function renderEditor() {
     const spec = specFor(node, parameter, value);
     const shown = value * spec.scale;
     dial.querySelector('.pointer').style.transform = `rotate(${knobAngle(shown, Math.min(spec.min, shown), Math.max(spec.max, shown))}deg)`;
+    dial.parentElement.title = `${knobLabel(parameter)}: ${describeValue(node, parameter, value)}`;
+  }
+  for (const setting of $('board').querySelectorAll('.mini-setting')) {
+    const [nodeId, parameter] = setting.dataset.setting.split('/');
+    const node = nodeById(nodeId);
+    if (node) setText(setting, `${parameterLabel(parameter)}: ${describeValue(node, parameter, node.dspUnitParameters[parameter])}`);
   }
   for (const slot of $('board').children) {
     const edited = changes.some(change => change.nodeId === slot.dataset.node);
@@ -856,8 +892,10 @@ function renderEditor() {
   const undo = $('closeup-undo');
   if (undo) undo.hidden = !changes.some(change => change.nodeId === selectedNode && change.parameter);
   renderChanges(changes);
+  renderCloseupSteps();
   setText($('name-count'), `${nameInput.value.length}/16`);
-  editorFields.disabled = !state.connected || exclusive;
+  // The close-up's own buttons stay outside these, so it can still be closed while the amp is away.
+  $('board-fields').disabled = $('closeup-body').disabled = !state.connected || exclusive;
 }
 
 // Status, top bar and banners ------------------------------------------------
@@ -931,7 +969,8 @@ function render() {
   renderEditor();
   renderStatus();
   renderLastSave();
-  if (grid.querySelector('[aria-current="true"]')?.dataset.preset !== previousActive) scrollToActive();
+  // The first time, centre it so the presets around it show too.
+  if (grid.querySelector('[aria-current="true"]')?.dataset.preset !== previousActive) scrollToActive(previousActive ? 'nearest' : 'center');
 }
 
 // Close-up -----------------------------------------------------------------------
@@ -961,7 +1000,10 @@ window.addEventListener('pointercancel', () => { dragging = null; });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) readState(); });
 
 $('closeup-close').addEventListener('click', closeCloseup);
+$('closeup-prev').addEventListener('click', () => openCloseup(closeupNeighbour(-1).nodeId));
+$('closeup-next').addEventListener('click', () => openCloseup(closeupNeighbour(1).nodeId));
 $('closeup').addEventListener('close', () => {
+  if ($('closeup').open) return; // Already reopened; the close event arrives late.
   const opened = selectedNode;
   selectedNode = null;
   builtKey = '';
@@ -1029,6 +1071,14 @@ grid.addEventListener('keydown', event => {
 });
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') { closeDrawer(); return; }
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+    event.preventDefault(); // Never the browser's "save this page".
+    if (!document.querySelector('dialog[open]:not(#closeup)') && !$('save').disabled) {
+      if ($('closeup').open) closeCloseup();
+      saveHere();
+    }
+    return;
+  }
   if (document.querySelector('dialog[open]') || event.metaKey || event.ctrlKey || event.altKey) return;
   if (event.target.closest('input, select, textarea')) return;
   if (event.key === '[') stepPreset(-1);

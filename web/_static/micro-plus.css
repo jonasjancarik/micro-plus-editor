@@ -88,7 +88,8 @@ main { overflow-y: auto; min-width: 0; padding: 18px 20px 28px; }
 #waiting { max-width: 520px; margin: 40px auto; text-align: center; }
 #waiting h1 { font-size: 21px; margin-bottom: 8px; }
 #waiting p, .hint, .shortcuts { color: var(--muted); }
-#editor { border: 0; padding: 0; margin: 0; min-width: 0; max-width: 1040px; }
+#editor { min-width: 0; max-width: 1040px; }
+#board-fields, #closeup-body { border: 0; padding: 0; margin: 0; min-width: 0; }
 .name-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .name-row label { font-weight: 600; }
 #preset-name { width: 220px; }
@@ -116,6 +117,7 @@ main { overflow-y: auto; min-width: 0; padding: 18px 20px 28px; }
 .mini-dial { position: relative; flex: none; width: 30px; height: 30px; }
 .mini-dial img { position: absolute; inset: 0; width: 100%; height: 100%; }
 .mini-label { margin-top: 2px; font-size: 10px; font-weight: 600; line-height: 1.1; text-align: center; }
+.mini-setting { align-self: center; font-size: 12px; font-weight: 600; line-height: 1.2; text-align: center; }
 .board-pedal .light { display: block; width: 12px; height: 12px; margin: 8px auto 0; }
 .board-pedal .name { margin-top: 6px; font-size: 14px; line-height: 1.2; overflow-wrap: break-word; }
 .board-pedal .kind { font-size: 12px; font-weight: 500; }
@@ -127,7 +129,11 @@ main { overflow-y: auto; min-width: 0; padding: 18px 20px 28px; }
 #closeup { width: min(460px, calc(100vw - 24px)); max-width: none; max-height: calc(100dvh - 24px); padding: 0; overflow-y: auto; animation: closeup-in .16s ease-out; }
 @keyframes closeup-in { from { opacity: 0; transform: scale(.94); } }
 #closeup-inner { padding: 16px 18px 20px; }
-.closeup-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.closeup-head { display: flex; align-items: flex-start; gap: 8px; }
+.closeup-name { flex: 1; min-width: 0; }
+#closeup-close { margin-left: 4px; }
+#closeup .readout { visibility: visible; }
+#closeup .model-picker { margin-bottom: 14px; }
 #closeup h2 { margin: 0; font-size: 19px; }
 #closeup-kind { color: var(--muted); font-size: 13px; }
 #closeup-status { min-height: 20px; margin: 4px 0; font-size: 13px; color: var(--muted); }
@@ -183,6 +189,16 @@ dialog input, dialog select { width: 100%; }
 }
 @container board-area (max-width: 400px) {
   .mini-dials { gap: 3px; }
+}
+/* With room to spare, the close-up puts its other controls beside the pedal, so it rarely needs scrolling. */
+@media (min-width: 800px) {
+  #closeup:has(.closeup-stage) { width: 780px; }
+  #closeup-body:has(.closeup-stage) { display: grid; grid-template-columns: 360px minmax(0, 1fr); column-gap: 20px; align-items: start; }
+  .closeup-stage { grid-row: 1 / span 8; padding-bottom: 0; }
+  #closeup .fields { grid-template-columns: minmax(0, 1fr); }
+  #closeup .knob-tip { text-align: left; }
+  #closeup-undo { margin-left: 0; }
+  #advanced { margin-top: 2px; }
 }
 @media (max-width: 860px) {
   html, body { height: auto; }

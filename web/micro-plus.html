@@ -57,7 +57,8 @@
       <h1>Looking for your Micro Plus</h1>
       <p>Turn on the amp and close Fender Tone on your other devices. This page connects by itself once the amp is found.</p>
     </div>
-    <fieldset id="editor" hidden>
+    <div id="editor" hidden>
+      <fieldset id="board-fields">
       <legend class="visually-hidden">Preset editor</legend>
       <div class="name-row">
         <label for="preset-name">Preset name</label>
@@ -65,32 +66,35 @@
         <span id="name-count"></span>
         <span id="sync" role="status"></span>
       </div>
-      <p class="hint">Select a pedal or the amp to adjust it. Changes reach the amp as you make them, about once a second, and aren't kept until you save.</p>
+      <p class="hint">Select a pedal or the amp to adjust it. You'll hear your changes on the amp as you make them, but they aren't kept until you save.</p>
       <h2 class="visually-hidden">Your pedalboard</h2>
       <div id="board-area"><div id="board"></div></div>
       <details id="changes" hidden>
         <summary id="changes-summary"></summary>
         <ul id="changes-list"></ul>
       </details>
+      </fieldset>
       <dialog id="closeup" aria-labelledby="closeup-title">
         <div id="closeup-inner">
           <div class="closeup-head">
-            <div>
+            <div class="closeup-name">
               <h2 id="closeup-title"></h2>
               <p id="closeup-kind"></p>
             </div>
-            <button id="closeup-close" type="button">Done</button>
+            <button id="closeup-prev" type="button" class="icon">&#8249;</button>
+            <button id="closeup-next" type="button" class="icon">&#8250;</button>
+            <button id="closeup-close" type="button" autofocus>Done</button>
           </div>
           <p id="closeup-status" role="status"></p>
-          <div id="closeup-body"></div>
+          <fieldset id="closeup-body"></fieldset>
         </div>
       </dialog>
-    </fieldset>
+    </div>
     <div id="last-save" hidden>
       <span id="last-save-text"></span>
       <button id="undo-save" type="button">Undo this save</button>
     </div>
-    <p class="shortcuts">Keyboard: <kbd>[</kbd> and <kbd>]</kbd> change preset. In the preset list, use the up and down arrows.</p>
+    <p class="shortcuts">Keyboard: <kbd>[</kbd> and <kbd>]</kbd> change preset, and <kbd>Ctrl</kbd> or <kbd>&#8984;</kbd> + <kbd>S</kbd> saves. In the preset list, use the up and down arrows.</p>
   </main>
 </div>
 
