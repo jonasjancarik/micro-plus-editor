@@ -32,6 +32,7 @@ let showEmpty = storedFlag('mmp-show-empty');
 let sortByNumber = storedFlag('mmp-sort-by-number');
 let shownGroup = null; // The one preset group the picker is limited to, if any.
 let userGroups = { groups: [], assignments: {} }; // The groups made on this computer, from the server.
+let savedPresets = {}; // Slot → the name of a preset seen to be saved there, from the server.
 let groupNameCurrent = null; // The group being renamed, whose own name isn't a clash.
 const GROUPS_API = '/api/micro-plus/groups';
 const NEW_GROUP = '__new__';
@@ -83,6 +84,7 @@ function clearOldNews() {
 // Talking to the server ----------------------------------------------------
 function adopt(next) {
   if (next.preset_groups) userGroups = next.preset_groups;
+  if (next.saved_presets) savedPresets = next.saved_presets;
   if (next.stalled) reconnectAfterStall = true;
   if (next.connected) {
     const reconnected = known && known.revision?.split(':')[0] !== next.revision?.split(':')[0];
@@ -383,6 +385,13 @@ function presetGroup(preset) {
   return movableGroups().includes(moved) ? moved : usualGroup(preset);
 }
 function presetDescription(preset) { return factoryPresets.get(preset?.name?.trim())?.description ?? ''; }
+// Unlabelled presets came with the amp.
+function presetOrigin(preset) {
+  if (!preset || isEmptySlot(preset)) return '';
+  const name = preset.name.trim();
+  if (!factoryPresets.has(name)) return 'Yours';
+  return savedPresets[preset.preset] === name ? 'Edited' : '';
+}
 
 function smallButton(label, onClick, ariaLabel) {
   const button = document.createElement('button');
@@ -432,6 +441,13 @@ function buildPresetList() {
       const name = document.createElement('span');
       name.className = 'name';
       name.textContent = displayName(preset);
+      const origin = presetOrigin(preset);
+      if (origin) {
+        const label = document.createElement('span');
+        label.className = 'origin';
+        label.textContent = origin;
+        name.append(' ', label);
+      }
       text.append(name);
       const description = presetDescription(preset);
       if (description) {
@@ -563,7 +579,7 @@ async function movePreset(number) {
 function matchesSearch(preset, query) {
   if (!query) return true;
   if (/^\d+$/.test(query)) return preset.preset === Number(query); // Numbers mean slots, not "contains 7".
-  return [displayName(preset), presetDescription(preset), presetGroup(preset)]
+  return [displayName(preset), presetDescription(preset), presetGroup(preset), presetOrigin(preset)]
     .some(text => text.toLocaleLowerCase().includes(query));
 }
 
@@ -573,7 +589,7 @@ function visiblePresetButtons() {
 
 function renderPresets() {
   if (!known) return;
-  const names = JSON.stringify([known.presets, userGroups, sortByNumber]);
+  const names = JSON.stringify([known.presets, userGroups, savedPresets, sortByNumber]);
   if (names !== renderedNames) {
     const hadFocus = grid.contains(document.activeElement) ? document.activeElement.dataset.preset : null;
     buildPresetList();
@@ -1256,7 +1272,9 @@ function renderConnection() {
   if (known?.preset) {
     setText($('current-number'), state.connected ? `Preset ${known.preset}` : `Preset ${known.preset} (last known)`);
     setText($('current-name'), known.name || 'Unnamed preset');
-    setText($('preset-about'), presetDescription(presetByNumber(known.preset)));
+    const current = presetByNumber(known.preset);
+    setText($('preset-about'), presetOrigin(current) === 'Edited'
+      ? `Edited since it came with the amp, so it may no longer sound like this: ${presetDescription(current)}` : presetDescription(current));
     $('preset-about').hidden = !$('preset-about').textContent;
   }
 }

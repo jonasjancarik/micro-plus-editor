@@ -130,6 +130,8 @@ body:has(#closeup[open]) #message { display: none; } /* The close-up shows the s
 .preset .num { width: 26px; flex: none; color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; text-align: right; }
 .preset .text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .preset .name { font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+.preset .origin { display: inline-block; margin-left: 4px; padding: 0 6px; border: 1px solid var(--line); border-radius: 5px; font-size: 12px; font-weight: 500; line-height: 1.5; color: var(--muted); vertical-align: 1px; white-space: nowrap; }
+.origin-note { margin-left: auto; font-size: 14px; color: var(--muted); }
 .preset .about { font-size: 14px; line-height: 1.4; color: var(--muted); }
 .preset .badge { flex: none; font-size: 13px; font-weight: 600; color: var(--accent); }
 .preset.empty-slot .name { color: var(--muted); font-style: italic; }
@@ -309,6 +311,7 @@ dialog input, dialog select { width: 100%; }
   #topbar { padding: 6px 8px; background: var(--bg); backdrop-filter: none; }
   .panel-head { gap: 10px; justify-content: space-between; }
   #count { display: none; }
+  .origin-note { margin-left: 0; }
   #preset-panel label.check { white-space: nowrap; }
   .now { flex-basis: 100%; }
   #open-presets { flex: 1; justify-content: center; padding: 2px 8px; }

@@ -20,7 +20,7 @@ import json
 import time
 import uuid
 from pathlib import Path
-from mmp_groups import PresetGroups
+from mmp_groups import PresetGroups, SavedPresets
 from mmp_session import EditorConflict, MODELS, PARAMETER_CHOICES, READ_RECONNECT_GAP, SAVED_READ_FAILURES, UNSCALED
 from mmp_web import dispatch, handle
 
@@ -50,6 +50,8 @@ class MockSession:
         self.read_reconnected_at = None
         self.stalled = False
         self.groups = PresetGroups()
+        self.saved = SavedPresets()
+        self.saved_before_last_save = None
 
     def read(self, slot):
         if slot not in self.stored:
@@ -75,7 +77,7 @@ class MockSession:
                 'revision': f'{self.generation}:{self.document_revision}' if connected else None,
                 'dirty': self.dirty if connected else False,
                 'models': MODELS, 'parameter_choices': PARAMETER_CHOICES, 'unscaled': UNSCALED,
-                'last_save': self.last_save, 'last_undo': self.last_undo, 'preset_groups': self.groups.state}
+                'last_save': self.last_save, 'last_undo': self.last_undo, 'preset_groups': self.groups.state, 'saved_presets': self.saved.state}
 
     def change_groups(self, request):
         self.groups.apply(request)
@@ -196,6 +198,8 @@ class MockSession:
         saved['info']['displayName'] = name
         self.stored[target] = saved
         self.names[target - 1] = name
+        self.saved_before_last_save = self.saved.state.get(str(target))
+        self.saved.set(target, name)
         self.last_save = {'preset': target, 'name': name, 'backup': backup, 'verified': True, 'time': time.time()}
         if target == self.slot:
             self.document = copy.deepcopy(saved)
@@ -211,6 +215,7 @@ class MockSession:
         target = self.last_save['preset']
         self.stored[target], self.names[target - 1] = self.backups[self.last_save['backup']]
         self.last_undo = {'preset': target, 'backup': self.last_save['backup'], 'time': time.time()}
+        self.saved.set(target, self.saved_before_last_save)
         self.last_save = None
         if target == self.slot:
             self.document = self.read(target)

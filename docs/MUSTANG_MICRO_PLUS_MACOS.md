@@ -56,6 +56,12 @@ back to where they started. The groups and descriptions are Maneline's own and a
 stored on the amp: your groups are in `_work/preset-groups.json` in the checkout the
 server runs from, so every browser using this server sees the same groups.
 
+In the list, a preset whose name isn't one of the factory presets is labelled Yours. A
+factory preset is labelled Edited once it's saved over from this page, or once you select
+it and the amp says it isn't the factory version. Saves made elsewhere can only be spotted
+that way, and only when the amp reports them, so such a preset can look unchanged. Those
+records are in `_work/preset-saved.json`.
+
 Search by name, sound or group, or type a number to find exactly that slot. Empty slots are hidden until you
 ask for them. The arrows in the top bar and the `[` and `]` keys step through the
 listed presets in slot order. Selecting a

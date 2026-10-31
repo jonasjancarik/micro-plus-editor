@@ -128,7 +128,8 @@ async def handle(reader, writer, session, allowed_hosts=None, dispatcher=dispatc
 async def run(args):
     Path(args.log).parent.mkdir(parents=True, exist_ok=True)
     with open(args.log, 'a', encoding='utf-8') as log:
-        session = MicroPlusSession(args.device, log, groups_path='_work/preset-groups.json')
+        session = MicroPlusSession(args.device, log, groups_path='_work/preset-groups.json',
+                                    saved_path='_work/preset-saved.json')
         hostname = socket.gethostname().lower().removesuffix('.local')
         allowed_hosts = {'localhost', '127.0.0.1', '::1', hostname, hostname + '.local',
                          *args.allow_host}

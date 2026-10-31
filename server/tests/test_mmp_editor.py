@@ -12,7 +12,7 @@ from pathlib import Path
 from unittest.mock import AsyncMock, Mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from mmp_ble import Controller
-from mmp_groups import PresetGroups
+from mmp_groups import PresetGroups, SavedPresets
 from mmp_protocol import presets_match
 from mmp_session import EditorConflict, MicroPlusSession, READ_RECONNECT_GAP, SAVED_READ_FAILURES
 from mmp_web import dispatch, HTTPError
@@ -455,6 +455,45 @@ class PresetGroupStoreTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 groups.apply({'action': 'create', 'name': 'Gig'})
             self.assertEqual(groups.state['groups'], [])
+
+
+class SavedPresetTests(unittest.IsolatedAsyncioTestCase):
+    def session(self, directory):
+        session = EditorTests.session(self, directory)
+        session.controller.document['info']['is_factory_default'] = True
+        return session
+
+    async def test_saving_marks_the_slot_and_undo_clears_it(self):
+        with tempfile.TemporaryDirectory() as directory:
+            session = self.session(directory)
+            state = await session.save(100, '2:4', 100, 'Surfy')
+            self.assertEqual(state['saved_presets'], {'100': 'Surfy'})
+            session.controller.restore_preset = AsyncMock()
+            session.controller.switch = AsyncMock()
+            session.controller.refresh_current = AsyncMock()
+            state = await session.undo_save(100, '2:4')
+            self.assertEqual(state['saved_presets'], {})
+
+    def test_a_preset_the_amp_says_is_not_factory_is_marked_when_seen(self):
+        with tempfile.TemporaryDirectory() as directory:
+            session = self.session(directory)
+            session.controller.document['info'].update(is_factory_default=False, displayName='Surfy   ')
+            self.assertEqual(session.snapshot()['saved_presets'], {'100': 'Surfy'})
+
+    def test_a_factory_preset_is_not_marked(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertEqual(self.session(directory).snapshot()['saved_presets'], {})
+
+    def test_marks_survive_a_restart_and_a_failed_write_does_not_raise(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'saved.json'
+            SavedPresets(path).set(17, 'Wild Nocturne')
+            self.assertEqual(SavedPresets(path).state, {'17': 'Wild Nocturne'})
+            (Path(directory) / 'file').write_text('')
+            blocked = SavedPresets(Path(directory) / 'file' / 'saved.json')
+            with contextlib.redirect_stderr(io.StringIO()):
+                blocked.set(17, 'Wild Nocturne')
+            self.assertEqual(blocked.state, {'17': 'Wild Nocturne'})
 
 
 class PresetGroupRequestTests(unittest.IsolatedAsyncioTestCase):

@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from mmp_ble import Controller, KEEPALIVE, KEEPALIVE_INTERVAL, NAME, RESPONSE, SERVICE
-from mmp_groups import PresetGroups
+from mmp_groups import PresetGroups, SavedPresets
 
 MODELS = json.loads(Path(__file__).with_name('mmp_models.json').read_text())
 PARAMETER_CHOICES = json.loads(Path(__file__).with_name('mmp_parameter_choices.json').read_text())
@@ -24,11 +24,13 @@ class EditorConflict(ValueError):
 
 
 class MicroPlusSession:
-    def __init__(self, device=None, log=None, backup_dir='_work/preset-backups', groups_path=None):
+    def __init__(self, device=None, log=None, backup_dir='_work/preset-backups', groups_path=None, saved_path=None):
         self.device_id = device
         self.log = log
         self.backup_dir = Path(backup_dir)
         self.groups = PresetGroups(groups_path)
+        self.saved = SavedPresets(saved_path)
+        self.saved_before_last_save = None
         self.controller = None
         self.client = None
         self.error = None
@@ -47,6 +49,10 @@ class MicroPlusSession:
     def snapshot(self):
         controller = self.controller
         connected = bool(controller and self.client and self.client.is_connected)
+        if connected and getattr(controller, 'document', None) and controller.document_slot == controller.slot:
+            info = controller.document['info']
+            if info.get('is_factory_default') is False:  # Saved with another app, perhaps.
+                self.saved.set(controller.slot, info['displayName'].rstrip())
         return {'connected': connected, 'phase': self.phase, 'error': self.error, 'stalled': self.stalled,
                 'device': NAME, 'connections': self.connections,
                 'connected_since': self.connected_since,
@@ -58,7 +64,7 @@ class MicroPlusSession:
                 'revision': f'{self.generation}:{getattr(controller, "document_revision", 0)}' if connected else None,
                 'dirty': bool(getattr(controller, 'dirty', False)) if connected else False,
                 'models': MODELS, 'parameter_choices': PARAMETER_CHOICES, 'unscaled': UNSCALED, 'last_save': self.last_save,
-                'last_undo': self.last_undo, 'preset_groups': self.groups.state}
+                'last_undo': self.last_undo, 'preset_groups': self.groups.state, 'saved_presets': self.saved.state}
 
     def change_groups(self, request):
         self.groups.apply(request)  # Stays on this computer, so it works whether or not the amp is connected.
@@ -188,6 +194,8 @@ class MicroPlusSession:
                 # A physical preset change during the backup must not save the wrong sound.
                 self.require_editor(slot, revision)
                 await controller.save_current(name, target)
+                self.saved_before_last_save = self.saved.state.get(str(target))
+                self.saved.set(target, name)
                 self.last_save = {'preset': target, 'name': name, 'backup': backup,
                                   'verified': True, 'time': time.time()}
                 return self.snapshot()
@@ -217,6 +225,7 @@ class MicroPlusSession:
                     # The amp keeps playing its live copy until the slot is selected again.
                     await controller.switch(target)
                 await controller.refresh_current()
+                self.saved.set(target, self.saved_before_last_save)
                 self.last_save = None
                 self.last_undo = {'preset': target, 'backup': safety, 'time': time.time()}
                 return self.snapshot()
