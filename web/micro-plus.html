@@ -60,19 +60,18 @@
     <div id="editor" hidden>
       <fieldset id="board-fields">
       <legend class="visually-hidden">Preset editor</legend>
-      <div class="name-row">
-        <label for="preset-name">Preset name</label>
-        <input id="preset-name" maxlength="16" required autocomplete="off">
-        <span id="name-count"></span>
-        <span id="sync" role="status"></span>
-      </div>
-      <p class="hint">Select a pedal or the amp to adjust it. You'll hear your changes on the amp as you make them, but they aren't kept until you save.</p>
+      <p id="hint" class="hint">Select a pedal or the amp to adjust it. You'll hear your changes on the amp as you make them, but they aren't kept until you save.</p>
       <h2 class="visually-hidden">Your pedalboard</h2>
       <div id="board-area"><div id="board"></div></div>
       <details id="changes" hidden>
         <summary id="changes-summary"></summary>
         <ul id="changes-list"></ul>
       </details>
+      <div class="name-row">
+        <label for="preset-name">Preset name</label>
+        <input id="preset-name" maxlength="16" required autocomplete="off">
+        <span id="name-count"></span>
+      </div>
       </fieldset>
       <dialog id="closeup" aria-labelledby="closeup-title">
         <div id="closeup-inner">
@@ -81,10 +80,9 @@
               <h2 id="closeup-title"></h2>
               <p id="closeup-kind"></p>
             </div>
-            <button id="closeup-prev" type="button" class="icon">&#8249;</button>
-            <button id="closeup-next" type="button" class="icon">&#8250;</button>
             <button id="closeup-close" type="button" autofocus>Done</button>
           </div>
+          <nav id="closeup-tabs" aria-label="Pedals on the board"></nav>
           <p id="closeup-status" role="status"></p>
           <fieldset id="closeup-body"></fieldset>
         </div>
@@ -94,7 +92,8 @@
       <span id="last-save-text"></span>
       <button id="undo-save" type="button">Undo this save</button>
     </div>
-    <p class="shortcuts">Keyboard: <kbd>[</kbd> and <kbd>]</kbd> change preset, and <kbd>Ctrl</kbd> or <kbd>&#8984;</kbd> + <kbd>S</kbd> saves. In the preset list, use the up and down arrows.</p>
+    <p class="shortcuts">Keyboard: <kbd>[</kbd> and <kbd>]</kbd> change preset, and <kbd>Ctrl</kbd> or <kbd>&#8984;</kbd> + <kbd>S</kbd> saves. In the preset list, use the up and down arrows.
+      On a knob, scroll to turn it, hold <kbd>Shift</kbd> while dragging for fine changes, or select its number to type a value.</p>
   </main>
 </div>
 

@@ -29,6 +29,7 @@ let formPreset = null;
 let advancedOpen = false;
 let showEmpty = storedFlag('mmp-show-empty');
 const baselines = new Map(); // "generation:preset" → the saved document, for showing what changed.
+const pedalTabLabels = { stomp: 'Stomp', mod: 'Mod', amp: 'Amp', delay: 'Delay', reverb: 'Reverb' };
 
 const grid = $('presets');
 const filter = $('filter');
@@ -672,7 +673,17 @@ async function restorePedal(nodeId) {
   }
 }
 
+function stepModel(node, direction) {
+  // Stepping is for trying sounds, so it passes over the choice that removes the pedal.
+  const choices = (known.models[node.nodeId] || []).filter(model => model.id !== 'DUBS_Unknown');
+  const index = choices.findIndex(model => model.id === node.FenderId);
+  const model = choices[(index + direction + choices.length) % choices.length];
+  if (model) exclusiveOperation(EDITOR_API, { action: 'model', ...guard(), node: node.nodeId, model: model.id }, `Changing to ${model.name}…`);
+}
+
 function buildModelPicker(node) {
+  const row = document.createElement('div');
+  row.className = 'model-row';
   const label = document.createElement('label');
   label.className = 'model-picker';
   const name = document.createElement('span');
@@ -693,7 +704,22 @@ function buildModelPicker(node) {
     exclusiveOperation(EDITOR_API, { action: 'model', ...guard(), node: node.nodeId, model: select.value }, 'Changing model…');
   });
   label.append(name, select);
-  return label;
+  row.append(label);
+  if (!isEmptyNode(node)) {
+    const what = node.nodeId === 'amp' ? 'amp model' : 'effect';
+    for (const [text, direction, word] of [['\u2039', -1, 'previous'], ['\u203a', 1, 'next']]) {
+      const step = document.createElement('button');
+      step.type = 'button';
+      step.className = 'icon';
+      step.textContent = text;
+      step.dataset.key = `${node.nodeId}/#model${direction}`;
+      step.title = `Try the ${word} ${what}`;
+      step.setAttribute('aria-label', step.title);
+      step.addEventListener('click', () => stepModel(nodeById(node.nodeId), direction));
+      row.append(step);
+    }
+  }
+  return row;
 }
 
 // The close-up: the chosen pedal at full size, with anything less common tucked away below it.
@@ -722,12 +748,12 @@ function buildCloseup() {
       for (const parameter of main) fields.append(buildField(node, parameter, node.dspUnitParameters[parameter]));
       body.append(fields);
     }
-    if (knobs.length) {
+    if (knobs.length && !storedFlag('mmp-knob-tip-seen')) {
       const tip = document.createElement('p');
       tip.className = 'knob-tip';
       tip.textContent = window.matchMedia('(pointer: coarse)').matches
-        ? 'Drag a knob up or down. Double-tap a knob to put it back to its saved setting.'
-        : 'Drag a knob up or down, or select it and use the arrow keys. Double-click a knob to put it back to its saved setting.';
+        ? 'Drag a knob up or down, or tap its number to type a value. Double-tap a knob to put it back to its saved setting.'
+        : 'Drag or scroll over a knob to turn it, or select its number to type a value. Double-click a knob to put it back to its saved setting.';
       body.append(tip);
     }
     body.append(buildUndoButton(node));
@@ -767,23 +793,32 @@ function openCloseup(nodeId) {
   const dialog = $('closeup');
   if (!dialog.open) dialog.showModal();
   dialog.scrollTop = 0;
-  renderCloseupSteps();
 }
 
-// Previous and next follow the signal chain, so you can work through the board without closing the close-up.
-function closeupNeighbour(direction) {
+// One button per position in signal order, so you can move around the board without closing the close-up.
+function renderCloseupTabs(changes) {
+  const tabs = $('closeup-tabs');
   const nodes = currentNodes();
-  return nodes[(nodes.findIndex(node => node.nodeId === selectedNode) + direction + nodes.length) % nodes.length];
-}
-
-function renderCloseupSteps() {
-  if (!selectedNode || !nodeById(selectedNode)) return;
-  for (const [button, direction, word] of [[$('closeup-prev'), -1, 'Previous'], [$('closeup-next'), 1, 'Next']]) {
-    const neighbour = closeupNeighbour(direction);
-    const text = isEmptyNode(neighbour) ? `${word}: empty ${nodeTitle(neighbour).toLowerCase()} position`
-      : `${word}: ${modelName(neighbour)}`;
-    button.setAttribute('aria-label', text);
-    button.title = text;
+  if ([...tabs.children].map(tab => tab.dataset.node).join() !== nodes.map(node => node.nodeId).join()) {
+    tabs.replaceChildren(...nodes.map(node => {
+      const tab = document.createElement('button');
+      tab.type = 'button';
+      tab.dataset.node = node.nodeId;
+      tab.textContent = pedalTabLabels[node.nodeId] || nodeTitle(node);
+      tab.addEventListener('click', () => openCloseup(node.nodeId));
+      return tab;
+    }));
+  }
+  for (const tab of tabs.children) {
+    const node = nodeById(tab.dataset.node);
+    const empty = isEmptyNode(node);
+    const off = hasBypass(node) && node.dspUnitParameters.bypass;
+    const text = `${empty ? `Empty ${nodeTitle(node).toLowerCase()} position` : `${modelName(node)}, ${nodeTitle(node)}`}${off ? ', off' : ''}`;
+    tab.title = text;
+    tab.setAttribute('aria-label', text);
+    if (tab.dataset.node === selectedNode) tab.setAttribute('aria-current', 'true'); else tab.removeAttribute('aria-current');
+    tab.classList.toggle('muted', empty || off);
+    tab.classList.toggle('has-changes', changes.some(change => change.nodeId === tab.dataset.node));
   }
 }
 
@@ -954,7 +989,7 @@ function renderEditor() {
   const undo = $('closeup-undo');
   if (undo) undo.hidden = !changes.some(change => change.nodeId === selectedNode);
   renderChanges(changes);
-  renderCloseupSteps();
+  renderCloseupTabs(changes);
   setText($('name-count'), `${nameInput.value.length}/16`);
   // The close-up's own buttons stay outside these, so it can still be closed while the amp is away.
   $('board-fields').disabled = $('closeup-body').disabled = !state.connected || exclusive;
@@ -965,7 +1000,7 @@ function renderStatus() {
   const count = changesFromSaved().length + (nameChanged() ? 1 : 0);
   const unsaved = state.connected && hasChanges();
   setText($('dirty'), !unsaved ? '' : count > 1 ? `${count} unsaved changes` : count === 1 ? '1 unsaved change' : 'Unsaved changes');
-  setText($('sync'), editsWaiting() ? 'Sending to the amp…' : '');
+  if (state.connected) setText($('connection-text'), editsWaiting() ? 'Sending to the amp…' : 'Connected');
   const note = $('message').hidden ? '' : $('message').textContent;
   const problem = $('message').dataset.kind === 'error' ? note : '';
   const closeupStatus = $('closeup-status');
@@ -976,6 +1011,7 @@ function renderStatus() {
   $('save').disabled = !usable || !hasChanges() || !nameInput.value.trim();
   $('save-copy').disabled = !usable;
   $('discard').disabled = !usable || !hasChanges();
+  $('discard').hidden = !hasChanges();
   $('prev').disabled = $('next').disabled = !usable;
   if (known?.preset) document.title = `${unsaved ? '• ' : ''}${known.preset} · ${known.name || 'Unnamed preset'} · Maneline`;
 }
@@ -1020,7 +1056,8 @@ function renderLastSave() {
   $('undo-save').disabled = exclusive || editsWaiting();
   if (save) {
     const time = new Date(save.time * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setText($('last-save-text'), `Saved “${save.name}” to preset ${save.preset} at ${time}. Previous version backed up as ${save.backup}.`);
+    setText($('last-save-text'), `Saved “${save.name}” to preset ${save.preset} at ${time}. Maneline kept a backup of what it replaced.`);
+    $('last-save-text').title = `Backup file: ${save.backup}`;
   }
 }
 
@@ -1062,10 +1099,11 @@ window.addEventListener('pointercancel', () => { dragging = null; });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) readState(); });
 
 $('closeup-close').addEventListener('click', closeCloseup);
-$('closeup-prev').addEventListener('click', () => openCloseup(closeupNeighbour(-1).nodeId));
-$('closeup-next').addEventListener('click', () => openCloseup(closeupNeighbour(1).nodeId));
 $('closeup').addEventListener('close', () => {
   if ($('closeup').open) return; // Already reopened; the close event arrives late.
+  storeFlag('mmp-knob-tip-seen', true);
+  storeFlag('mmp-hint-seen', true);
+  $('hint').hidden = true;
   const opened = selectedNode;
   selectedNode = null;
   builtKey = '';
@@ -1146,6 +1184,9 @@ document.addEventListener('keydown', event => {
   if (event.key === '[') stepPreset(-1);
   if (event.key === ']') stepPreset(1);
 });
+
+$('hint').hidden = storedFlag('mmp-hint-seen');
+$('changes').open = window.matchMedia('(min-width: 861px)').matches; // There's room for the list beside everything else.
 
 readState();
 setInterval(readState, 1000);

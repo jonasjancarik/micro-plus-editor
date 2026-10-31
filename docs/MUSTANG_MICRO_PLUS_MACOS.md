@@ -56,14 +56,18 @@ Choose a preset and it appears as a pedalboard: stompbox, modulation, amp, delay
 and reverb, joined by a cable, with each knob labelled. It runs across the screen in
 a wide window, and in a narrow one or on a phone it stacks in rows that each read
 left to right, with the cable dropping through the amp. Each pedal's footswitch
-turns it on or off from the board. Hover over a knob on the board to read its value;
+turns it on or off from the board, and a pedal that's off says so under its name. Hover over a knob on the board to read its value;
 a pedal with no knobs, such as the compressor, shows its main setting instead. Select
 a pedal or the amp to open a close-up with its knobs and their values; select an empty
-position to add an effect. Drag a knob up or down, or select it and use the arrow keys,
-and double-click or double-tap it to put it back to its saved setting. A model
+position to add an effect. Drag a knob up or down, or scroll over it, or select it and
+use the arrow keys; hold Shift while dragging for finer changes. Select the number above
+a knob to type a value, and double-click or double-tap a knob to put it back to its
+saved setting. In a close-up too tall for the window, a knob only responds to scrolling
+once it has been selected, so scrolling past one doesn't change it. A model
 with more than six knobs spreads them over pages, and less common settings are
-under **More settings**. The arrows at the top of the close-up move to the previous or
-next position on the board. To close the close-up, choose **Done**, press Escape or
+under **More settings**. The buttons along the top of the close-up go to any position on
+the board and mark the ones with changes, and the arrows beside the model menu try the
+previous or next model, passing over **None**. To close the close-up, choose **Done**, press Escape or
 select outside it. Changes are sent to the active sound while you make them.
 Ctrl+S or ⌘+S asks to save over the current preset, as **Save** does.
 Controls stay usable during a send: the amp takes about a second per change, so
@@ -72,7 +76,9 @@ A parameter change is acknowledged and its updated preset is read back before th
 browser accepts it. The editor queries the device's parameter type before
 writing, distinguishing continuous float controls from integer choices.
 
-The top bar counts unsaved changes. A pedal with changes is outlined on the board,
+The preset name is under the board. On a phone, **Save** and **Save as copy** stay at
+the bottom of the screen, and **Discard changes** appears only when there's something
+to discard. The top bar counts unsaved changes. A pedal with changes is outlined on the board,
 changed knobs are marked with a dot, and the close-up offers to undo that pedal's
 changes, including a changed model. The list under the board shows each change from
 the saved preset, with a **Reset** button for each one, and the browser tab's title

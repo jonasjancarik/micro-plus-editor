@@ -56,10 +56,12 @@ button.icon { width: 38px; padding: 0; font-size: 22px; line-height: 1; flex: no
 .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 #dirty { font-size: 13px; font-weight: 600; color: var(--warn); margin-right: 4px; }
 
-#connection-banner, #message { padding: 9px 16px; font-size: 14px; border-bottom: 1px solid var(--line); }
-#connection-banner { background: var(--warn-soft); }
-#message { background: var(--surface-2); }
-#message[data-kind="error"] { background: var(--error-soft); color: var(--error); }
+#connection-banner { padding: 9px 16px; font-size: 14px; border-bottom: 1px solid var(--line); background: var(--warn-soft); }
+/* Floats over the page, so a passing message doesn't push the board down and back up. */
+#message { position: fixed; z-index: 10; left: 50%; bottom: 18px; transform: translateX(-50%); width: max-content; max-width: min(560px, calc(100vw - 32px));
+  padding: 9px 14px; font-size: 14px; background: var(--text); color: var(--bg); border-radius: 8px; box-shadow: 0 4px 16px rgb(0 0 0 / 35%); }
+#message[data-kind="error"] { background: var(--error-soft); color: var(--error); border: 1px solid var(--error); }
+body:has(#closeup[open]) #message { display: none; } /* The close-up shows the same message in its own status line. */
 
 #layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 300px minmax(0, 1fr); }
 #preset-panel { display: flex; flex-direction: column; gap: 8px; min-height: 0; padding: 14px 12px 0;
@@ -90,17 +92,18 @@ main { overflow-y: auto; min-width: 0; padding: 18px 20px 28px; }
 #waiting p, .hint, .shortcuts { color: var(--muted); }
 #editor { min-width: 0; max-width: 1040px; }
 #board-fields, #closeup-body { border: 0; padding: 0; margin: 0; min-width: 0; }
-.name-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.name-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
 .name-row label { font-weight: 600; }
 #preset-name { width: 220px; }
 #name-count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
-#sync { font-size: 13px; color: var(--muted); }
-.hint { font-size: 13px; margin: 8px 0 16px; }
+.hint { font-size: 13px; margin-bottom: 14px; }
 
 /* The board: a dark mat in either theme, with a cable running between the positions. */
-#board-area { container: board-area / inline-size; }
 #board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 1.5fr) repeat(2, minmax(0, 1fr)); gap: 22px;
-  align-items: center; padding: 26px 22px; background: #26241f; border-radius: 12px; }
+  align-items: center; position: relative; padding: 38px 22px; background: #26241f; border-radius: 12px; }
+#board::before, #board::after { position: absolute; font-size: 12px; color: #D3D1C7; }
+#board::before { content: "From your guitar"; top: 12px; left: 22px; }
+#board::after { content: "To your headphones"; bottom: 12px; right: 22px; }
 .slot { position: relative; min-width: 0; }
 .slot:not(:last-child)::after { content: ""; position: absolute; z-index: 0; top: 50%; right: -23px; width: 24px; height: 6px;
   margin-top: -3px; background: #0d0c0a; border-block: 1px solid #8a867c; }
@@ -121,6 +124,8 @@ main { overflow-y: auto; min-width: 0; padding: 18px 20px 28px; }
 .board-pedal .light { display: block; width: 12px; height: 12px; margin: 8px auto 0; }
 .board-pedal .name { margin-top: 6px; font-size: 14px; line-height: 1.2; overflow-wrap: break-word; }
 .board-pedal .kind { font-size: 12px; font-weight: 500; }
+.board-pedal.off .kind::after { content: " · Off"; font-weight: 700; }
+.board-pedal.off .mini-dials { opacity: .55; }
 .board-pedal .foot { width: 54px; height: 54px; margin-top: 6px; }
 .empty-position { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 150px; padding: 10px;
   border: 2px dashed #6b675f; border-radius: 12px; background: none; color: #D3D1C7; text-align: center; font-size: 14px; }
@@ -133,9 +138,14 @@ main { overflow-y: auto; min-width: 0; padding: 18px 20px 28px; }
 .closeup-name { flex: 1; min-width: 0; }
 #closeup-close { margin-left: 4px; }
 #closeup .readout { visibility: visible; }
-#closeup .model-picker { margin-bottom: 14px; }
+#closeup .model-row { margin-bottom: 14px; }
 #closeup h2 { margin: 0; font-size: 19px; }
 #closeup-kind { color: var(--muted); font-size: 13px; }
+#closeup-tabs { display: flex; gap: 4px; margin-top: 10px; }
+#closeup-tabs button { position: relative; flex: 1 1 0; min-width: 0; padding: 4px 2px; font-size: 13px; }
+#closeup-tabs button.muted { color: var(--muted); }
+#closeup-tabs button[aria-current="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--text); font-weight: 600; }
+#closeup-tabs button.has-changes::after { content: ""; position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
 #closeup-status { min-height: 20px; margin: 4px 0; font-size: 13px; color: var(--muted); }
 #closeup-status[data-kind="error"] { color: var(--error); }
 .closeup-stage { display: flex; justify-content: center; padding: 8px 0 16px; }
@@ -143,7 +153,8 @@ main { overflow-y: auto; min-width: 0; padding: 18px 20px 28px; }
 #closeup-undo { display: block; margin: 0 auto 12px; }
 .knob.is-changed .knob-label::after { content: ""; display: inline-block; width: 7px; height: 7px; margin-left: 4px;
   border-radius: 50%; background: currentColor; vertical-align: 1px; }
-.model-picker { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 14px; }
+.model-row { display: flex; align-items: center; gap: 6px; }
+.model-picker { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 14px; }
 .model-picker select { flex: 1; min-width: 0; font-weight: 400; }
 .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px 20px; margin-bottom: 12px; }
 .field-head { display: flex; align-items: center; gap: 6px; min-height: 24px; font-size: 14px; }
@@ -175,9 +186,13 @@ dialog input, dialog select { width: 100%; }
 .dialog-actions { display: flex; justify-content: end; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
 
 /* Five pedals side by side need room for their knob labels. Otherwise they stack in rows
-   that each read left to right, with the cable dropping through the amp between them. */
-@container board-area (max-width: 940px) {
-  #board { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 22px; padding: 18px 14px; }
+   that each read left to right, with the cable dropping through the amp between them.
+   These are media queries because Chromium can lay out a container query's contents at zero
+   height when they're rebuilt in the same frame that something above them changes size. */
+@media (max-width: 1280px) {
+  #board { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 22px; padding: 34px 14px; }
+  #board::before { left: 14px; }
+  #board::after { right: 14px; }
   .slot[data-node="stomp"] { grid-area: 1 / 1; }
   .slot[data-node="mod"] { grid-area: 1 / 2; }
   .slot[data-node="amp"] { grid-area: 2 / 1 / 3 / 3; }
@@ -187,7 +202,7 @@ dialog input, dialog select { width: 100%; }
     border-block: 0; border-inline: 1px solid #8a867c; }
   .slot[data-node="amp"]::after { right: 75%; }
 }
-@container board-area (max-width: 400px) {
+@media (max-width: 432px) {
   .mini-dials { gap: 3px; }
 }
 /* With room to spare, the close-up puts its other controls beside the pedal, so it rarely needs scrolling. */
@@ -209,15 +224,18 @@ dialog input, dialog select { width: 100%; }
   #connection[data-state="connected"] { display: none; }
   .now-text { flex: 1; }
   #current-name { font-size: 17px; }
-  .actions { flex: 1 1 100%; }
+  /* Within reach of a thumb, and out of the way of the board. */
+  .actions { position: fixed; z-index: 5; inset: auto 0 0 0; padding: 8px 16px calc(8px + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--line); }
   .actions #dirty { flex-basis: 100%; margin: 0; }
+  .actions #dirty:empty { display: none; }
   .actions button { flex: 1 1 auto; padding: 5px 8px; }
   #layout { display: block; }
   #preset-panel { position: fixed; inset: 0 auto 0 0; z-index: 20; width: min(340px, 88vw); visibility: hidden;
     transform: translateX(-100%); transition: transform .18s ease, visibility .18s; box-shadow: 4px 0 18px rgb(0 0 0 / 30%); }
   body.drawer-open #preset-panel { visibility: visible; transform: none; transition: transform .18s ease; }
   #scrim { position: fixed; inset: 0; z-index: 15; background: rgb(0 0 0 / 40%); display: block; }
-  main { overflow: visible; padding: 14px 16px 24px; }
+  main { overflow: visible; padding: 14px 16px 112px; }
+  #message { bottom: 104px; }
   #preset-name { flex: 1 1 140px; width: auto; min-width: 0; }
   .empty-position { min-height: 110px; }
   .preset { min-height: 44px; }
