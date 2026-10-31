@@ -7,6 +7,7 @@
   --hover-soft: rgb(255 255 255 / 5%); --cable: #0d0c0a; --cable-edge: #5c584f;
   --font-text: system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", Roboto, sans-serif;
   --font-display: "Avenir Next", var(--font-text);
+  --pedal-name-font: var(--font-text);
   --dial: 30px; --dial-label: 11px; --foot: 54px; --pedal-name: 14px; --board-gap: 22px;
   color-scheme: dark;
 }
@@ -38,8 +39,8 @@ html { background: var(--bg); }
 body { margin: 0; min-height: 100dvh; display: flex; flex-direction: column; color: var(--text);
   background: radial-gradient(90% 60% at 50% 0, var(--glow), transparent 70%) no-repeat;
   font: 16px/1.5 var(--font-text); }
-/* A clear system font does the small text; the more characterful one is kept for names and headings. */
-h1, h2, #current-name, .preset .name, .pedal .name { font-family: var(--font-display); }
+/* A clear system font does everything except large text, where the more characterful one has room to show. */
+h1, h2, #current-name, .pedal .name { font-family: var(--font-display); }
 h1, h2, h3, p { margin: 0; text-wrap: pretty; }
 h2 { font-size: 16px; font-weight: 600; }
 button, input, select { font: inherit; color: inherit; }
@@ -128,12 +129,11 @@ body:has(#closeup[open]) #message { display: none; } /* The close-up shows the s
 .preset { display: flex; align-items: baseline; gap: 10px; width: 100%; min-height: 38px; padding: 8px 10px; border: 0; border-radius: 8px; background: none; text-align: left; font-weight: 400; }
 .preset .num { width: 26px; flex: none; color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; text-align: right; }
 .preset .text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.preset .name { font-size: 16px; font-weight: 500; overflow-wrap: anywhere; }
+.preset .name { font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
 .preset .about { font-size: 14px; line-height: 1.4; color: var(--muted); }
 .preset .badge { flex: none; font-size: 13px; font-weight: 600; color: var(--accent); }
 .preset.empty-slot .name { color: var(--muted); font-style: italic; }
 .preset[aria-current="true"] { background: var(--accent-soft); }
-.preset[aria-current="true"] .name { font-weight: 600; }
 .preset:focus-visible { outline-offset: -3px; }
 #presets.unavailable .preset { color: var(--muted); cursor: default; }
 #empty { padding: 8px 10px; color: var(--muted); font-size: 14px; }
@@ -181,7 +181,7 @@ body:has(#waiting:not([hidden])) :is(.actions, .shortcuts, #prev, #next) { displ
 .mini-label { margin-top: 3px; font-size: var(--dial-label); font-weight: 600; line-height: 1.1; text-align: center; }
 .mini-setting { align-self: center; font-size: 13px; font-weight: 600; line-height: 1.2; text-align: center; }
 .board-pedal .light { display: block; width: 12px; height: 12px; margin: 8px auto 0; }
-.board-pedal .name { margin-top: 6px; font-size: var(--pedal-name); line-height: 1.2; overflow-wrap: break-word; }
+.board-pedal .name { margin-top: 6px; font-family: var(--pedal-name-font); font-size: var(--pedal-name); line-height: 1.2; overflow-wrap: break-word; }
 .board-pedal .kind { font-size: 13px; font-weight: 500; }
 .board-pedal.off .kind::after { content: " · Off"; font-weight: 700; }
 .board-pedal.off .mini-dials { opacity: .55; }
@@ -258,7 +258,7 @@ dialog input, dialog select { width: 100%; }
   .empty-position { min-height: var(--pedal-height); }
 }
 @media (min-width: 1240px) {
-  :root { --dial: 40px; --dial-label: 12px; --foot: 72px; --pedal-name: 18px; --board-gap: 26px; }
+  :root { --dial: 40px; --dial-label: 12px; --foot: 72px; --pedal-name: 18px; --pedal-name-font: var(--font-display); --board-gap: 26px; }
   .mini-dials { gap: 10px; }
   .board-pedal .kind { font-size: 14px; }
 }
@@ -288,7 +288,7 @@ dialog input, dialog select { width: 100%; }
   .slot[data-node="amp"]::after { right: 75%; }
 }
 @media (min-width: 640px) and (max-width: 1039px) {
-  :root { --dial: 44px; --dial-label: 13px; --foot: 72px; --pedal-name: 18px; }
+  :root { --dial: 44px; --dial-label: 13px; --foot: 72px; --pedal-name: 18px; --pedal-name-font: var(--font-display); }
   .mini-dials { gap: 12px; }
 }
 @media (max-width: 432px) {
