@@ -749,6 +749,7 @@ function buildBoard() {
     const pedal = document.createElement('div');
     pedal.className = node.nodeId === 'amp' ? 'pedal light-ink board-pedal' : 'pedal board-pedal';
     pedal.style.setProperty('--tint', nodeColours[node.nodeId]);
+    pedal.dataset.model = node.FenderId;
     const face = document.createElement('div');
     face.className = 'face';
     const open = document.createElement('button');

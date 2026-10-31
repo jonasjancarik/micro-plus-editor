@@ -10,3 +10,7 @@ written descriptions of generic hardware with no brand, logo or commercial pedal
 as a reference. `surface.jpg` is a neutral grey that gets tinted by the pedal's
 colour. When tinting, use a colour about 18% brighter than the one you want,
 because the grey darkens it.
+
+`tweed.jpg`, `grille-oxblood.jpg` and `enamel-green.jpg` came the same way, and are used
+as they are, without tinting. So far only the Micro Plus board uses them, for the
+'57 Twin and the Greenbox.
