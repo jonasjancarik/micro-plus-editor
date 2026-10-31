@@ -375,7 +375,7 @@ async function undoSave() {
 const YOUR_PRESETS = 'Your presets';
 const EMPTY_SLOTS = 'Empty slots';
 const factoryPresets = new Map(factoryPresetGroups.flatMap(group =>
-  Object.entries(group.presets).map(([name, description]) => [name, { group: group.name, description }])));
+  Object.entries(group.presets).map(([name, preset]) => [name, { group: group.name, ...preset }])));
 
 function movableGroups() { return [...userGroups.groups, YOUR_PRESETS, ...factoryPresetGroups.map(group => group.name)]; }
 function usualGroup(preset) { return factoryPresets.get(preset.name.trim())?.group ?? YOUR_PRESETS; }
@@ -385,7 +385,18 @@ function presetGroup(preset) {
   return movableGroups().includes(moved) ? moved : usualGroup(preset);
 }
 function presetDescription(preset) { return factoryPresets.get(preset?.name?.trim())?.description ?? ''; }
-function presetArtists(preset) { return factoryPresetArtists[preset?.name?.trim()] ?? ''; }
+function presetArtists(preset) { return factoryPresets.get(preset?.name?.trim())?.artists ?? []; }
+function showArtists(element, artists) {
+  const label = document.createElement('span');
+  label.className = 'artists-label';
+  label.textContent = 'Close to';
+  element.replaceChildren(label, ...artists.flatMap(artist => {
+    const name = document.createElement('span');
+    name.className = 'artist';
+    name.textContent = artist;
+    return [' ', name];
+  }));
+}
 // Unlabelled presets came with the amp.
 function presetOrigin(preset) {
   if (!preset || isEmptySlot(preset)) return '';
@@ -454,8 +465,14 @@ function buildPresetList() {
       if (description) {
         const about = document.createElement('span');
         about.className = 'about';
-        about.textContent = presetArtists(preset) ? `${description} Close to: ${presetArtists(preset)}.` : description;
+        about.textContent = description;
         text.append(about);
+      }
+      if (presetArtists(preset).length) {
+        const artists = document.createElement('span');
+        artists.className = 'artists';
+        showArtists(artists, presetArtists(preset));
+        text.append(artists);
       }
       const badge = document.createElement('span');
       badge.className = 'badge';
@@ -582,7 +599,7 @@ const searchText = text => text.normalize('NFD').replace(/\p{M}/gu, '').toLocale
 function matchesSearch(preset, query) {
   if (!query) return true;
   if (/^\d+$/.test(query)) return preset.preset === Number(query); // Numbers mean slots, not "contains 7".
-  return [displayName(preset), presetDescription(preset), presetArtists(preset), presetGroup(preset), presetOrigin(preset)]
+  return [displayName(preset), presetDescription(preset), ...presetArtists(preset), presetGroup(preset), presetOrigin(preset)]
     .some(text => searchText(text).includes(query));
 }
 
@@ -1276,11 +1293,15 @@ function renderConnection() {
     setText($('current-number'), state.connected ? `Preset ${known.preset}` : `Preset ${known.preset} (last known)`);
     setText($('current-name'), known.name || 'Unnamed preset');
     const current = presetByNumber(known.preset);
-    const artists = presetArtists(current) ? ` Close to: ${presetArtists(current)}.` : '';
     setText($('preset-about'), presetOrigin(current) === 'Edited'
-      ? `Edited since it came with the amp, so it may no longer sound like this: ${presetDescription(current)}${artists}`
-      : presetDescription(current) && presetDescription(current) + artists);
+      ? `Edited since it came with the amp, so it may no longer sound like this: ${presetDescription(current)}` : presetDescription(current));
     $('preset-about').hidden = !$('preset-about').textContent;
+    const artists = presetArtists(current);
+    if ($('preset-artists').dataset.artists !== artists.join()) {
+      $('preset-artists').dataset.artists = artists.join();
+      showArtists($('preset-artists'), artists);
+    }
+    $('preset-artists').hidden = !artists.length;
   }
 }
 

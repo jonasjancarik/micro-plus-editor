@@ -62,7 +62,7 @@ it and the amp says it isn't the factory version. Saves made elsewhere can only 
 that way, and only when the amp reports them, so such a preset can look unchanged. Those
 records are in `_work/preset-saved.json`.
 
-Most factory descriptions also name artists the preset is roughly close to, which are
+Most factory presets also list artists they're roughly close to, which are
 Maneline's own judgement. Search by name, sound, artist or group, or type a number to find exactly that slot. Empty slots are hidden until you
 ask for them. The arrows in the top bar and the `[` and `]` keys step through the
 listed presets in slot order. Selecting a

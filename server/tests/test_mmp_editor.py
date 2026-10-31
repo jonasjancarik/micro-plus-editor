@@ -517,14 +517,16 @@ class FactoryPresetGroupTests(unittest.TestCase):
     def test_every_factory_preset_has_one_group_and_a_description(self):
         root = Path(__file__).resolve().parents[2]
         source = (root / 'web-app/web_ui/_static/micro-plus-presets.js').read_text(encoding='utf-8')
-        groups, artists = source.split('factoryPresetGroups = ', 1)[1].split('// A rough idea', 1)
-        groups = json.loads(groups.rstrip().rstrip(';'))
-        artists = json.loads(artists.split('factoryPresetArtists = ', 1)[1].rstrip().rstrip(';'))
+        groups = json.loads(source.split('factoryPresetGroups = ', 1)[1].rstrip().rstrip(';'))
         names = [name for group in groups for name in group['presets']]
         fixture = json.loads((root / 'scripts/mmp_mock_fixture.json').read_text(encoding='utf-8'))
         self.assertCountEqual(names, fixture['names'][:70])
-        self.assertLessEqual(set(artists), set(names))
-        self.assertTrue(all(text for group in groups for text in group['presets'].values()))
+        presets = [preset for group in groups for preset in group['presets'].values()]
+        self.assertTrue(all(preset['description'] for preset in presets))
+        for preset in presets:
+            self.assertLessEqual(set(preset), {'description', 'artists'})
+            if 'artists' in preset:
+                self.assertTrue(preset['artists'] and all(preset['artists']))
 
 
 if __name__ == '__main__':
