@@ -56,6 +56,8 @@ async def dispatch(method, path, headers, body, session, allowed_hosts=None):
                 elif action == 'model' and set(request) == common | {'node', 'model'}:
                     state = await session.replace(request['preset'], request['revision'],
                                                   request['node'], request['model'])
+                elif action == 'order' and set(request) == common | {'order'}:
+                    state = await session.set_order(request['preset'], request['revision'], request['order'])
                 elif action == 'save' and set(request) == common | {'target', 'name'}:
                     state = await session.save(request['preset'], request['revision'],
                                                request['target'], request['name'])

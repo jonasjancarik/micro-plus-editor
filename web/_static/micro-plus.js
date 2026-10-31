@@ -693,8 +693,8 @@ function scrollToActive(block = 'nearest') {
 function currentNodes() { return known?.document?.audioGraph.nodes ?? []; }
 function nodeById(id) { return currentNodes().find(node => node.nodeId === id); }
 // The nodes are stored in a fixed order, but the sound travels along the preset's connections.
-function signalOrder(nodes) {
-  const next = new Map((known?.document?.audioGraph.connections ?? []).filter(link => link.input.index === 0)
+function signalOrder(nodes, graph = known?.document?.audioGraph) {
+  const next = new Map((graph?.connections ?? []).filter(link => link.input.index === 0)
     .map(link => [link.input.nodeId, link.output.nodeId]));
   const ordered = [];
   for (let id = next.get('preset'); id && id !== 'preset' && ordered.length < nodes.length; id = next.get(id)) {
@@ -806,10 +806,127 @@ function buildBoard() {
       face.append(foot);
     }
     pedal.append(face);
-    slot.append(pedal);
+    slot.append(pedal, buildMoveButtons(node));
     board.append(slot);
   }
 }
+
+// Moving pedals. A new order waits on the server and reaches the amp when the preset is saved.
+function boardOrder() { return [...$('board').children].map(slot => slot.dataset.node); }
+
+async function changeOrder(order, afterwards) {
+  const moved = await exclusiveOperation(EDITOR_API, { action: 'order', ...guard(), order }, 'Moving the pedal…',
+    () => hasChanges() ? "You'll hear the new order after you save." : '');
+  if (!moved) builtKey = ''; // Put the board back to what the server has.
+  render();
+  afterwards?.();
+}
+
+function buildMoveButtons(node) {
+  const row = document.createElement('div');
+  row.className = 'slot-move';
+  const order = signalOrder(currentNodes()).map(entry => entry.nodeId);
+  const index = order.indexOf(node.nodeId);
+  for (const [step, mark, towards] of [[-1, '‹', 'your guitar'], [1, '›', 'your headphones']]) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = mark;
+    button.dataset.move = `${node.nodeId}/${step}`;
+    button.title = `Move ${nodeTitle(node).toLowerCase()} closer to ${towards}`;
+    button.setAttribute('aria-label', button.title);
+    button.disabled = !order[index + step];
+    button.addEventListener('click', () => {
+      const next = boardOrder();
+      next.splice(index, 1);
+      next.splice(index + step, 0, node.nodeId);
+      changeOrder(next, () => {
+        const again = $('board').querySelector(`[data-move="${node.nodeId}/${step}"]`);
+        (again?.disabled ? $('board').querySelector(`[data-move="${node.nodeId}/${-step}"]`) : again)?.focus({ preventScroll: true });
+      });
+    });
+    row.append(button);
+  }
+  return row;
+}
+
+// Dragging is for a mouse or pen. On a touch screen a drag has to scroll the page, so the arrows do this there.
+let boardDrag = null;
+
+function placeDragged(event) {
+  const { slot, grabX, grabY } = boardDrag;
+  slot.style.transform = '';
+  const home = slot.getBoundingClientRect();
+  slot.style.transform = `translate(${event.clientX - home.left - grabX}px, ${event.clientY - home.top - grabY}px)`;
+}
+
+function moveDragged(event) {
+  if (!boardDrag || event.pointerId !== boardDrag.pointerId) return;
+  const { slot } = boardDrag;
+  if (!boardDrag.moving) {
+    if (Math.hypot(event.clientX - boardDrag.startX, event.clientY - boardDrag.startY) < 6) return;
+    boardDrag.moving = true;
+    slot.classList.add('dragging');
+    $('board').classList.add('reordering');
+    $('board').setPointerCapture(event.pointerId);
+  }
+  // A swap can resize the columns under the pointer, so a pedal can't swap straight back and flicker.
+  const over = [...$('board').children].find(other => {
+    if (other === slot) return false;
+    const box = other.getBoundingClientRect();
+    return event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom;
+  });
+  if (over !== boardDrag.lastOver) boardDrag.lastOver = null;
+  if (over && !boardDrag.lastOver) {
+    const siblings = [...$('board').children];
+    $('board').insertBefore(slot, siblings.indexOf(over) < siblings.indexOf(slot) ? over : over.nextSibling);
+    boardDrag.lastOver = over;
+  }
+  placeDragged(event);
+}
+
+function endDrag(event, { cancelled = false } = {}) {
+  if (!boardDrag || (event.pointerId !== undefined && event.pointerId !== boardDrag.pointerId)) return;
+  const { slot, moving, before, pointerId } = boardDrag;
+  boardDrag = null;
+  window.removeEventListener('keydown', cancelDrag, true);
+  if (!moving) return;
+  const board = $('board');
+  if (board.hasPointerCapture(pointerId)) board.releasePointerCapture(pointerId);
+  slot.classList.remove('dragging');
+  slot.style.transform = '';
+  board.classList.remove('reordering');
+  // The release still counts as a click on whatever is under it, which mustn't open a pedal.
+  const swallow = click => { click.stopPropagation(); click.preventDefault(); };
+  board.addEventListener('click', swallow, { capture: true, once: true });
+  setTimeout(() => board.removeEventListener('click', swallow, { capture: true }), 0);
+  if (cancelled) {
+    for (const id of before) board.append(board.querySelector(`.slot[data-node="${id}"]`));
+    return;
+  }
+  const order = boardOrder();
+  if (order.join() !== before.join()) changeOrder(order);
+}
+
+function cancelDrag(event) {
+  if (event.key !== 'Escape' || !boardDrag) return;
+  event.stopPropagation();
+  endDrag({}, { cancelled: true });
+}
+
+$('board').addEventListener('dragstart', event => event.preventDefault());
+$('board').addEventListener('pointerdown', event => {
+  const slot = event.target.closest('.slot');
+  if (!slot || event.button !== 0 || event.pointerType === 'touch' || boardDrag || exclusive || !state.connected
+    || event.target.closest('.foot, .slot-move')) return;
+  const box = slot.getBoundingClientRect();
+  boardDrag = { slot, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY,
+    grabX: event.clientX - box.left, grabY: event.clientY - box.top, moving: false, lastOver: null, before: boardOrder() };
+  window.addEventListener('keydown', cancelDrag, true);
+});
+$('board').addEventListener('pointermove', moveDragged);
+window.addEventListener('pointermove', event => { if (boardDrag && !boardDrag.moving) moveDragged(event); });
+window.addEventListener('pointerup', endDrag);
+window.addEventListener('pointercancel', event => endDrag(event, { cancelled: true }));
 
 function buildKnobSpec(node, parameter) {
   const value = node.dspUnitParameters[parameter];
@@ -1144,6 +1261,12 @@ function changesFromSaved() {
   const saved = baseline();
   if (!saved) return [];
   const changes = [];
+  const order = signalOrder(currentNodes());
+  const savedOrder = signalOrder(currentNodes(), saved.audioGraph);
+  if (order.some((node, index) => node !== savedOrder[index])) {
+    changes.push({ order: savedOrder.map(node => node.nodeId),
+      text: `Order: ${order.map(nodeTitle).join(' → ')}. You'll hear this after you save.` });
+  }
   for (const node of currentNodes()) {
     const before = saved.audioGraph.nodes.find(entry => entry.nodeId === node.nodeId);
     if (!before) continue;
@@ -1199,7 +1322,8 @@ function renderChanges(changes) {
     reset.textContent = 'Reset';
     reset.setAttribute('aria-label', `Reset ${change.text}`);
     reset.addEventListener('click', () => {
-      if (change.parameter) resetToSaved(change.nodeId, change.parameter, change.saved);
+      if (change.order) changeOrder(change.order);
+      else if (change.parameter) resetToSaved(change.nodeId, change.parameter, change.saved);
       else restorePedal(change.nodeId);
     });
     item.append(reset);
@@ -1219,7 +1343,7 @@ function renderEditor() {
     formPreset = known.preset;
   }
   const shape = shapeKey();
-  if (shape !== builtKey) {
+  if (shape !== builtKey && !boardDrag?.moving) {
     const focusKey = editorFields.contains(document.activeElement) ? document.activeElement.dataset?.key : null;
     buildBoard();
     buildCloseup();

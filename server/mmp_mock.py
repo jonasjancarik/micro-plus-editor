@@ -21,6 +21,7 @@ import time
 import uuid
 from pathlib import Path
 from mmp_groups import PresetGroups, SavedPresets
+from mmp_protocol import with_signal_order
 from mmp_session import EditorConflict, MODELS, PARAMETER_CHOICES, READ_RECONNECT_GAP, SAVED_READ_FAILURES, UNSCALED, prepare_import
 from mmp_web import dispatch, handle
 
@@ -213,6 +214,12 @@ class MockSession:
         self.node(node)['FenderId'] = model
         self.dirty = True
         self.document_revision += 1
+        return self.snapshot()
+
+    async def set_order(self, slot, revision, order):
+        self.require_editor(slot, revision)
+        self.document = with_signal_order(self.document, order)
+        self.dirty = True
         return self.snapshot()
 
     async def save(self, slot, revision, target, name):

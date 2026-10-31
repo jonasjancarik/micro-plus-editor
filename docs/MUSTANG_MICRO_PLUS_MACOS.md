@@ -7,8 +7,8 @@ Maneline can read, switch, edit and save Micro Plus presets using Bleak's
 CoreBluetooth backend. The browser editor supports amplifier/effect model
 selection, parameter changes, preset names, and saving to the current slot or
 another slot. The USB cable can remain connected for audio and power.
-You can also export presets to files and import one into a slot. Reordering the signal
-chain from the page and restoring a whole exported library at once are not implemented.
+You can also export presets to files and import one into a slot. Restoring a whole exported
+library at once is not implemented.
 
 ## Setup
 
@@ -102,7 +102,10 @@ writing, distinguishing continuous float controls from integer choices.
 
 The board is drawn in the order the sound travels, from the preset's connections, so it differs
 between presets: many put reverb before delay, and a few put modulation after the amp or the amp first.
-The positions themselves are the same five in every preset.
+The positions themselves are the same five in every preset. To change the order, drag a pedal with
+a mouse or pen, or use the arrows under it (always shown on touch screens, and reachable from the
+keyboard). The amp has no known way to play a new order live, so it counts as an unsaved change: Save
+sends the whole preset to the amp, backed up and read back like an import, and only then can you hear it.
 
 Each amp and pedal has its own look. Amps are drawn as combos, stacks or rack units with their
 own covering and grille cloth, and each pedal has its own colour and finish. These are generic

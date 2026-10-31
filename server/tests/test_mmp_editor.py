@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, Mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from mmp_ble import Controller
 from mmp_groups import PresetGroups, SavedPresets
-from mmp_protocol import presets_match
+from mmp_protocol import presets_match, signal_order, with_signal_order
 from mmp_session import EditorConflict, MicroPlusSession, READ_RECONNECT_GAP, SAVED_READ_FAILURES
 from mmp_web import dispatch, HTTPError
 from test_mmp_protocol import preset_fixture
@@ -511,6 +511,110 @@ class PresetGroupRequestTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(HTTPError):
             await dispatch('POST', '/api/micro-plus/groups', {**self.headers, 'origin': 'http://evil.example'}, body, session)
         self.assertEqual(session.groups.state['groups'], [])
+
+
+class SignalOrderTests(unittest.IsolatedAsyncioTestCase):
+    ORDER = ['reverb', 'delay', 'mod', 'amp', 'stomp']
+
+    def session(self, directory):
+        session = EditorTests().session(directory)
+        session.controller.document = with_signal_order(five_positions(), ['stomp', 'mod', 'amp', 'delay', 'reverb'])
+        session.controller.dirty = False
+        session.write_stored = AsyncMock()
+        return session
+
+    async def test_a_new_order_is_an_unsaved_change_that_writes_nothing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            session = self.session(directory)
+            state = await session.set_order(100, '2:4', self.ORDER)
+            self.assertTrue(state['dirty'])
+            self.assertEqual(signal_order(state['document']), self.ORDER)
+            self.assertEqual(signal_order(session.controller.document), ['stomp', 'mod', 'amp', 'delay', 'reverb'])
+            session.write_stored.assert_not_awaited()
+            session.controller.read_preset.assert_not_awaited()
+
+    async def test_returning_to_the_saved_order_leaves_nothing_to_save(self):
+        with tempfile.TemporaryDirectory() as directory:
+            session = self.session(directory)
+            await session.set_order(100, '2:4', self.ORDER)
+            state = await session.set_order(100, '2:4', ['stomp', 'mod', 'amp', 'delay', 'reverb'])
+            self.assertFalse(state['dirty'])
+
+    async def test_an_order_must_hold_every_position_once(self):
+        with tempfile.TemporaryDirectory() as directory:
+            session = self.session(directory)
+            for order in (['stomp', 'mod', 'amp', 'delay'], ['stomp', 'stomp', 'amp', 'delay', 'reverb'], 'stomp', None):
+                with self.assertRaises(ValueError):
+                    await session.set_order(100, '2:4', order)
+            self.assertIsNone(session.pending_order)
+
+    async def test_saving_sends_the_preset_with_its_new_order_and_backs_up_first(self):
+        with tempfile.TemporaryDirectory() as directory:
+            session = self.session(directory)
+            await session.set_order(100, '2:4', self.ORDER)
+
+            async def write(controller, target, document):
+                self.assertEqual(len(list(Path(directory).glob('*.json'))), 1)
+                session.pending_order = None
+            session.write_stored = AsyncMock(side_effect=write)
+            await session.save(100, '2:4', 100, 'Moved')
+            session.controller.save_current.assert_not_awaited()
+            _, target, document = session.write_stored.await_args.args
+            self.assertEqual((target, signal_order(document), document['info']['displayName']), (100, self.ORDER, 'Moved'))
+
+    async def test_a_copy_with_a_new_order_gets_its_own_identity(self):
+        with tempfile.TemporaryDirectory() as directory:
+            session = self.session(directory)
+            await session.set_order(100, '2:4', self.ORDER)
+            source_id = session.controller.document['info'].get('preset_id')
+            await session.save(100, '2:4', 99, 'Copy')
+            _, target, document = session.write_stored.await_args.args
+            self.assertEqual(target, 99)
+            self.assertNotEqual(document['info']['preset_id'], source_id)
+            self.assertIs(document['info']['is_factory_default'], False)
+
+    async def test_a_save_without_a_new_order_still_saves_on_the_amp(self):
+        with tempfile.TemporaryDirectory() as directory:
+            session = self.session(directory)
+            await session.save(100, '2:4', 100, 'Same')
+            session.controller.save_current.assert_awaited_once_with('Same', 100)
+            session.write_stored.assert_not_awaited()
+
+    async def test_a_new_order_is_dropped_on_another_preset_or_after_reconnecting(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for change in (lambda session: setattr(session.controller, 'slot', 5), lambda session: setattr(session, 'generation', 3)):
+                session = self.session(directory)
+                await session.set_order(100, '2:4', self.ORDER)
+                change(session)
+                session.controller.document_slot = session.controller.slot
+                state = session.snapshot()
+                self.assertFalse(state['dirty'])
+                self.assertEqual(signal_order(state['document']), ['stomp', 'mod', 'amp', 'delay', 'reverb'])
+                self.assertIsNone(session.pending_order)
+
+    async def test_choosing_the_preset_again_discards_a_new_order(self):
+        with tempfile.TemporaryDirectory() as directory:
+            session = self.session(directory)
+            session.controller.switch = AsyncMock()
+            session.controller.refresh_current = AsyncMock()
+            await session.set_order(100, '2:4', self.ORDER)
+            state = await session.switch(100)
+            self.assertFalse(state['dirty'])
+
+    async def test_the_order_action_is_routed_over_http(self):
+        with tempfile.TemporaryDirectory() as directory:
+            session = self.session(directory)
+            body = json.dumps({'action': 'order', 'preset': 100, 'revision': '2:4', 'order': self.ORDER}).encode()
+            headers = {'origin': 'http://localhost', 'host': 'localhost', 'content-type': 'application/json'}
+            _, _, reply = await dispatch('POST', '/api/micro-plus/editor', headers, body, session)
+            self.assertEqual(signal_order(json.loads(reply)['document']), self.ORDER)
+
+
+def five_positions():
+    preset = preset_fixture()
+    preset['audioGraph']['nodes'] = [{'nodeId': node, 'nodeType': 'dspUnit', 'FenderId': 'DUBS_Unknown', 'dspUnitParameters': {}}
+                                     for node in ('stomp', 'mod', 'amp', 'delay', 'reverb')]
+    return preset
 
 
 class BoardLookTests(unittest.TestCase):

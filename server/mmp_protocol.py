@@ -2,6 +2,7 @@
 
 Schemas: spod/fmmp/protobuf/ltx. Transport framing: Maneline's Tone captures.
 """
+import copy
 import json
 import math
 import struct
@@ -53,6 +54,31 @@ def validate_preset(preset):
                 raise ValueError('Parameter values must be finite')
     # Reject NaN/Infinity anywhere in the document before retaining/exporting it.
     json.dumps(preset, allow_nan=False)
+
+
+def signal_order(preset):
+    """The positions in the order the sound travels, or None if the connections don't form one chain."""
+    graph = preset['audioGraph']
+    following = {link['input']['nodeId']: link['output']['nodeId']
+                 for link in graph.get('connections', []) if link['input']['index'] == 0}
+    order, at = [], following.get('preset')
+    while at and at != 'preset' and len(order) <= len(graph['nodes']):
+        order.append(at)
+        at = following.get(at)
+    return order if at == 'preset' and sorted(order) == sorted(node['nodeId'] for node in graph['nodes']) else None
+
+
+def with_signal_order(preset, order):
+    """A copy of the preset whose sound travels through its positions in this order. Only the connections change."""
+    if (not isinstance(order, list) or not all(isinstance(node, str) for node in order)
+            or sorted(order) != sorted(node['nodeId'] for node in preset['audioGraph']['nodes'])):
+        raise ValueError('Put every pedal in the new order exactly once.')
+    route = ['preset', *order, 'preset']
+    reordered = copy.deepcopy(preset)
+    reordered['audioGraph']['connections'] = [
+        {'input': {'nodeId': source, 'index': index}, 'output': {'nodeId': target, 'index': index}}
+        for source, target in zip(route, route[1:]) for index in (0, 1)]
+    return reordered
 
 
 def wire_varint(value):

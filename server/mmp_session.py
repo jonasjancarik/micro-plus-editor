@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from mmp_ble import Controller, KEEPALIVE, KEEPALIVE_INTERVAL, NAME, RESPONSE, SERVICE
 from mmp_groups import PresetGroups, SavedPresets
+from mmp_protocol import signal_order, with_signal_order
 
 MODELS = json.loads(Path(__file__).with_name('mmp_models.json').read_text())
 PARAMETER_CHOICES = json.loads(Path(__file__).with_name('mmp_parameter_choices.json').read_text())
@@ -65,6 +66,16 @@ class MicroPlusSession:
         self.saved_read_failures = 0
         self.read_reconnected_at = None
         self.stalled = False
+        self.pending_order = None  # A new order waits here until it's saved: the amp has no way to play it before then.
+
+    def waiting_order(self, controller):
+        pending = self.pending_order
+        if not pending:
+            return None
+        if pending['slot'] != controller.slot or pending['generation'] != self.generation:
+            self.pending_order = None  # The amp moved to another preset or reconnected, so its edits are gone too.
+            return None
+        return pending['order']
 
     def snapshot(self):
         controller = self.controller
@@ -73,6 +84,8 @@ class MicroPlusSession:
             info = controller.document['info']
             if info.get('is_factory_default') is False:  # Saved with another app, perhaps.
                 self.saved.set(controller.slot, info['displayName'].rstrip())
+        order = self.waiting_order(controller) if connected and getattr(controller, 'document', None) else None
+        document = getattr(controller, 'document', None) if connected else None
         return {'connected': connected, 'phase': self.phase, 'error': self.error, 'stalled': self.stalled,
                 'device': NAME, 'connections': self.connections,
                 'connected_since': self.connected_since,
@@ -80,9 +93,9 @@ class MicroPlusSession:
                 'name': controller.status()['name'] if connected else None,
                 'presets': [{'preset': i + 1, 'name': name}
                             for i, name in enumerate(controller.names)] if connected else [],
-                'document': getattr(controller, 'document', None) if connected else None,
+                'document': with_signal_order(document, order) if order else document,
                 'revision': f'{self.generation}:{getattr(controller, "document_revision", 0)}' if connected else None,
-                'dirty': bool(getattr(controller, 'dirty', False)) if connected else False,
+                'dirty': (bool(getattr(controller, 'dirty', False)) or bool(order)) if connected else False,
                 'models': MODELS, 'parameter_choices': PARAMETER_CHOICES, 'unscaled': UNSCALED, 'last_save': self.last_save,
                 'last_undo': self.last_undo, 'preset_groups': self.groups.state, 'saved_presets': self.saved.state}
 
@@ -129,6 +142,7 @@ class MicroPlusSession:
             try:
                 await controller.switch(slot)
                 await controller.refresh_current()
+                self.pending_order = None  # Choosing the same preset again is how the page discards changes.
                 return self.snapshot()
             except ValueError:
                 raise
@@ -167,6 +181,14 @@ class MicroPlusSession:
                 raise
             except Exception:
                 raise self.unconfirmed('amplifier or effect change') from None
+
+    async def set_order(self, slot, revision, order):
+        async with self.lock:
+            controller = self.require_editor(slot, revision)
+            with_signal_order(controller.document, order)  # Rejects anything but the same positions in a new order.
+            self.pending_order = None if order == signal_order(controller.document) else {
+                'slot': slot, 'generation': self.generation, 'order': list(order)}
+            return self.snapshot()
 
     async def read_stored(self, controller, slot):
         # Only reads, so one failure says little about the connection. Several in a row mean the amp has stalled.
@@ -225,7 +247,15 @@ class MicroPlusSession:
                 backup = self.backup(target, original)  # Must succeed before a write is sent.
                 # A physical preset change during the backup must not save the wrong sound.
                 self.require_editor(slot, revision)
-                await controller.save_current(name, target)
+                order = self.waiting_order(controller)
+                if order:  # Saving on the amp would keep its old order, so the whole preset has to be sent.
+                    document = with_signal_order(controller.document, order)
+                    document['info']['displayName'] = name
+                    if target != slot:  # A copy gets its own identity, as in save_current.
+                        document['info'].update(preset_id=str(uuid.uuid4()).upper(), is_factory_default=False)
+                    await self.write_stored(controller, target, document)
+                else:
+                    await controller.save_current(name, target)
                 self.saved_before_last_save = self.saved.state.get(str(target))
                 self.saved.set(target, name)
                 self.last_save = {'preset': target, 'name': name, 'backup': backup,
@@ -244,6 +274,7 @@ class MicroPlusSession:
             # The amp keeps playing its live copy until the slot is selected again.
             await controller.switch(target)
         await controller.refresh_current()
+        self.pending_order = None
 
     async def import_preset(self, slot, revision, target, name, document):
         prepared, name = prepare_import(document, name, target)  # Validate before reading or writing the device.
