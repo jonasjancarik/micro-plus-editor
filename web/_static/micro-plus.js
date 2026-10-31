@@ -624,7 +624,8 @@ function renderPresets() {
   setText($('count'), query ? `${visible} of ${known.presets.length}` : `${known.presets.length - emptyCount} presets`);
   setText($('show-empty-label'), `Show ${emptyCount} empty`);
   $('show-empty').checked = showEmpty;
-  $('sort-number').checked = sortByNumber;
+  $('view-groups').setAttribute('aria-pressed', String(!sortByNumber));
+  $('view-number').setAttribute('aria-pressed', String(sortByNumber));
   $('empty').hidden = visible > 0 || !query;
 }
 
@@ -1338,12 +1339,14 @@ $('show-empty').addEventListener('change', event => {
   storeFlag('mmp-show-empty', showEmpty);
   renderPresets();
 });
-$('sort-number').addEventListener('change', event => {
-  sortByNumber = event.target.checked;
+function listPresets(byNumber) {
+  sortByNumber = byNumber;
   storeFlag('mmp-sort-by-number', sortByNumber);
   renderPresets();
   scrollToActive('center');
-});
+}
+$('view-groups').addEventListener('click', () => listPresets(false));
+$('view-number').addEventListener('click', () => listPresets(true));
 $('move-target').addEventListener('change', showMoveNameField);
 $('group-form').addEventListener('submit', event => {
   if (event.submitter?.value !== 'confirm') return;

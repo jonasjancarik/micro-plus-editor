@@ -45,8 +45,8 @@ top bar, or press `/`, to open the list of presets, which marks the active one. 
 70 factory presets are sorted into groups by sound, each with a short description, and
 anything else is listed under Your presets. Factory presets are recognised by name
 (see `web-app/web_ui/_static/micro-plus-presets.js`), so one you renamed moves to Your
-presets, and one you changed but kept the name of keeps its original description. Choose
-Sort by number to drop the groups and list every preset in slot order.
+presets, and one you changed but kept the name of keeps its original description. Switch
+from In groups to By number to list every preset in slot order instead.
 
 You can make your own groups and use Move on a preset to put it in any group. Moves
 belong to the preset's slot, so a preset keeps its group when renamed, and whatever you

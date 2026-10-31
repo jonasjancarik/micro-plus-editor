@@ -74,7 +74,10 @@ body:has(#closeup[open]) #message { display: none; } /* The close-up shows the s
 #preset-panel label.check { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; font-weight: 400; color: var(--muted); cursor: pointer; }
 #filter { width: 100%; flex: none; }
 #presets-scroll { flex: 1; min-height: 0; overflow-y: auto; margin: 0 -20px; padding: 0 20px 16px; }
-.panel-options { display: flex; flex-wrap: wrap; flex: none; gap: 4px 18px; }
+.panel-options { display: flex; flex-wrap: wrap; align-items: center; flex: none; gap: 6px 18px; }
+.view-switch { display: flex; padding: 2px; border: 1px solid var(--line); border-radius: 8px; }
+.view-switch button { min-height: 28px; padding: 2px 12px; border: 0; border-radius: 6px; background: none; font-size: 13px; font-weight: 400; color: var(--muted); }
+.view-switch button[aria-pressed="true"] { background: var(--accent-soft); color: var(--text); font-weight: 500; }
 #picker-status { margin: 0; font-size: 14px; color: var(--error); }
 #picker-status:empty, .field-error:empty { display: none; }
 .field-error { margin: 10px 0 0; font-size: 14px; color: var(--error); }
@@ -298,6 +301,7 @@ dialog input, dialog select { width: 100%; }
   #presets { display: block; }
   #preset-groups { flex-wrap: nowrap; overflow-x: auto; margin: 0 -20px; padding: 0 20px 2px; scrollbar-width: none; }
   #preset-groups button { flex: none; min-height: 40px; }
+  .view-switch button { min-height: 38px; }
   .move, .bank button { min-height: 40px; }
   .bank { position: sticky; top: 0; z-index: 1; background: var(--surface); }
   .preset { min-height: 44px; }

@@ -48,7 +48,10 @@
     <label for="filter" class="visually-hidden">Find by name, number or sound</label>
     <input id="filter" type="search" placeholder="Find by name, number or sound" autocomplete="off">
     <div class="panel-options">
-      <label class="check"><input id="sort-number" type="checkbox"> Sort by number</label>
+      <div class="view-switch" role="group" aria-label="How to list presets">
+        <button id="view-groups" type="button">In groups</button>
+        <button id="view-number" type="button">By number</button>
+      </div>
       <label class="check"><input id="show-empty" type="checkbox"> <span id="show-empty-label">Show empty slots</span></label>
     </div>
     <div id="preset-groups" role="group" aria-label="Show one group of presets"></div>
