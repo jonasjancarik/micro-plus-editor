@@ -6,6 +6,9 @@ Nothing here touches Bluetooth. Control the simulation from a browser or curl:
   /__mock/mode/disconnected  the amp disappears until the mode changes again
   /__mock/mode/fail          the next writes are not confirmed
   /__mock/mode/stall         the next switch reaches the amp but is not confirmed
+  /__mock/mode/noread        the amp stops sending saved presets until the server reconnects
+  /__mock/mode/noread-stuck  the same, but reconnecting doesn't help
+  /__mock/edited-flag        the amp calls the preset edited although nothing differs
   /__mock/knob/5             someone turns the knob on the amp to preset 5
   /__mock/limit/delay/feedback/0.3  the amp stores no more than 0.3 for that setting
   /__mock/requests           every write the page has sent
@@ -17,7 +20,7 @@ import json
 import time
 import uuid
 from pathlib import Path
-from mmp_session import EditorConflict, MODELS, PARAMETER_CHOICES, UNSCALED
+from mmp_session import EditorConflict, MODELS, PARAMETER_CHOICES, READ_RECONNECT_GAP, SAVED_READ_FAILURES, UNSCALED
 from mmp_web import dispatch, handle
 
 FIXTURE = json.loads(Path(__file__).with_name('mmp_mock_fixture.json').read_text())
@@ -42,6 +45,9 @@ class MockSession:
         self.backups = {}
         self.requests = []
         self.limits = {}
+        self.saved_read_failures = 0
+        self.read_reconnected_at = None
+        self.stalled = False
 
     def read(self, slot):
         if slot not in self.stored:
@@ -58,6 +64,7 @@ class MockSession:
         connected = self.connected
         return {'connected': connected, 'phase': 'connected' if connected else 'disconnected',
                 'error': None if connected else self.error or 'Micro Plus not found. Turn it on and close Fender Tone on other devices.',
+                'stalled': self.stalled,
                 'device': 'Simulated Micro Plus', 'connections': self.connections,
                 'connected_since': None, 'preset': self.slot if connected else None,
                 'name': self.names[self.slot - 1] if connected else None,
@@ -69,7 +76,7 @@ class MockSession:
                 'last_save': self.last_save, 'last_undo': self.last_undo}
 
     def set_mode(self, mode):
-        if mode not in ('ok', 'disconnected', 'fail', 'stall'):
+        if mode not in ('ok', 'disconnected', 'fail', 'stall', 'noread', 'noread-stuck'):
             raise ValueError('Unknown mode')
         if self.mode == 'disconnected' and mode != 'disconnected':
             self.reconnect()
@@ -80,6 +87,10 @@ class MockSession:
         self.generation = uuid.uuid4().hex
         self.connections += 1
         self.error = None
+        self.saved_read_failures = 0
+        if self.stalled:
+            self.stalled = False  # Reconnecting after a stall leaves the amp's live preset and flag as they were.
+            return
         self.dirty = False
         self.document = self.read(self.slot)
 
@@ -144,8 +155,21 @@ class MockSession:
     async def saved_copy(self, slot, revision):
         self.require_editor(slot, revision)
         await asyncio.sleep(self.delay)
-        if not self.connected or self.mode == 'fail':
+        if self.mode in ('noread', 'noread-stuck'):
+            self.saved_read_failures += 1
+            now = time.monotonic()
+            if self.saved_read_failures >= SAVED_READ_FAILURES and (
+                    self.read_reconnected_at is None or now - self.read_reconnected_at >= READ_RECONNECT_GAP):
+                self.read_reconnected_at = now
+                self.stalled = True
+                self.error = 'Your Micro Plus stopped answering, so Maneline is reconnecting to it.'
+                after = 'ok' if self.mode == 'noread' else 'noread-stuck'
+                self.mode = 'disconnected'
+                asyncio.get_running_loop().call_later(RECONNECT_SECONDS, self.set_mode, after)
+                raise RuntimeError(self.error)
+        if not self.connected or self.mode in ('fail', 'noread', 'noread-stuck'):
             raise RuntimeError('The Micro Plus did not send the saved preset.')
+        self.saved_read_failures = 0
         self.require_editor(slot, revision)
         return {'preset': slot, 'revision': revision, 'saved_document': self.read(slot)}
 
@@ -196,6 +220,9 @@ async def mock_dispatch(method, path, headers, body, session, allowed_hosts=None
             result = session.set_mode(parts[1])
         elif parts[0] == 'knob':
             result = session.knob(int(parts[1]))
+        elif parts[0] == 'edited-flag':
+            session.dirty = True
+            result = session.snapshot()
         elif parts[0] == 'limit':
             session.limits[(parts[1], parts[2])] = float(parts[3])
             result = session.snapshot()

@@ -14,6 +14,7 @@ let switchingTo = null;
 let epoch = 0; // Discards polls that started before a write.
 let reconnectNotice = false;
 let checkingAfterNoReply = false;
+let reconnectAfterStall = false;
 
 const pendingEdits = new Map(); // "node/parameter" → newest value not yet sent.
 let inFlightKey = null;
@@ -75,11 +76,14 @@ function clearOldNews() {
 
 // Talking to the server ----------------------------------------------------
 function adopt(next) {
+  if (next.stalled) reconnectAfterStall = true;
   if (next.connected) {
     const reconnected = known && known.revision?.split(':')[0] !== next.revision?.split(':')[0];
     if (reconnected && edited()) reconnectNotice = true;
     // A failure message like "reconnecting to check" is out of date once the amp is back.
     if (reconnected && $('message').dataset.kind === 'error') showMessage(`Reconnected. The amp is on preset ${next.preset}.`);
+    if (reconnected && reconnectAfterStall) showMessage('Reconnected to your Micro Plus.');
+    if (reconnected) reconnectAfterStall = false;
     // The document is briefly missing while the amp changes preset; keep showing the last one.
     known = next.document || !known ? next : { ...next, document: known.document };
     if (next.document && !next.dirty) baselines.set(baselineKey(next), next.document);
@@ -96,21 +100,32 @@ function baselineKey(snapshot) { return `${snapshot.revision?.split(':')[0]}:${s
 
 // A page opened after edits never saw the preset clean, so it asks the amp for the saved one.
 // Without it the page still works and only can't list the changes, so a few tries are enough.
+const SAVED_COPY_TRIES = 3;
+const SAVED_COPY_RETRY_MS = 1500;
 const savedCopyTries = new Map();
 let savedCopyRunning = false;
+// While the amp calls the preset edited and the saved copy hasn't arrived, nobody knows yet whether anything differs.
+function savedCopyUnknown() { return state.connected && Boolean(known?.dirty && known.document) && !baseline(); }
+function savedCopyGaveUp() {
+  return savedCopyUnknown() && !savedCopyRunning && (savedCopyTries.get(baselineKey(known)) ?? 0) >= SAVED_COPY_TRIES;
+}
+function checkingForChanges() { return savedCopyUnknown() && !savedCopyGaveUp() && !nameChanged() && !editsWaiting(); }
 async function fetchSavedCopy() {
   if (savedCopyRunning || !known?.dirty || !known.document || baseline()) return;
   const key = baselineKey(known);
   const tries = savedCopyTries.get(key) ?? 0;
-  if (tries >= 3) return;
+  if (tries >= SAVED_COPY_TRIES) return;
   savedCopyTries.set(key, tries + 1);
   savedCopyRunning = true;
   try {
     const reply = await post(EDITOR_API, { action: 'saved-copy', preset: known.preset, revision: known.revision });
     baselines.set(key, reply.saved_document);
-    render();
-  } catch { /* The next poll tries again. */ } finally {
+  } catch {
+    // The server may have just started reconnecting, so a poll gets to report that before this counts as giving up.
+    await new Promise(resolve => setTimeout(resolve, SAVED_COPY_RETRY_MS));
+  } finally {
     savedCopyRunning = false;
+    render();
   }
 }
 
@@ -261,7 +276,7 @@ async function selectPreset(number, { discard = false } = {}) {
   const expected = guard();
   if (hasChanges() && !discard) {
     const go = await confirmAction('Discard your unsaved changes?',
-      `Switching to preset ${number} loses your edits to this preset.`, 'Discard and switch');
+      `Switching to preset ${number} loses ${savedCopyGaveUp() ? 'any' : 'your'} edits to this preset.`, 'Discard and switch');
     if (!go || !stillSameEditor(expected)) return;
   }
   switchingTo = number;
@@ -998,8 +1013,11 @@ function renderEditor() {
 // Status, top bar and banners ------------------------------------------------
 function renderStatus() {
   const count = changesFromSaved().length + (nameChanged() ? 1 : 0);
-  const unsaved = state.connected && hasChanges();
-  setText($('dirty'), !unsaved ? '' : count > 1 ? `${count} unsaved changes` : count === 1 ? '1 unsaved change' : 'Unsaved changes');
+  const checking = checkingForChanges();
+  const unsaved = state.connected && hasChanges() && !checking;
+  const unsure = savedCopyGaveUp() && !nameChanged() && !editsWaiting();
+  setText($('dirty'), checking ? 'Checking for changes…' : !unsaved ? '' : unsure ? 'May have unsaved changes'
+    : count > 1 ? `${count} unsaved changes` : count === 1 ? '1 unsaved change' : 'Unsaved changes');
   if (state.connected) setText($('connection-text'), editsWaiting() ? 'Sending to the amp…' : 'Connected');
   const note = $('message').hidden ? '' : $('message').textContent;
   const problem = $('message').dataset.kind === 'error' ? note : '';
@@ -1008,10 +1026,10 @@ function renderStatus() {
     : note || (editsWaiting() ? 'Sending to the amp…' : ''));
   closeupStatus.dataset.kind = !state.connected || problem ? 'error' : '';
   const usable = state.connected && !exclusive;
-  $('save').disabled = !usable || !hasChanges() || !nameInput.value.trim();
+  $('save').disabled = !usable || !hasChanges() || checking || !nameInput.value.trim();
   $('save-copy').disabled = !usable;
   $('discard').disabled = !usable || !hasChanges();
-  $('discard').hidden = !hasChanges();
+  $('discard').hidden = !hasChanges() || checking;
   $('prev').disabled = $('next').disabled = !usable;
   if (known?.preset) document.title = `${unsaved ? '• ' : ''}${known.preset} · ${known.name || 'Unnamed preset'} · Maneline`;
 }
@@ -1023,7 +1041,11 @@ function renderConnection() {
   if (state.connected) {
     connection.dataset.state = 'connected';
     label = 'Connected';
-    if (reconnectNotice) banner = 'Reconnected. Check how the preset sounds before saving, because your unsaved changes may not have survived.';
+    if (savedCopyGaveUp()) {
+      banner = "Your Micro Plus isn't sending its saved copy of this preset, so this page can't tell whether anything has changed. Turning the amp off and on again may help.";
+    } else if (reconnectNotice && !savedCopyUnknown() && edited()) {
+      banner = 'Reconnected. Check how the preset sounds before saving, because your unsaved changes may not have survived.';
+    }
   } else if (!reachable) {
     connection.dataset.state = 'lost';
     label = 'Not connected';
@@ -1033,8 +1055,9 @@ function renderConnection() {
     label = 'Reconnecting…';
     // Don't repeat what the message under the top bar already says.
     const reason = state.error && state.error !== $('message').textContent ? `${state.error} ` : '';
-    const edits = edited() || nameChanged() ? ' Your unsaved changes may not survive this.' : '';
-    banner = `Lost the connection to your Micro Plus. ${reason}This page shows the last settings it read and will reconnect by itself.${edits}`;
+    // A stall can leave the page without the saved copy, and then it doesn't know of any edits to warn about.
+    const edits = (state.stalled ? changesFromSaved().length > 0 : edited()) || nameChanged() ? ' Your unsaved changes may not survive this.' : '';
+    banner = `${state.stalled ? '' : 'Lost the connection to your Micro Plus. '}${reason}This page shows the last settings it read and will reconnect by itself.${edits}`;
   } else {
     connection.dataset.state = 'connecting';
     label = 'Connecting…';

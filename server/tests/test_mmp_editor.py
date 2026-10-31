@@ -5,6 +5,7 @@ import io
 import json
 import sys
 import tempfile
+import time
 import types
 import unittest
 from pathlib import Path
@@ -12,7 +13,7 @@ from unittest.mock import AsyncMock, Mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from mmp_ble import Controller
 from mmp_protocol import presets_match
-from mmp_session import EditorConflict, MicroPlusSession
+from mmp_session import EditorConflict, MicroPlusSession, READ_RECONNECT_GAP, SAVED_READ_FAILURES
 from mmp_web import dispatch, HTTPError
 from test_mmp_protocol import preset_fixture
 
@@ -71,15 +72,65 @@ class EditorTests(unittest.IsolatedAsyncioTestCase):
             session.controller.set_parameter.assert_not_awaited()
             self.assertEqual(list(Path(directory).glob('*.json')), [])
 
+    async def fail_saved_copies(self, session, count):
+        session.controller.read_preset = AsyncMock(side_effect=TimeoutError())
+        with contextlib.redirect_stderr(io.StringIO()):
+            for _ in range(count):
+                with self.assertRaisesRegex(RuntimeError, 'did not send the saved preset'):
+                    await session.saved_copy(100, '2:4')
+
     async def test_failed_saved_copy_keeps_the_connection(self):
         with tempfile.TemporaryDirectory() as directory:
             session = self.session(directory)
-            session.controller.read_preset = AsyncMock(side_effect=TimeoutError())
-            with self.assertRaisesRegex(RuntimeError, 'did not send the saved preset'):
-                await session.saved_copy(100, '2:4')
+            await self.fail_saved_copies(session, SAVED_READ_FAILURES - 1)
             self.assertIsNotNone(session.controller)
             self.assertFalse(session.reset.is_set())
             self.assertIsNone(session.error)
+            self.assertFalse(session.snapshot()['stalled'])
+
+    async def test_saved_copy_failures_in_a_row_reconnect(self):
+        with tempfile.TemporaryDirectory() as directory:
+            session = self.session(directory)
+            await self.fail_saved_copies(session, SAVED_READ_FAILURES - 1)
+            log = io.StringIO()
+            with contextlib.redirect_stderr(log), self.assertRaisesRegex(RuntimeError, 'stopped answering'):
+                await session.saved_copy(100, '2:4')
+            self.assertTrue(session.reset.is_set())
+            self.assertIsNone(session.controller)
+            self.assertTrue(session.snapshot()['stalled'])
+            self.assertIn('saved preset read failed, 3 in a row', log.getvalue())
+            self.assertIn('TimeoutError', log.getvalue())
+
+    async def test_a_good_saved_copy_restarts_the_failure_count(self):
+        with tempfile.TemporaryDirectory() as directory:
+            session = self.session(directory)
+            stored = preset_fixture()
+            await self.fail_saved_copies(session, SAVED_READ_FAILURES - 1)
+            session.controller.read_preset = AsyncMock(return_value=stored)
+            await session.saved_copy(100, '2:4')
+            await self.fail_saved_copies(session, SAVED_READ_FAILURES - 1)
+            self.assertFalse(session.reset.is_set())
+
+    async def test_saved_copy_failures_do_not_reconnect_again_straight_away(self):
+        with tempfile.TemporaryDirectory() as directory:
+            session = self.session(directory)
+            session.read_reconnected_at = time.monotonic()
+            await self.fail_saved_copies(session, SAVED_READ_FAILURES + 2)
+            self.assertFalse(session.reset.is_set())
+            self.assertIsNotNone(session.controller)
+            session.read_reconnected_at = time.monotonic() - READ_RECONNECT_GAP
+            with contextlib.redirect_stderr(io.StringIO()), self.assertRaisesRegex(RuntimeError, 'stopped answering'):
+                await session.saved_copy(100, '2:4')
+            self.assertTrue(session.reset.is_set())
+
+    async def test_a_stale_editor_does_not_count_as_a_failed_read(self):
+        with tempfile.TemporaryDirectory() as directory:
+            session = self.session(directory)
+            for _ in range(SAVED_READ_FAILURES + 1):
+                with self.assertRaises(EditorConflict):
+                    await session.saved_copy(100, '2:3')
+            self.assertEqual(session.saved_read_failures, 0)
+            self.assertFalse(session.reset.is_set())
 
     async def test_amp_timeout_during_save_is_not_reported_as_a_failed_backup(self):
         # TimeoutError is an OSError, and a save that timed out may still have reached the amp.

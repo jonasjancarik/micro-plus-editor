@@ -14,6 +14,8 @@ from mmp_ble import Controller, KEEPALIVE, KEEPALIVE_INTERVAL, NAME, RESPONSE, S
 MODELS = json.loads(Path(__file__).with_name('mmp_models.json').read_text())
 PARAMETER_CHOICES = json.loads(Path(__file__).with_name('mmp_parameter_choices.json').read_text())
 UNSCALED = json.loads(Path(__file__).with_name('mmp_parameter_hints.json').read_text())
+SAVED_READ_FAILURES = 3  # The amp has been seen to stop answering these while its connection still looks healthy.
+READ_RECONNECT_GAP = 300  # Seconds. If reconnecting doesn't help, trying again every few reads wouldn't either.
 
 
 class EditorConflict(ValueError):
@@ -36,11 +38,14 @@ class MicroPlusSession:
         self.last_save = None
         self.last_undo = None
         self.generation = 0
+        self.saved_read_failures = 0
+        self.read_reconnected_at = None
+        self.stalled = False
 
     def snapshot(self):
         controller = self.controller
         connected = bool(controller and self.client and self.client.is_connected)
-        return {'connected': connected, 'phase': self.phase, 'error': self.error,
+        return {'connected': connected, 'phase': self.phase, 'error': self.error, 'stalled': self.stalled,
                 'device': NAME, 'connections': self.connections,
                 'connected_since': self.connected_since,
                 'preset': controller.slot if connected else None,
@@ -74,6 +79,7 @@ class MicroPlusSession:
         messages = {
             'save': 'The save could not be verified. Reconnecting to read the device; check the result before saving again.',
             'undo': 'The undo could not be verified. Reconnecting to read the device; check the result before saving again.',
+            'saved preset read': 'Your Micro Plus stopped answering, so Maneline is reconnecting to it.',
             'preset selection': 'The Micro Plus did not confirm the switch, so it may already be on the new preset. '
                                 'Reconnecting to check.'}
         self.error = messages.get(action, f'The Micro Plus did not confirm the {action}. '
@@ -130,7 +136,7 @@ class MicroPlusSession:
                 raise self.unconfirmed('amplifier or effect change') from None
 
     async def saved_copy(self, slot, revision):
-        # Only reads, so a failure here says nothing about the connection and must not reset it.
+        # Only reads, so one failure says little about the connection. Several in a row mean the amp has stalled.
         async with self.lock:
             controller = self.require_editor(slot, revision)
             try:
@@ -138,7 +144,17 @@ class MicroPlusSession:
             except ValueError:
                 raise
             except Exception as error:
+                self.saved_read_failures += 1
+                print(f'Micro Plus saved preset read failed, {self.saved_read_failures} in a row: {error!r}',
+                      file=sys.stderr, flush=True)
+                now = time.monotonic()
+                if self.saved_read_failures >= SAVED_READ_FAILURES and (
+                        self.read_reconnected_at is None or now - self.read_reconnected_at >= READ_RECONNECT_GAP):
+                    self.read_reconnected_at = now
+                    self.stalled = True
+                    raise self.unconfirmed('saved preset read') from None
                 raise RuntimeError('The Micro Plus did not send the saved preset.') from error
+            self.saved_read_failures = 0
             self.require_editor(slot, revision)
             return {'preset': slot, 'revision': revision, 'saved_document': document}
 
@@ -246,6 +262,8 @@ class MicroPlusSession:
                         self.connected_since = time.time()
                         self.phase = 'connected'
                         self.error = None
+                        self.stalled = False
+                        self.saved_read_failures = 0
                         await self.reset.wait()
                     finally:
                         keepalive.cancel()

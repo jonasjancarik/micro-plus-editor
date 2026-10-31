@@ -83,8 +83,15 @@ changed knobs are marked with a dot, and the close-up offers to undo that pedal'
 changes, including a changed model. The list under the board shows each change from
 the saved preset, with a **Reset** button for each one, and the browser tab's title
 starts with a dot while anything is unsaved. A page opened after edits were made asks
-the amp for the saved preset, which only reads it, and lists the same changes. If the
-amp doesn't send it, the page still says "Unsaved changes" but can't list them.
+the amp for the saved preset, which only reads it, says "Checking for changes" until it
+arrives, and lists the same changes.
+
+The amp has been seen to stop sending saved presets while its connection still looked
+healthy, and reconnecting cleared it. After three failed reads in a row the server
+reconnects by itself, at most once every five minutes, and logs each failure. The page
+says what's happening, and the live preset stayed as it was when this happened on the real
+amp. If reads still fail, the page says "May have unsaved changes" and explains that it
+can't compare, without reconnecting again until five minutes have passed.
 
 The amp keeps reporting a preset as edited even after every setting is put back, so
 the page goes by the comparison instead: once nothing differs from the saved preset,
@@ -142,7 +149,8 @@ _work/mmp-venv/bin/python scripts/mmp_mock.py
 
 This serves the real page at `http://localhost:8092` through the real request
 handling, against a simulated amp with no Bluetooth. Open `/__mock/mode/disconnected`,
-`/__mock/mode/fail`, `/__mock/mode/stall` or `/__mock/knob/5` to simulate a lost
+`/__mock/mode/fail`, `/__mock/mode/stall`, `/__mock/mode/noread`,
+`/__mock/mode/noread-stuck`, `/__mock/edited-flag` or `/__mock/knob/5` to simulate a lost
 connection, unconfirmed writes, the stall described below, or a preset change made
 on the amp; `/__mock/mode/ok` returns to normal. Use it for anything that would
 otherwise overwrite presets.
