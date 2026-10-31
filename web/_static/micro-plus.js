@@ -1345,6 +1345,22 @@ function listPresets(byNumber) {
   renderPresets();
   scrollToActive('center');
 }
+function showTheme() {
+  const theme = document.documentElement.dataset.theme ?? 'auto';
+  for (const button of document.querySelectorAll('[data-theme-choice]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.themeChoice === theme));
+  }
+}
+for (const button of document.querySelectorAll('[data-theme-choice]')) {
+  button.addEventListener('click', () => {
+    const theme = button.dataset.themeChoice;
+    if (theme === 'auto') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem('mmp-theme', theme); } catch { /* Only a convenience. */ }
+    showTheme();
+  });
+}
+showTheme();
 $('view-groups').addEventListener('click', () => listPresets(false));
 $('view-number').addEventListener('click', () => listPresets(true));
 $('move-target').addEventListener('change', showMoveNameField);

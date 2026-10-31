@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
+  <meta name="color-scheme" content="dark light">
+  <script>try { const theme = localStorage.getItem('mmp-theme'); if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme; } catch { /* Follows the system instead. */ }</script>
   <title>Mustang Micro Plus · Maneline</title>
   <link rel="stylesheet" href="/web_ui/_static/pedal-kit/pedal-kit.css">
   <link rel="stylesheet" href="/web_ui/_static/micro-plus.css">
@@ -106,6 +107,14 @@
     </div>
     <p class="shortcuts">Keyboard: <kbd>/</kbd> opens the presets, <kbd>[</kbd> and <kbd>]</kbd> change preset, and <kbd>Ctrl</kbd> or <kbd>&#8984;</kbd> + <kbd>S</kbd> saves.
       On a knob, scroll to turn it, hold <kbd>Shift</kbd> while dragging for fine changes, or select its number to type a value.</p>
+    <div class="appearance">
+      <span id="appearance-label">Appearance</span>
+      <div class="view-switch" role="group" aria-labelledby="appearance-label">
+        <button type="button" data-theme-choice="auto">Match system</button>
+        <button type="button" data-theme-choice="light">Light</button>
+        <button type="button" data-theme-choice="dark">Dark</button>
+      </div>
+    </div>
 </main>
 
 <dialog id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-text">

@@ -40,7 +40,8 @@ connection shared by all browser clients; browser refreshes and preset clicks do
 not reconnect the amplifier. The original Java/Lua USB mode is still launched
 with `scripts/run_web_cli.sh` without `--micro-plus`.
 
-The page is built around the board, and always dark. Select the preset name in the
+The page is built around the board. It follows your system's light or dark setting
+unless you choose one under Appearance at the bottom of the page. Select the preset name in the
 top bar, or press `/`, to open the list of presets, which marks the active one. The
 70 factory presets are sorted into groups by sound, each with a short description, and
 anything else is listed under Your presets. Factory presets are recognised by name
