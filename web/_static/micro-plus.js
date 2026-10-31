@@ -89,10 +89,11 @@ function hasChanges() { return edited() || nameChanged() || editsWaiting(); }
 
 // Messages -----------------------------------------------------------------
 let messageTimer;
-function showMessage(text, kind = '') {
+function showMessage(text, kind = '', { outlastsReconnect = false } = {}) {
   const message = $('message');
   message.hidden = !text;
   message.dataset.kind = kind;
+  message.dataset.outlastsReconnect = outlastsReconnect ? 'yes' : '';
   setText(message, text);
   clearTimeout(messageTimer);
   // Problems stay until they're dealt with; good news shouldn't sit there for the rest of the session.
@@ -113,8 +114,9 @@ function adopt(next) {
     const reconnected = known && known.revision?.split(':')[0] !== next.revision?.split(':')[0];
     if (reconnected && edited()) reconnectNotice = true;
     // A failure message like "reconnecting to check" is out of date once the amp is back.
-    if (reconnected && $('message').dataset.kind === 'error') showMessage(`Reconnected. The amp is on preset ${next.preset}.`);
-    if (reconnected && reconnectAfterStall) showMessage('Reconnected to your Micro Plus.');
+    const replaceable = !$('message').dataset.outlastsReconnect;
+    if (reconnected && replaceable && $('message').dataset.kind === 'error') showMessage(`Reconnected. The amp is on preset ${next.preset}.`);
+    if (reconnected && replaceable && reconnectAfterStall) showMessage('Reconnected to your Micro Plus.');
     if (reconnected) reconnectAfterStall = false;
     // The document is briefly missing while the amp changes preset; keep showing the last one.
     known = next.document || !known ? next : { ...next, document: known.document };
@@ -355,12 +357,7 @@ async function saveCopy() {
   await editsIdle();
   const expected = guard();
   const select = $('copy-target');
-  select.replaceChildren(...known.presets.map(preset => {
-    const option = document.createElement('option');
-    option.value = preset.preset;
-    option.textContent = `${preset.preset} · ${displayName(preset)}`;
-    return option;
-  }));
+  select.replaceChildren(...slotOptions());
   const firstEmpty = known.presets.find(isEmptySlot);
   select.value = String((firstEmpty ?? known.presets.find(preset => preset.preset !== known.preset)).preset);
   $('copy-name').value = nameInput.value.trim() || documentName();
@@ -1350,6 +1347,7 @@ function render() {
   renderEditor();
   renderStatus();
   renderLastSave();
+  renderPresetFiles();
   // The first time, centre it so the presets around it show too.
   if (grid.querySelector('[aria-current="true"]')?.dataset.preset !== previousActive) scrollToActive(previousActive ? 'nearest' : 'center');
 }
@@ -1403,6 +1401,17 @@ $('save').addEventListener('click', saveHere);
 $('save-copy').addEventListener('click', saveCopy);
 $('undo-save').addEventListener('click', undoSave);
 $('copy-target').addEventListener('change', renderCopyChoice);
+$('export-current').addEventListener('click', exportCurrentPreset);
+$('export-all').addEventListener('click', exportAllPresets);
+$('import-preset').addEventListener('click', () => $('import-file').click());
+$('import-file').addEventListener('change', event => {
+  const [file] = event.target.files;
+  event.target.value = ''; // So choosing the same file again still counts as a change.
+  if (file) importFromFile(file);
+});
+$('import-choice').addEventListener('change', useChosenImport);
+$('import-target').addEventListener('change', renderImportChoice);
+$('export-dialog').addEventListener('close', () => { exportStopped = true; });
 $('show-empty').addEventListener('change', event => {
   showEmpty = event.target.checked;
   storeFlag('mmp-show-empty', showEmpty);

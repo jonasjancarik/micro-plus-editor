@@ -7,7 +7,8 @@ Maneline can read, switch, edit and save Micro Plus presets using Bleak's
 CoreBluetooth backend. The browser editor supports amplifier/effect model
 selection, parameter changes, preset names, and saving to the current slot or
 another slot. The USB cable can remain connected for audio and power.
-Signal-chain reordering and a browser backup-import interface are not implemented.
+You can also export presets to files and import one into a slot. Signal-chain
+reordering and restoring a whole exported library at once are not implemented.
 
 ## Setup
 
@@ -148,6 +149,28 @@ success is reported. Acknowledgement alone is insufficient.
 **Undo this save** restores the backup from the most recent save, after backing up
 what it replaces. It is available until the server restarts.
 
+### Exporting and importing
+
+Below the board, **Export this preset** downloads the current preset as it's saved on
+the amp, so unsaved changes aren't in the file. **Export all presets** downloads every
+preset that isn't an empty slot, along with your groups, as one file. It reads the presets
+one at a time and shows its progress, and other controls wait until it finishes. If a preset
+still can't be read after a few tries, or you cancel, no file is downloaded. Files are
+downloaded by the browser you're using, so this also works from a phone or another computer.
+
+**Import a preset** takes a file from either kind of export, or a backup from
+`_work/preset-backups/`. If the file holds several presets, choose one, then choose its name
+and the slot to put it in. An import works like **Save as copy**: the slot's saved contents
+are backed up first, nothing is sent if that fails, the imported preset gets a new preset ID,
+and success is only reported once reading the slot back matches. **Undo this save** covers it
+too. Importing into the active slot loses any unsaved edits to it.
+
+An import only changes that one slot. The groups in an all-presets file aren't restored yet.
+Files are checked for the amp's five positions and for a matching amp type before anything is
+sent. Models aren't compared with Maneline's list, because the list is incomplete; the amp
+decides, and the read-back catches anything it changed. Importing has only been tested
+against the simulated amp, and files don't record the firmware they came from.
+
 **Discard changes** reloads the saved preset. Switching away from an edited preset
 also asks before discarding live edits or an unsaved name. Browser requests include
 the selected slot and an opaque editor revision, so stale controls cannot quietly
@@ -192,10 +215,11 @@ Preset numbers are 1–100, matching the display. Invalid numbers return HTTP 40
 an unavailable connection or unconfirmed switch returns HTTP 503. A failed
 confirmation does not establish that the amplifier stayed on its previous preset.
 The editor endpoint is `POST /api/micro-plus/editor` with an `action` of
-`parameter`, `model`, `save`, or `undo-save`. Each action includes `preset` and
-`revision` from the latest GET response. Parameter changes also supply `node`,
-`parameter` and `value`; model changes supply `node` and `model`; saves supply
-`target` and `name`. If the amp stored a different number from the one sent, the
+`parameter`, `model`, `save`, `undo-save`, `read-slot`, or `import`. Each action
+except `read-slot` includes `preset` and `revision` from the latest GET response.
+Parameter changes also supply `node`, `parameter` and `value`; model changes supply
+`node` and `model`; saves supply `target` and `name`; imports supply `target`, `name`
+and `document`, the preset itself; and `read-slot` supplies only `slot`. If the amp stored a different number from the one sent, the
 parameter response adds `limited` with `node`, `parameter`, `requested` and `stored`.
 A stale revision returns HTTP 409, invalid data returns 400, an
 unconfirmed device operation returns 503, and a backup-file failure returns 500.
