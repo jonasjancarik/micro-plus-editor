@@ -513,6 +513,17 @@ class PresetGroupRequestTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(session.groups.state['groups'], [])
 
 
+class BoardLookTests(unittest.TestCase):
+    def test_every_model_has_its_own_look_on_the_board(self):
+        root = Path(__file__).resolve().parents[2]
+        looks = (root / 'web-app/web_ui/_static/micro-plus-looks.css').read_text(encoding='utf-8')
+        models = json.loads((root / 'scripts/mmp_models.json').read_text(encoding='utf-8'))
+        for position, choices in models.items():
+            for model in choices:
+                if model['id'] != 'DUBS_Unknown' and model['id'] not in ('ACD_Deluxe65GT',):  # The default amp look.
+                    self.assertIn(f'[data-model="{model["id"]}"]', looks, f'{position}: {model["name"]}')
+
+
 class FactoryPresetGroupTests(unittest.TestCase):
     def test_every_factory_preset_has_one_group_and_a_description(self):
         root = Path(__file__).resolve().parents[2]

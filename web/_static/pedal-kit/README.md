@@ -11,6 +11,6 @@ as a reference. `surface.jpg` is a neutral grey that gets tinted by the pedal's
 colour. When tinting, use a colour about 18% brighter than the one you want,
 because the grey darkens it.
 
-`tweed.jpg`, `grille-oxblood.jpg` and `enamel-green.jpg` came the same way, and are used
-as they are, without tinting. So far only the Micro Plus board uses them, for the
-'57 Twin and the Greenbox.
+The amp coverings, grille cloths and pedal finishes (`tolex-*`, `tweed`, `grille-*`, `enamel-*`,
+`brushed-metal` and `sparkle-metal`) came the same way. Only the Micro Plus board uses them, through
+`micro-plus-looks.css`. The neutral ones are tinted with a multiply blend, so one image gives many colours.

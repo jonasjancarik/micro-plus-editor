@@ -100,6 +100,11 @@ A parameter change is acknowledged and its updated preset is read back before th
 browser accepts it. The editor queries the device's parameter type before
 writing, distinguishing continuous float controls from integer choices.
 
+Each amp and pedal has its own look. Amps are drawn as combos, stacks or rack units with their
+own covering and grille cloth, and each pedal has its own colour and finish. These are generic
+drawings made for this page, not pictures of the real gear. The styles are in
+`web-app/web_ui/_static/micro-plus-looks.css`.
+
 To rename a preset, select the pencil beside its name in the top bar, then save as
 usual. On a phone, **Save** and its menu stay at
 the bottom of the screen, and **Discard changes** appears only when there's something
