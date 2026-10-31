@@ -7,8 +7,8 @@ Maneline can read, switch, edit and save Micro Plus presets using Bleak's
 CoreBluetooth backend. The browser editor supports amplifier/effect model
 selection, parameter changes, preset names, and saving to the current slot or
 another slot. The USB cable can remain connected for audio and power.
-You can also export presets to files and import one into a slot. Signal-chain
-reordering and restoring a whole exported library at once are not implemented.
+You can also export presets to files and import one into a slot. Reordering the signal
+chain from the page and restoring a whole exported library at once are not implemented.
 
 ## Setup
 
@@ -180,8 +180,9 @@ Files are checked for the amp's five positions and for a matching amp type befor
 sent. Models aren't compared with Maneline's list, because the list is incomplete; the amp
 decides, and the read-back catches anything it changed. Files don't record the firmware
 they came from. Importing was checked on the amp with slot 100, including a preset whose order
-none of the amp's own presets use: it was stored and read back as written. The amp moves to the
-slot it just received, so an import leaves you on that preset.
+none of the amp's own presets use: it was stored and read back as written, and it sounded clearly
+different from the same settings in the usual order, so the amp follows a preset's connections.
+The amp moves to the slot it just received, so an import leaves you on that preset.
 
 A preset is long enough to need many Bluetooth packets. Sent back to back, the amp didn't answer
 them and then stayed silent until Maneline reconnected, so they now go out 30 ms apart.
