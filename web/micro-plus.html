@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light dark">
+  <meta name="color-scheme" content="dark">
   <title>Mustang Micro Plus · Maneline</title>
   <link rel="stylesheet" href="/web_ui/_static/pedal-kit/pedal-kit.css">
   <link rel="stylesheet" href="/web_ui/_static/micro-plus.css">
@@ -15,12 +15,14 @@
 <body>
 <header id="topbar">
   <div class="now">
-    <button id="open-presets" type="button" class="narrow-only">Presets</button>
     <button id="prev" type="button" class="icon" aria-label="Previous preset" title="Previous preset ( [ )">&#8249;</button>
-    <div class="now-text">
-      <span id="current-number">Mustang Micro Plus</span>
-      <strong id="current-name">Waiting for your amp</strong>
-    </div>
+    <button id="open-presets" type="button" aria-haspopup="dialog" title="Choose a preset ( / )" disabled>
+      <span class="now-text">
+        <span id="current-number">Mustang Micro Plus</span>
+        <strong id="current-name">Waiting for your amp</strong>
+      </span>
+      <svg class="chevron" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg>
+    </button>
     <button id="next" type="button" class="icon" aria-label="Next preset" title="Next preset ( ] )">&#8250;</button>
   </div>
   <p id="connection" data-state="connecting"><span class="dot" aria-hidden="true"></span><span id="connection-text">Connecting</span></p>
@@ -35,24 +37,24 @@
 <div id="connection-banner" role="status" hidden></div>
 <div id="message" role="status" hidden></div>
 
-<div id="layout">
-  <aside id="preset-panel" aria-labelledby="presets-title">
+<dialog id="preset-panel" aria-labelledby="presets-title">
+  <div id="preset-panel-inner">
     <div class="panel-head">
       <h2 id="presets-title">Presets</h2>
-      <button id="close-presets" type="button" class="narrow-only">Close</button>
-    </div>
-    <label for="filter">Find by name or number</label>
-    <input id="filter" type="search" placeholder="For example, Twin or 17" autocomplete="off">
-    <div class="list-tools">
       <span id="count"></span>
       <label class="check"><input id="show-empty" type="checkbox"> <span id="show-empty-label">Show empty slots</span></label>
+      <button id="close-presets" type="button">Close</button>
     </div>
-    <ol id="presets" aria-busy="true"></ol>
-    <p id="empty" hidden>No presets match your search.</p>
-  </aside>
-  <div id="scrim" class="narrow-only" hidden></div>
+    <label for="filter" class="visually-hidden">Find by name or number</label>
+    <input id="filter" type="search" placeholder="Find by name or number" autocomplete="off">
+    <div id="presets-scroll">
+      <ol id="presets" aria-busy="true"></ol>
+      <p id="empty" hidden>No presets match your search.</p>
+    </div>
+  </div>
+</dialog>
 
-  <main>
+<main>
     <div id="waiting">
       <h1>Looking for your Micro Plus</h1>
       <p>Turn on the amp and close Fender Tone on your other devices. This page connects by itself once the amp is found.</p>
@@ -92,10 +94,9 @@
       <span id="last-save-text"></span>
       <button id="undo-save" type="button">Undo this save</button>
     </div>
-    <p class="shortcuts">Keyboard: <kbd>[</kbd> and <kbd>]</kbd> change preset, and <kbd>Ctrl</kbd> or <kbd>&#8984;</kbd> + <kbd>S</kbd> saves. In the preset list, use the up and down arrows.
+    <p class="shortcuts">Keyboard: <kbd>/</kbd> opens the presets, <kbd>[</kbd> and <kbd>]</kbd> change preset, and <kbd>Ctrl</kbd> or <kbd>&#8984;</kbd> + <kbd>S</kbd> saves.
       On a knob, scroll to turn it, hold <kbd>Shift</kbd> while dragging for fine changes, or select its number to type a value.</p>
-  </main>
-</div>
+</main>
 
 <dialog id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-text">
   <form method="dialog">

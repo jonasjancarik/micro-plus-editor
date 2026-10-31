@@ -269,7 +269,7 @@ const SAVE_CAUTION = 'Maneline keeps a backup first, and you can undo the save a
 
 // Preset switching ---------------------------------------------------------
 async function selectPreset(number, { discard = false } = {}) {
-  closeDrawer();
+  closePicker();
   if (exclusive || !state.connected) return;
   if (number === state.preset && !discard) return;
   await editsIdle();
@@ -1031,6 +1031,7 @@ function renderStatus() {
   $('discard').disabled = !usable || !hasChanges();
   $('discard').hidden = !hasChanges() || checking;
   $('prev').disabled = $('next').disabled = !usable;
+  $('open-presets').disabled = !known;
   if (known?.preset) document.title = `${unsaved ? '• ' : ''}${known.preset} · ${known.name || 'Unnamed preset'} · Maneline`;
 }
 
@@ -1101,19 +1102,20 @@ function closeCloseup() {
   else selectedNode = null;
 }
 
-// Narrow-screen preset drawer ------------------------------------------------
-function openDrawer() {
-  document.body.classList.add('drawer-open');
-  $('scrim').hidden = false;
-  scrollToActive();
-  // Focusing the list instead of the search box keeps the phone keyboard closed.
-  (grid.querySelector('.preset[tabindex="0"]') ?? filter).focus({ preventScroll: true });
+// Preset picker --------------------------------------------------------------
+function openPicker({ search = false } = {}) {
+  const picker = $('preset-panel');
+  if (picker.open || !known) return;
+  filter.value = '';
+  renderPresets();
+  picker.showModal();
+  scrollToActive('center');
+  // Going to the list instead of the search box keeps a phone's keyboard closed.
+  const typing = search || window.matchMedia('(pointer: fine)').matches;
+  (typing ? filter : grid.querySelector('.preset[tabindex="0"]') ?? filter).focus({ preventScroll: true });
 }
-function closeDrawer() {
-  if (!document.body.classList.contains('drawer-open')) return;
-  document.body.classList.remove('drawer-open');
-  $('scrim').hidden = true;
-  $('open-presets').focus();
+function closePicker() {
+  if ($('preset-panel').open) $('preset-panel').close();
 }
 
 // Events -----------------------------------------------------------------------
@@ -1135,9 +1137,9 @@ $('closeup').addEventListener('close', () => {
 });
 // Selecting the dimmed area around the close-up closes it; the backdrop's clicks land on the dialog itself.
 $('closeup').addEventListener('click', event => { if (event.target === $('closeup')) closeCloseup(); });
-$('open-presets').addEventListener('click', openDrawer);
-$('close-presets').addEventListener('click', closeDrawer);
-$('scrim').addEventListener('click', closeDrawer);
+$('open-presets').addEventListener('click', () => openPicker());
+$('close-presets').addEventListener('click', closePicker);
+$('preset-panel').addEventListener('click', event => { if (event.target === $('preset-panel')) closePicker(); });
 $('prev').addEventListener('click', () => stepPreset(-1));
 $('next').addEventListener('click', () => stepPreset(1));
 $('save').addEventListener('click', saveHere);
@@ -1193,7 +1195,6 @@ grid.addEventListener('keydown', event => {
   }
 });
 document.addEventListener('keydown', event => {
-  if (event.key === 'Escape') { closeDrawer(); return; }
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
     event.preventDefault(); // Never the browser's "save this page".
     if (!document.querySelector('dialog[open]:not(#closeup)') && !$('save').disabled) {
@@ -1206,6 +1207,7 @@ document.addEventListener('keydown', event => {
   if (event.target.closest('input, select, textarea')) return;
   if (event.key === '[') stepPreset(-1);
   if (event.key === ']') stepPreset(1);
+  if (event.key === '/') { event.preventDefault(); openPicker({ search: true }); }
 });
 
 $('hint').hidden = storedFlag('mmp-hint-seen');

@@ -40,12 +40,14 @@ connection shared by all browser clients; browser refreshes and preset clicks do
 not reconnect the amplifier. The original Java/Lua USB mode is still launched
 with `scripts/run_web_cli.sh` without `--micro-plus`.
 
-The preset list marks the active preset. Search by name, or type a number to find
-exactly that slot. Empty slots are hidden until you ask for them. The arrows in
-the top bar and the `[` and `]` keys step through the listed presets. Selecting a
+The page is built around the board, and always dark. Select the preset name in the
+top bar, or press `/`, to open the list of presets, which marks the active one. Search
+by name, or type a number to find exactly that slot. Empty slots are hidden until you
+ask for them. The arrows in the top bar and the `[` and `]` keys step through the
+listed presets. Selecting a
 preset waits for the amp to confirm the change. The display also follows preset
 changes received from the device. Switching presets does not rewrite saved preset
-settings. On narrow screens the list opens as a drawer from the **Presets** button.
+settings.
 
 ### Editing and saving
 
