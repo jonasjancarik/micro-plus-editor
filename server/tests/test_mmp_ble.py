@@ -1,9 +1,11 @@
 """Protocol fixtures from the checked-in Micro Plus Bluetooth captures."""
 import sys
+import time
+import types
 import unittest
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from mmp_ble import Controller, Frames, fields, packet, select_preset
+from mmp_ble import Controller, Frames, PACKET_GAP, fields, packet, select_preset
 
 
 class ProtocolTests(unittest.TestCase):
@@ -75,6 +77,28 @@ class SwitchTests(unittest.IsolatedAsyncioTestCase):
         controller = Controller(ConnectedClient(), None)
         with self.assertRaises(TimeoutError):
             await controller.wait_for(lambda: False, timeout=0.01)
+
+
+class PacketPacingTests(unittest.IsolatedAsyncioTestCase):
+    async def test_a_long_command_is_not_sent_back_to_back(self):
+        times = []
+
+        class Services:
+            def get_characteristic(self, uuid):
+                return types.SimpleNamespace(properties=['write-without-response'])
+
+        class Client:
+            is_connected = True
+            services = Services()
+
+            async def write_gatt_char(self, characteristic, data, response):
+                times.append(time.monotonic())
+
+        controller = Controller(Client(), None)
+        await controller.send_packets([b'one', b'two', b'three'])
+        self.assertEqual(len(times), 3)
+        for earlier, later in zip(times, times[1:]):
+            self.assertGreaterEqual(later - earlier, PACKET_GAP * .9)
 
 
 if __name__ == '__main__':

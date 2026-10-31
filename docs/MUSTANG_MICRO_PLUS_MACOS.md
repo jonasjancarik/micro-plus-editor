@@ -178,8 +178,13 @@ too. Importing into the active slot loses any unsaved edits to it.
 An import only changes that one slot. The groups in an all-presets file aren't restored yet.
 Files are checked for the amp's five positions and for a matching amp type before anything is
 sent. Models aren't compared with Maneline's list, because the list is incomplete; the amp
-decides, and the read-back catches anything it changed. Importing has only been tested
-against the simulated amp, and files don't record the firmware they came from.
+decides, and the read-back catches anything it changed. Files don't record the firmware
+they came from. Importing was checked on the amp with slot 100, including a preset whose order
+none of the amp's own presets use: it was stored and read back as written. The amp moves to the
+slot it just received, so an import leaves you on that preset.
+
+A preset is long enough to need many Bluetooth packets. Sent back to back, the amp didn't answer
+them and then stayed silent until Maneline reconnected, so they now go out 30 ms apart.
 
 **Discard changes** reloads the saved preset. Switching away from an edited preset
 also asks before discarding live edits or an unsaved name. Browser requests include

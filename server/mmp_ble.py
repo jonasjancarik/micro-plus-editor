@@ -19,6 +19,8 @@ from mmp_protocol import (CURRENT, SAVE_CURRENT, READ_PRESET, REPLACE_NODE, SAVE
                           wire_bytes, wire_string, wire_uint)
 
 NAME = 'Mustang Micro Plus'
+# Sent back to back, the packets of a long command can get lost, and the amp then stops answering until it reconnects.
+PACKET_GAP = 0.03
 # Firmware 1.1.11 stops sending notifications with one-second keep-alives.
 # Keep a margin below the 500 ms interval used by the original BLE experiment.
 KEEPALIVE_INTERVAL = 0.25
@@ -237,7 +239,9 @@ class Controller:
             raise RuntimeError('Micro Plus control characteristic was not found')
         response = 'write-without-response' not in characteristic.properties
         async with self.write_lock:
-            for data in packets:
+            for index, data in enumerate(packets):
+                if index:
+                    await asyncio.sleep(PACKET_GAP)
                 self.record('tx', data)
                 await self.client.write_gatt_char(characteristic, data, response=response)
 
