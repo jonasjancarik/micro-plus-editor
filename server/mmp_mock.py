@@ -21,7 +21,7 @@ import time
 import uuid
 from pathlib import Path
 from mmp_groups import PresetGroups, SavedPresets
-from mmp_session import EditorConflict, MODELS, PARAMETER_CHOICES, READ_RECONNECT_GAP, SAVED_READ_FAILURES, UNSCALED
+from mmp_session import EditorConflict, MODELS, PARAMETER_CHOICES, READ_RECONNECT_GAP, SAVED_READ_FAILURES, UNSCALED, prepare_import
 from mmp_web import dispatch, handle
 
 FIXTURE = json.loads(Path(__file__).with_name('mmp_mock_fixture.json').read_text())
@@ -160,8 +160,7 @@ class MockSession:
             snapshot['limited'] = {'node': node, 'parameter': parameter, 'requested': value, 'stored': stored}
         return snapshot
 
-    async def saved_copy(self, slot, revision):
-        self.require_editor(slot, revision)
+    async def read_stored(self, slot):
         await asyncio.sleep(self.delay)
         if self.mode in ('noread', 'noread-stuck'):
             self.saved_read_failures += 1
@@ -178,8 +177,35 @@ class MockSession:
         if not self.connected or self.mode in ('fail', 'noread', 'noread-stuck'):
             raise RuntimeError('The Micro Plus did not send the saved preset.')
         self.saved_read_failures = 0
+        return self.read(slot)
+
+    async def saved_copy(self, slot, revision):
         self.require_editor(slot, revision)
-        return {'preset': slot, 'revision': revision, 'saved_document': self.read(slot)}
+        document = await self.read_stored(slot)
+        self.require_editor(slot, revision)
+        return {'preset': slot, 'revision': revision, 'saved_document': document}
+
+    async def read_slot(self, slot):
+        if type(slot) is not int or not 1 <= slot <= 100:
+            raise ValueError('Choose a preset number from 1 to 100.')
+        return {'slot': slot, 'saved_document': await self.read_stored(slot)}
+
+    async def import_preset(self, slot, revision, target, name, document):
+        prepared, name = prepare_import(document, name, target)
+        self.require_editor(slot, revision)
+        await self.begin('import', {'target': target, 'name': name})
+        backup = f'{time.strftime("%Y%m%dT%H%M%S")}Z-preset-{target:03d}.json'
+        self.backups[backup] = (self.read(target), self.names[target - 1])
+        self.stored[target] = prepared
+        self.names[target - 1] = name
+        self.saved_before_last_save = self.saved.state.get(str(target))
+        self.saved.set(target, name)
+        self.last_save = {'preset': target, 'name': name, 'backup': backup, 'verified': True, 'time': time.time()}
+        if target == self.slot:
+            self.document = self.read(target)
+            self.dirty = False
+        self.document_revision += 1
+        return self.snapshot()
 
     async def replace(self, slot, revision, node, model):
         self.require_editor(slot, revision)

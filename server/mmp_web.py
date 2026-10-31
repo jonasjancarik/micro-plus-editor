@@ -11,6 +11,8 @@ from urllib.parse import urlsplit
 from mmp_session import EditorConflict, MicroPlusSession
 
 WEB_ROOT = Path(__file__).resolve().parents[1] / 'web-app' / 'web_ui'
+MAX_BODY = 1024
+MAX_EDITOR_BODY = 64 * 1024  # Imports carry a whole preset, and the amp's own are under 3 KB.
 
 
 class HTTPError(Exception):
@@ -61,6 +63,11 @@ async def dispatch(method, path, headers, body, session, allowed_hosts=None):
                     state = await session.undo_save(request['preset'], request['revision'])
                 elif action == 'saved-copy' and set(request) == common:
                     state = await session.saved_copy(request['preset'], request['revision'])
+                elif action == 'read-slot' and set(request) == {'action', 'slot'}:
+                    state = await session.read_slot(request['slot'])
+                elif action == 'import' and set(request) == common | {'target', 'name', 'document'}:
+                    state = await session.import_preset(request['preset'], request['revision'], request['target'],
+                                                        request['name'], request['document'])
                 else:
                     raise ValueError('Choose a parameter, model, save or undo operation.')
         except EditorConflict as error:
@@ -101,7 +108,7 @@ async def handle(reader, writer, session, allowed_hosts=None, dispatcher=dispatc
             if 'transfer-encoding' in headers:
                 raise HTTPError(400, 'Chunked requests are not supported.')
             length = int(headers.get('content-length', '0'))
-            if not 0 <= length <= 1024:
+            if not 0 <= length <= (MAX_EDITOR_BODY if urlsplit(target).path == '/api/micro-plus/editor' else MAX_BODY):
                 raise HTTPError(413, 'Request body is too large.')
             body = await reader.readexactly(length)
             status, content_type, result = await dispatcher(

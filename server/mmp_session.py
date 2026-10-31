@@ -1,6 +1,7 @@
 """Own one persistent Micro Plus connection and serialize browser commands."""
 import asyncio
 import contextlib
+import copy
 import json
 import os
 import sys
@@ -17,10 +18,29 @@ PARAMETER_CHOICES = json.loads(Path(__file__).with_name('mmp_parameter_choices.j
 UNSCALED = json.loads(Path(__file__).with_name('mmp_parameter_hints.json').read_text())
 SAVED_READ_FAILURES = 3  # The amp has been seen to stop answering these while its connection still looks healthy.
 READ_RECONNECT_GAP = 300  # Seconds. If reconnecting doesn't help, trying again every few reads wouldn't either.
+PRESET_POSITIONS = {'stomp', 'mod', 'amp', 'delay', 'reverb'}  # Every preset read from the amp has exactly these.
 
 
 class EditorConflict(ValueError):
     """The device selection changed since the browser read the editor."""
+
+
+def prepare_import(document, name, target):
+    """Check a preset from a file and return the copy to write. Files can come from anyone, so nothing is assumed."""
+    from mmp_protocol import save_current_payload, validate_preset
+    if isinstance(name, str):
+        name = name.strip()
+    save_current_payload(name, target)
+    validate_preset(document)
+    if {node['nodeId'] for node in document['audioGraph']['nodes']} != PRESET_POSITIONS:
+        raise ValueError('This file isn\'t a Micro Plus preset, so nothing was changed.')
+    if document['info'].get('product_id', 'mustang-ltx') != 'mustang-ltx':
+        raise ValueError('This preset is for a different amp, so nothing was changed.')
+    # Models aren't checked against MODELS: that list is incomplete, and the amp's own presets can use others.
+    # An imported sound gets its own identity, as a copy does, so two slots never claim to be the same preset.
+    prepared = copy.deepcopy(document)
+    prepared['info'].update(displayName=name, preset_id=str(uuid.uuid4()).upper(), is_factory_default=False)
+    return prepared, name
 
 
 class MicroPlusSession:
@@ -91,6 +111,7 @@ class MicroPlusSession:
         messages = {
             'save': 'The save could not be verified. Reconnecting to read the device; check the result before saving again.',
             'undo': 'The undo could not be verified. Reconnecting to read the device; check the result before saving again.',
+            'import': 'The import could not be verified. Reconnecting to read the device; check the result before saving again.',
             'saved preset read': 'Your Micro Plus stopped answering, so Maneline is reconnecting to it.',
             'preset selection': 'The Micro Plus did not confirm the switch, so it may already be on the new preset. '
                                 'Reconnecting to check.'}
@@ -147,28 +168,39 @@ class MicroPlusSession:
             except Exception:
                 raise self.unconfirmed('amplifier or effect change') from None
 
-    async def saved_copy(self, slot, revision):
+    async def read_stored(self, controller, slot):
         # Only reads, so one failure says little about the connection. Several in a row mean the amp has stalled.
+        try:
+            document = await controller.read_preset(slot)
+        except ValueError:
+            raise
+        except Exception as error:
+            self.saved_read_failures += 1
+            print(f'Micro Plus saved preset read failed, {self.saved_read_failures} in a row: {error!r}',
+                  file=sys.stderr, flush=True)
+            now = time.monotonic()
+            if self.saved_read_failures >= SAVED_READ_FAILURES and (
+                    self.read_reconnected_at is None or now - self.read_reconnected_at >= READ_RECONNECT_GAP):
+                self.read_reconnected_at = now
+                self.stalled = True
+                raise self.unconfirmed('saved preset read') from None
+            raise RuntimeError('The Micro Plus did not send the saved preset.') from error
+        self.saved_read_failures = 0
+        return document
+
+    async def saved_copy(self, slot, revision):
         async with self.lock:
             controller = self.require_editor(slot, revision)
-            try:
-                document = await controller.read_preset(slot)
-            except ValueError:
-                raise
-            except Exception as error:
-                self.saved_read_failures += 1
-                print(f'Micro Plus saved preset read failed, {self.saved_read_failures} in a row: {error!r}',
-                      file=sys.stderr, flush=True)
-                now = time.monotonic()
-                if self.saved_read_failures >= SAVED_READ_FAILURES and (
-                        self.read_reconnected_at is None or now - self.read_reconnected_at >= READ_RECONNECT_GAP):
-                    self.read_reconnected_at = now
-                    self.stalled = True
-                    raise self.unconfirmed('saved preset read') from None
-                raise RuntimeError('The Micro Plus did not send the saved preset.') from error
-            self.saved_read_failures = 0
+            document = await self.read_stored(controller, slot)
             self.require_editor(slot, revision)
             return {'preset': slot, 'revision': revision, 'saved_document': document}
+
+    async def read_slot(self, slot):
+        """Read any slot for exporting. Reading doesn't depend on what the page is editing."""
+        if type(slot) is not int or not 1 <= slot <= 100:
+            raise ValueError('Choose a preset number from 1 to 100.')
+        async with self.lock:
+            return {'slot': slot, 'saved_document': await self.read_stored(self.require_controller(), slot)}
 
     def backup(self, slot, document):
         self.backup_dir.mkdir(parents=True, exist_ok=True)
@@ -206,6 +238,35 @@ class MicroPlusSession:
             except Exception:
                 raise self.unconfirmed('save') from None
 
+    async def write_stored(self, controller, target, document):
+        await controller.restore_preset(document, target)
+        if target == controller.slot:
+            # The amp keeps playing its live copy until the slot is selected again.
+            await controller.switch(target)
+        await controller.refresh_current()
+
+    async def import_preset(self, slot, revision, target, name, document):
+        prepared, name = prepare_import(document, name, target)  # Validate before reading or writing the device.
+        async with self.lock:
+            controller = self.require_editor(slot, revision)
+            try:
+                original = await controller.read_preset(target)
+                backup = self.backup(target, original)  # Must succeed before a write is sent.
+                self.require_editor(slot, revision)
+                await self.write_stored(controller, target, prepared)
+                self.saved_before_last_save = self.saved.state.get(str(target))
+                self.saved.set(target, name)
+                # Recorded as a save, so Undo this save covers an import too.
+                self.last_save = {'preset': target, 'name': name, 'backup': backup,
+                                  'verified': True, 'time': time.time()}
+                return self.snapshot()
+            except TimeoutError:  # An OSError, but the amp not answering is not a failed backup.
+                raise self.unconfirmed('import') from None
+            except (ValueError, OSError):
+                raise
+            except Exception:
+                raise self.unconfirmed('import') from None
+
     async def undo_save(self, slot, revision):
         async with self.lock:
             controller = self.require_editor(slot, revision)
@@ -220,11 +281,7 @@ class MicroPlusSession:
                 replaced = await controller.read_preset(target)
                 safety = self.backup(target, replaced)  # Undo must itself be recoverable.
                 self.require_editor(slot, revision)
-                await controller.restore_preset(backup['preset'], target)
-                if target == controller.slot:
-                    # The amp keeps playing its live copy until the slot is selected again.
-                    await controller.switch(target)
-                await controller.refresh_current()
+                await self.write_stored(controller, target, backup['preset'])
                 self.saved.set(target, self.saved_before_last_save)
                 self.last_save = None
                 self.last_undo = {'preset': target, 'backup': safety, 'time': time.time()}
