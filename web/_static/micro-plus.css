@@ -325,8 +325,10 @@ dialog input, dialog select { width: 100%; }
   #preset-panel label.check { white-space: nowrap; }
   #topbar { column-gap: 4px; }
   .now { flex-basis: 0; }
-  .theme-switch button { width: 34px; min-height: 40px; }
-  #open-presets { flex: 1; justify-content: center; padding: 2px 8px; }
+  .theme-switch button { width: 32px; min-height: 40px; }
+  .now { gap: 4px; }
+  .now button.icon { width: 32px; }
+  #open-presets { flex: 1; justify-content: center; gap: 4px; padding: 2px; }
   .now-text { flex: 0 1 auto; align-items: center; }
   #current-name { font-size: 19px; max-width: 100%; }
   #connection[data-state="connected"] { display: none; }
