@@ -385,6 +385,7 @@ function presetGroup(preset) {
   return movableGroups().includes(moved) ? moved : usualGroup(preset);
 }
 function presetDescription(preset) { return factoryPresets.get(preset?.name?.trim())?.description ?? ''; }
+function presetArtists(preset) { return factoryPresetArtists[preset?.name?.trim()] ?? ''; }
 // Unlabelled presets came with the amp.
 function presetOrigin(preset) {
   if (!preset || isEmptySlot(preset)) return '';
@@ -453,7 +454,7 @@ function buildPresetList() {
       if (description) {
         const about = document.createElement('span');
         about.className = 'about';
-        about.textContent = description;
+        about.textContent = presetArtists(preset) ? `${description} Close to: ${presetArtists(preset)}.` : description;
         text.append(about);
       }
       const badge = document.createElement('span');
@@ -576,11 +577,13 @@ async function movePreset(number) {
   else filter.focus();
 }
 
+const searchText = text => text.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase(); // So "motley" finds Mötley Crüe.
+
 function matchesSearch(preset, query) {
   if (!query) return true;
   if (/^\d+$/.test(query)) return preset.preset === Number(query); // Numbers mean slots, not "contains 7".
-  return [displayName(preset), presetDescription(preset), presetGroup(preset), presetOrigin(preset)]
-    .some(text => text.toLocaleLowerCase().includes(query));
+  return [displayName(preset), presetDescription(preset), presetArtists(preset), presetGroup(preset), presetOrigin(preset)]
+    .some(text => searchText(text).includes(query));
 }
 
 function visiblePresetButtons() {
@@ -596,7 +599,7 @@ function renderPresets() {
     renderedNames = names;
     if (hadFocus) grid.querySelector(`[data-preset="${hadFocus}"]`)?.focus();
   }
-  const query = filter.value.toLocaleLowerCase().trim();
+  const query = searchText(filter.value).trim();
   const emptyCount = known.presets.filter(isEmptySlot).length;
   let visible = 0;
   let bank = null;
@@ -1273,8 +1276,10 @@ function renderConnection() {
     setText($('current-number'), state.connected ? `Preset ${known.preset}` : `Preset ${known.preset} (last known)`);
     setText($('current-name'), known.name || 'Unnamed preset');
     const current = presetByNumber(known.preset);
+    const artists = presetArtists(current) ? ` Close to: ${presetArtists(current)}.` : '';
     setText($('preset-about'), presetOrigin(current) === 'Edited'
-      ? `Edited since it came with the amp, so it may no longer sound like this: ${presetDescription(current)}` : presetDescription(current));
+      ? `Edited since it came with the amp, so it may no longer sound like this: ${presetDescription(current)}${artists}`
+      : presetDescription(current) && presetDescription(current) + artists);
     $('preset-about').hidden = !$('preset-about').textContent;
   }
 }
