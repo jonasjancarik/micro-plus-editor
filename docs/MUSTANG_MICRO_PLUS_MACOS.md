@@ -99,7 +99,8 @@ A parameter change is acknowledged and its updated preset is read back before th
 browser accepts it. The editor queries the device's parameter type before
 writing, distinguishing continuous float controls from integer choices.
 
-The preset name is under the board. On a phone, **Save** and **Save as copy** stay at
+To rename a preset, select the pencil beside its name in the top bar, then save as
+usual. On a phone, **Save** and **Save as copy** stay at
 the bottom of the screen, and **Discard changes** appears only when there's something
 to discard. The top bar counts unsaved changes. A pedal with changes is outlined on the board,
 changed knobs are marked with a dot, and the close-up offers to undo that pedal's

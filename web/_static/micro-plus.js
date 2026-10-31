@@ -29,6 +29,8 @@ let renderedChanges = '';
 let formPreset = null;
 let advancedOpen = false;
 let showEmpty = storedFlag('mmp-show-empty');
+let renaming = false;
+let nameBeforeRenaming = '';
 let sortByNumber = storedFlag('mmp-sort-by-number');
 let shownGroup = null; // The one preset group the picker is limited to, if any.
 let userGroups = { groups: [], assignments: {} }; // The groups made on this computer, from the server.
@@ -59,6 +61,27 @@ function presetByNumber(number) { return known?.presets.find(preset => preset.pr
 function guard() { return { preset: state.preset, revision: state.revision }; }
 function documentName() { return known?.document?.info.displayName.trim() ?? ''; }
 function nameChanged() { return Boolean(known?.document) && nameInput.value.trim() !== documentName(); }
+function shownName() { // A new name shows straight away, though it isn't kept until you save.
+  return (formPreset === known?.preset && nameChanged() && nameInput.value.trim()) || known?.name || 'Unnamed preset';
+}
+function startRenaming() {
+  renaming = true;
+  nameBeforeRenaming = nameInput.value;
+  document.querySelector('.now').classList.add('renaming');
+  nameInput.focus();
+  nameInput.select();
+}
+function closeRenaming() {
+  renaming = false;
+  document.querySelector('.now').classList.remove('renaming');
+}
+function stopRenaming({ restore = false, refocus = false } = {}) {
+  if (!renaming) return;
+  closeRenaming();
+  nameInput.value = (restore ? nameBeforeRenaming : nameInput.value).trim() || documentName();
+  if (refocus) $('rename').focus();
+  render();
+}
 function editsWaiting() { return sending || pendingEdits.size > 0; }
 // The amp keeps calling a preset edited even after every setting is back to its saved value.
 function edited() { return Boolean(known?.dirty) && !(baseline() && changesFromSaved().length === 0); }
@@ -305,7 +328,7 @@ function stepPreset(direction) {
 // Saving -------------------------------------------------------------------
 async function saveHere() {
   const name = nameInput.value.trim();
-  if (!name) { nameInput.focus(); return; }
+  if (!name) { startRenaming(); return; }
   await editsIdle();
   const expected = guard();
   const target = state.preset;
@@ -1181,6 +1204,7 @@ function renderEditor() {
   if (!available) return;
   if (selectedNode && !nodeById(selectedNode)) closeCloseup();
   if (formPreset !== known.preset) {
+    closeRenaming();
     nameInput.value = documentName();
     formPreset = known.preset;
   }
@@ -1252,8 +1276,10 @@ function renderStatus() {
   $('discard').disabled = !usable || !hasChanges();
   $('discard').hidden = !hasChanges() || checking;
   $('prev').disabled = $('next').disabled = !usable;
+  $('rename').disabled = nameInput.disabled = !usable || !known?.document;
+  if (nameInput.disabled) closeRenaming();
   $('open-presets').disabled = !known;
-  if (known?.preset) document.title = `${unsaved ? '• ' : ''}${known.preset} · ${known.name || 'Unnamed preset'} · Maneline`;
+  if (known?.preset) document.title = `${unsaved ? '• ' : ''}${known.preset} · ${shownName()} · Maneline`;
 }
 
 function renderConnection() {
@@ -1291,7 +1317,7 @@ function renderConnection() {
   setText(element, banner);
   if (known?.preset) {
     setText($('current-number'), state.connected ? `Preset ${known.preset}` : `Preset ${known.preset} (last known)`);
-    setText($('current-name'), known.name || 'Unnamed preset');
+    setText($('current-name'), shownName());
     const current = presetByNumber(known.preset);
     setText($('preset-about'), presetOrigin(current) === 'Edited'
       ? `Edited since it came with the amp, so it may no longer sound like this: ${presetDescription(current)}` : presetDescription(current));
@@ -1359,8 +1385,6 @@ $('closeup-close').addEventListener('click', closeCloseup);
 $('closeup').addEventListener('close', () => {
   if ($('closeup').open) return; // Already reopened; the close event arrives late.
   storeFlag('mmp-knob-tip-seen', true);
-  storeFlag('mmp-hint-seen', true);
-  $('hint').hidden = true;
   const opened = selectedNode;
   selectedNode = null;
   builtKey = '';
@@ -1432,8 +1456,11 @@ $('discard').addEventListener('click', async () => {
 });
 nameInput.addEventListener('input', () => { renderEditor(); renderStatus(); });
 nameInput.addEventListener('keydown', event => {
-  if (event.key === 'Enter' && !$('save').disabled) { event.preventDefault(); saveHere(); }
+  if (event.key === 'Enter') { event.preventDefault(); stopRenaming({ refocus: true }); }
+  if (event.key === 'Escape') { event.preventDefault(); stopRenaming({ restore: true, refocus: true }); }
 });
+nameInput.addEventListener('blur', () => stopRenaming());
+$('rename').addEventListener('click', startRenaming);
 
 filter.addEventListener('input', () => { shownGroup = null; renderPresets(); }); // Search always covers every group.
 filter.addEventListener('keydown', event => {
@@ -1481,7 +1508,6 @@ document.addEventListener('keydown', event => {
   if (event.key === '/') { event.preventDefault(); openPicker({ search: true }); }
 });
 
-$('hint').hidden = storedFlag('mmp-hint-seen');
 $('changes').open = window.matchMedia('(min-width: 861px)').matches; // There's room for the list beside everything else.
 
 readState();

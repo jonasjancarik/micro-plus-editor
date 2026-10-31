@@ -25,6 +25,14 @@
       </span>
       <svg class="chevron" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg>
     </button>
+    <div class="name-edit">
+      <label for="preset-name" class="visually-hidden">Preset name</label>
+      <input id="preset-name" maxlength="16" autocomplete="off">
+      <span id="name-count"></span>
+    </div>
+    <button id="rename" type="button" class="icon" aria-label="Rename this preset" title="Rename this preset" disabled>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.9 2.6a1.5 1.5 0 0 1 2.1 0l.4.4a1.5 1.5 0 0 1 0 2.1l-8 8-3.1.7.7-3.1 7.9-8.1Z"/><path d="m9.5 4 2.5 2.5"/></svg>
+    </button>
     <button id="next" type="button" class="icon" aria-label="Next preset" title="Next preset ( ] )">&#8250;</button>
   </div>
   <p id="connection" data-state="connecting"><span class="dot" aria-hidden="true"></span><span id="connection-text">Connecting</span></p>
@@ -86,18 +94,12 @@
       <legend class="visually-hidden">Preset editor</legend>
       <p id="preset-about" hidden></p>
       <p id="preset-artists" hidden></p>
-      <p id="hint" class="hint">Select a pedal or the amp to adjust it. You'll hear your changes on the amp as you make them, but they aren't kept until you save.</p>
       <h2 class="visually-hidden">Your pedalboard</h2>
       <div id="board-area"><div id="board"></div></div>
       <details id="changes" hidden>
         <summary id="changes-summary"></summary>
         <ul id="changes-list"></ul>
       </details>
-      <div class="name-row">
-        <label for="preset-name">Preset name</label>
-        <input id="preset-name" maxlength="16" required autocomplete="off">
-        <span id="name-count"></span>
-      </div>
       </fieldset>
       <dialog id="closeup" aria-labelledby="closeup-title">
         <div id="closeup-inner">
