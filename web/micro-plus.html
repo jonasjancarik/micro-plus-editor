@@ -14,6 +14,7 @@
   <script src="/web_ui/_static/micro-plus-params.js" defer></script>
   <script src="/web_ui/_static/micro-plus-presets.js" defer></script>
   <script src="/web_ui/_static/micro-plus-files.js" defer></script>
+  <script src="/web_ui/_static/micro-plus-compare.js" defer></script>
   <script src="/web_ui/_static/micro-plus.js" defer></script>
 </head>
 <body>
@@ -36,6 +37,10 @@
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.9 2.6a1.5 1.5 0 0 1 2.1 0l.4.4a1.5 1.5 0 0 1 0 2.1l-8 8-3.1.7.7-3.1 7.9-8.1Z"/><path d="m9.5 4 2.5 2.5"/></svg>
     </button>
     <button id="next" type="button" class="icon" aria-label="Next preset" title="Next preset ( ] )">&#8250;</button>
+    <button id="compare-toggle" type="button" title="Add or remove this preset from your compare list ( C )" aria-pressed="false" hidden>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.75" y="2.5" width="5" height="11" rx="1"/><rect x="9.25" y="2.5" width="5" height="11" rx="1"/></svg>
+      <span id="compare-toggle-text">Add to compare</span>
+    </button>
   </div>
   <p id="connection" data-state="connecting"><span class="dot" aria-hidden="true"></span><span id="connection-text">Connecting</span></p>
   <div class="theme-switch" role="group" aria-label="Appearance">
@@ -63,7 +68,19 @@
       </div>
     </div>
   </div>
+  <section id="compare" aria-label="Presets you're comparing" hidden>
+    <div id="compare-presets"></div>
+    <p id="compare-hint">Go to another preset and add it too, then switch between them here.</p>
+    <div class="compare-tools">
+      <button id="compare-differences" type="button" aria-expanded="false" aria-controls="compare-panel">Show differences</button>
+      <button id="compare-clear" type="button">Clear</button>
+    </div>
+  </section>
 </header>
+<section id="compare-panel" aria-label="How these presets differ" hidden>
+  <div id="compare-table"></div>
+  <p id="compare-unsaved" hidden>This table shows the saved presets, so it doesn't include your unsaved changes.</p>
+</section>
 
 <div id="connection-banner" role="status" hidden></div>
 <div id="message" role="status" hidden></div>
@@ -136,7 +153,7 @@
       <button id="undo-save" type="button">Undo this save</button>
     </div>
     <p class="shortcuts">Drag a pedal to change the order your sound goes through them, or use the arrows under it. You'll hear a new order after you save.</p>
-    <p class="shortcuts">Keyboard: <kbd>/</kbd> opens the presets, <kbd>[</kbd> and <kbd>]</kbd> change preset, and <kbd>Ctrl</kbd> or <kbd>&#8984;</kbd> + <kbd>S</kbd> saves.
+    <p class="shortcuts">Keyboard: <kbd>/</kbd> opens the presets, <kbd>[</kbd> and <kbd>]</kbd> change preset, <kbd>C</kbd> adds a preset to compare, <kbd>Space</kbd> or <kbd>1</kbd> to <kbd>6</kbd> switch between the ones you're comparing, and <kbd>Ctrl</kbd> or <kbd>&#8984;</kbd> + <kbd>S</kbd> saves.
       On a knob, scroll to turn it, hold <kbd>Shift</kbd> while dragging for fine changes, or select its number to type a value.</p>
 </main>
 

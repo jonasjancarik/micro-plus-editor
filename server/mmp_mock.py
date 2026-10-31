@@ -20,7 +20,7 @@ import json
 import time
 import uuid
 from pathlib import Path
-from mmp_groups import PresetGroups, SavedPresets
+from mmp_groups import CompareList, PresetGroups, SavedPresets
 from mmp_protocol import with_signal_order
 from mmp_session import EditorConflict, MODELS, PARAMETER_CHOICES, READ_RECONNECT_GAP, SAVED_READ_FAILURES, UNSCALED, prepare_import
 from mmp_web import dispatch, handle
@@ -51,6 +51,7 @@ class MockSession:
         self.read_reconnected_at = None
         self.stalled = False
         self.groups = PresetGroups()
+        self.compare = CompareList()
         self.saved = SavedPresets()
         self.saved_before_last_save = None
 
@@ -78,7 +79,12 @@ class MockSession:
                 'revision': f'{self.generation}:{self.document_revision}' if connected else None,
                 'dirty': self.dirty if connected else False,
                 'models': MODELS, 'parameter_choices': PARAMETER_CHOICES, 'unscaled': UNSCALED,
-                'last_save': self.last_save, 'last_undo': self.last_undo, 'preset_groups': self.groups.state, 'saved_presets': self.saved.state}
+                'last_save': self.last_save, 'last_undo': self.last_undo, 'preset_groups': self.groups.state, 'saved_presets': self.saved.state,
+                'compare_presets': self.compare.slots}
+
+    def change_compare(self, request):
+        self.compare.apply(request)
+        return self.snapshot()
 
     def change_groups(self, request):
         self.groups.apply(request)

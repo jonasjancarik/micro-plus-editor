@@ -25,7 +25,7 @@ async def dispatch(method, path, headers, body, session, allowed_hosts=None):
     if allowed_hosts is not None and host not in allowed_hosts:
         raise HTTPError(403, 'Use the local Maneline address to open these controls.')
     if path.startswith('/api/'):
-        if path not in ('/api/micro-plus', '/api/micro-plus/editor', '/api/micro-plus/groups'):
+        if path not in ('/api/micro-plus', '/api/micro-plus/editor', '/api/micro-plus/groups', '/api/micro-plus/compare'):
             raise HTTPError(404, 'Page not found.')
         if method == 'GET':
             return 200, 'application/json', json.dumps(session.snapshot()).encode()
@@ -47,6 +47,8 @@ async def dispatch(method, path, headers, body, session, allowed_hosts=None):
                 state = await session.switch(request['preset'])
             elif path == '/api/micro-plus/groups':
                 state = session.change_groups(request)
+            elif path == '/api/micro-plus/compare':
+                state = session.change_compare(request)
             else:
                 action = request.get('action')
                 common = {'action', 'preset', 'revision'}
@@ -138,7 +140,7 @@ async def run(args):
     Path(args.log).parent.mkdir(parents=True, exist_ok=True)
     with open(args.log, 'a', encoding='utf-8') as log:
         session = MicroPlusSession(args.device, log, groups_path='_work/preset-groups.json',
-                                    saved_path='_work/preset-saved.json')
+                                    saved_path='_work/preset-saved.json', compare_path='_work/preset-compare.json')
         hostname = socket.gethostname().lower().removesuffix('.local')
         allowed_hosts = {'localhost', '127.0.0.1', '::1', hostname, hostname + '.local',
                          *args.allow_host}

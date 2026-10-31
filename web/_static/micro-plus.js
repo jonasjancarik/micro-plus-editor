@@ -109,6 +109,8 @@ function clearOldNews() {
 function adopt(next) {
   if (next.preset_groups) userGroups = next.preset_groups;
   if (next.saved_presets) savedPresets = next.saved_presets;
+  if (next.compare_presets) comparePresets = next.compare_presets;
+  if (next.document && !next.dirty) comparedDocuments.set(next.preset, next.document);
   if (next.stalled) reconnectAfterStall = true;
   if (next.connected) {
     const reconnected = known && known.revision?.split(':')[0] !== next.revision?.split(':')[0];
@@ -256,7 +258,10 @@ async function exclusiveOperation(url, body, progress, onSuccess) {
   render();
   let success = false;
   try {
-    adopt(await post(url, body));
+    const savedSomething = ['save', 'undo-save', 'import'].includes(body.action);
+    const reply = await post(url, body);
+    if (savedSomething) comparedDocuments.clear(); // Before adopting, which knows the current preset's new contents.
+    adopt(reply);
     success = true;
     reconnectNotice = false;
     showMessage(onSuccess?.() ?? '');
@@ -314,10 +319,11 @@ async function selectPreset(number, { discard = false } = {}) {
     if (!go || !stillSameEditor(expected)) return;
   }
   switchingTo = number;
-  await exclusiveOperation(API, { preset: number }, `Switching to preset ${number}…`, () => {
+  const switched = await exclusiveOperation(API, { preset: number }, `Switching to preset ${number}…`, () => {
     formPreset = null; // Discarding has to reset an edited name too.
     return '';
   });
+  playQueuedCompared(switched);
 }
 
 function stepPreset(direction) {
@@ -499,10 +505,16 @@ function buildPresetList() {
       button.append(number, text, badge);
       item.append(button);
       if (!isEmptySlot(preset)) {
+        const compare = smallButton('Compare', () => toggleCompared(preset.preset), `Compare ${preset.name}`);
+        compare.className = 'compare-add';
         const move = smallButton('Move', () => movePreset(preset.preset), `Move ${preset.name} to another group`);
         move.className = 'move';
-        move.tabIndex = -1; // Reached with the right arrow from its preset, so the list stays one tab stop.
-        item.append(move);
+        const tools = document.createElement('span');
+        tools.className = 'row-tools';
+        // Reached with the right arrow from its preset, so the list stays one tab stop.
+        compare.tabIndex = move.tabIndex = -1;
+        tools.append(move, compare); // In compare stays showing, so it takes the place Move would leave empty.
+        item.append(tools);
       }
       grid.append(item);
     }
@@ -667,6 +679,12 @@ function renderPresets() {
     if (wanted) { visible++; bankHasItems = true; }
     if (active) button.setAttribute('aria-current', 'true'); else button.removeAttribute('aria-current');
     setText(button.querySelector('.badge'), number === switchingTo ? 'Switching…' : active ? 'Active' : '');
+    const compare = item.querySelector('.compare-add');
+    if (compare) {
+      const compared = comparePresets.includes(number);
+      compare.setAttribute('aria-pressed', String(compared));
+      setText(compare, compared ? 'In compare' : 'Compare');
+    }
   }
   settleBank();
   for (const chip of $('preset-groups').querySelectorAll('[data-group]')) {
@@ -1482,6 +1500,7 @@ function render() {
   renderPresets();
   renderEditor();
   renderStatus();
+  renderCompare();
   renderLastSave();
   renderPresetFiles();
   // The first time, centre it so the presets around it show too.
@@ -1649,10 +1668,13 @@ grid.addEventListener('click', event => {
   if (button) selectPreset(Number(button.dataset.preset));
 });
 grid.addEventListener('keydown', event => {
-  if (event.key === 'ArrowLeft' && event.target.closest('.move')) event.target.previousElementSibling.focus();
+  if (event.target.closest('.row-tools')) {
+    if (event.key === 'ArrowLeft') (event.target.previousElementSibling ?? event.target.closest('.row').firstElementChild).focus();
+    if (event.key === 'ArrowRight') event.target.nextElementSibling?.focus();
+  }
   const button = event.target.closest('.preset');
   if (!button) return;
-  if (event.key === 'ArrowRight') button.nextElementSibling?.focus();
+  if (event.key === 'ArrowRight') button.parentElement.querySelector('.row-tools button')?.focus();
   const buttons = visiblePresetButtons();
   const index = buttons.indexOf(button);
   const targets = { ArrowDown: index + 1, ArrowUp: index - 1, Home: 0, End: buttons.length - 1 };
@@ -1677,9 +1699,11 @@ document.addEventListener('keydown', event => {
   if (event.key === '[') stepPreset(-1);
   if (event.key === ']') stepPreset(1);
   if (event.key === '/') { event.preventDefault(); openPicker({ search: true }); }
+  compareKeys(event);
 });
 
 $('changes').open = window.matchMedia('(min-width: 861px)').matches; // There's room for the list beside everything else.
 
+setUpCompare();
 readState();
 setInterval(readState, 1000);

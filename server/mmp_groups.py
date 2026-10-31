@@ -1,4 +1,4 @@
-"""Keep what the amp has nowhere to store on this computer: preset groups, and which presets were saved over."""
+"""Keep what the amp has nowhere to store on this computer: preset groups, the compare list, and which presets were saved over."""
 import copy
 import json
 import os
@@ -7,6 +7,7 @@ from pathlib import Path
 
 MAX_GROUPS = 50
 MAX_NAME = 24
+MAX_COMPARED = 6
 
 
 def clean_name(name):
@@ -67,6 +68,38 @@ class SavedPresets:
             write_state(self.path, state)
         except OSError as error:  # Only a label depends on this, so it mustn't get in the way of a save.
             print(f'Could not remember the saved preset: {error!r}', file=sys.stderr, flush=True)
+
+
+class CompareList:
+    """The slots being compared, in the order they were added. A slot takes whatever is saved there."""
+
+    def __init__(self, path=None):
+        self.path = Path(path) if path else None
+        self.slots = read_state(self.path, [], lambda slots: isinstance(slots, list) and len(slots) <= MAX_COMPARED
+                                and len(set(slots)) == len(slots) and all(type(slot) is int and 1 <= slot <= 100 for slot in slots))
+
+    def apply(self, request):
+        action = request.get('action')
+        if action == 'clear' and set(request) == {'action'}:
+            slots = []
+        elif action in ('add', 'remove') and set(request) == {'action', 'preset'}:
+            preset = request['preset']
+            if type(preset) is not int or not 1 <= preset <= 100:
+                raise ValueError('Choose a preset number from 1 to 100.')
+            slots = [slot for slot in self.slots if slot != preset]
+            if action == 'add':
+                if preset in self.slots:
+                    return
+                if len(slots) >= MAX_COMPARED:
+                    raise ValueError(f'You can compare up to {MAX_COMPARED} presets. Remove one first.')
+                slots.append(preset)
+        else:
+            raise ValueError('Choose a preset to add or remove.')
+        try:
+            write_state(self.path, slots)
+        except OSError as error:
+            raise RuntimeError('Could not save your compare list on this computer.') from error
+        self.slots = slots
 
 
 class PresetGroups:

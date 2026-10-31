@@ -1,4 +1,5 @@
 """Safety checks for saving edited Micro Plus presets."""
+import asyncio
 import contextlib
 import copy
 import io
@@ -12,7 +13,7 @@ from pathlib import Path
 from unittest.mock import AsyncMock, Mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from mmp_ble import Controller
-from mmp_groups import PresetGroups, SavedPresets
+from mmp_groups import CompareList, MAX_COMPARED, PresetGroups, SavedPresets
 from mmp_protocol import presets_match, signal_order, with_signal_order
 from mmp_session import EditorConflict, MicroPlusSession, READ_RECONNECT_GAP, SAVED_READ_FAILURES
 from mmp_web import dispatch, HTTPError
@@ -455,6 +456,51 @@ class PresetGroupStoreTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 groups.apply({'action': 'create', 'name': 'Gig'})
             self.assertEqual(groups.state['groups'], [])
+
+
+class CompareListTests(unittest.TestCase):
+    def test_the_list_survives_a_restart_in_the_order_added(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'compare.json'
+            compared = CompareList(path)
+            for preset in (17, 2, 100):
+                compared.apply({'action': 'add', 'preset': preset})
+            compared.apply({'action': 'add', 'preset': 2})
+            compared.apply({'action': 'remove', 'preset': 17})
+            self.assertEqual(CompareList(path).slots, [2, 100])
+
+    def test_a_full_list_refuses_another_preset(self):
+        compared = CompareList()
+        for preset in range(1, MAX_COMPARED + 1):
+            compared.apply({'action': 'add', 'preset': preset})
+        with self.assertRaisesRegex(ValueError, 'Remove one first'):
+            compared.apply({'action': 'add', 'preset': 50})
+        compared.apply({'action': 'clear'})
+        self.assertEqual(compared.slots, [])
+
+    def test_bad_requests_change_nothing(self):
+        compared = CompareList()
+        compared.apply({'action': 'add', 'preset': 17})
+        for request in ({'action': 'add', 'preset': 0}, {'action': 'add', 'preset': 101}, {'action': 'add', 'preset': True},
+                        {'action': 'add'}, {'action': 'clear', 'preset': 17}, {'action': 'sort'}):
+            with self.subTest(request=request), self.assertRaises(ValueError):
+                compared.apply(request)
+        self.assertEqual(compared.slots, [17])
+
+    def test_an_unreadable_file_is_set_aside(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'compare.json'
+            for contents in ('[17, 17]', '[0]', '{"slots": []}', '[1, 2, 3, 4, 5, 6, 7]'):
+                path.write_text(contents)
+                with self.subTest(contents=contents), contextlib.redirect_stderr(io.StringIO()):
+                    self.assertEqual(CompareList(path).slots, [])
+
+    def test_the_list_is_reachable_without_the_amp(self):
+        async def change():
+            headers = {'host': 'localhost:8080', 'origin': 'http://localhost:8080', 'content-type': 'application/json'}
+            body = json.dumps({'action': 'add', 'preset': 17}).encode()
+            return await dispatch('POST', '/api/micro-plus/compare', headers, body, MicroPlusSession('device-id'))
+        self.assertEqual(json.loads(asyncio.run(change())[2])['compare_presets'], [17])
 
 
 class SavedPresetTests(unittest.IsolatedAsyncioTestCase):

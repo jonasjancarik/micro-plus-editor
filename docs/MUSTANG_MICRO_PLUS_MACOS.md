@@ -57,6 +57,17 @@ back to where they started. The groups and descriptions are Maneline's own and a
 stored on the amp: your groups are in `_work/preset-groups.json` in the checkout the
 server runs from, so every browser using this server sees the same groups.
 
+To compare presets whose slots are far apart, choose Add to compare in the top bar or press
+`C` on each one, or choose Compare on its row in the list of presets, which adds it without
+switching to it. They appear in a strip under the top bar, up to 6 at a time. Select one to
+hear it, press `1` to `6` for its position, or press Space to go to the next one. `[` and `]`
+still step through every preset by number. If you press several while the amp is changing
+preset, which takes about 1.5 seconds, only the last one counts. Switching away from unsaved
+changes asks first, as it does anywhere else. Show differences lists each preset's models,
+any settings that differ when the model is the same, and the order of its pedals. It reads the
+saved presets without changing what the amp is playing. The list is in
+`_work/preset-compare.json`, and it belongs to the slots, so it follows whatever you save there.
+
 In the list, a preset whose name isn't one of the factory presets is labelled Yours. A
 factory preset is labelled Edited once it's saved over from this page, or once you select
 it and the amp says it isn't the factory version. Saves made elsewhere can only be spotted
