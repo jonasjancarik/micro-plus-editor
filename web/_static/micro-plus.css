@@ -134,7 +134,7 @@ body:has(#closeup[open]) #message { display: none; } /* The close-up shows the s
 .origin-note { margin-left: auto; font-size: 14px; color: var(--muted); }
 .preset .about { font-size: 14px; line-height: 1.4; color: var(--muted); }
 .artists { display: block; font-size: 14px; line-height: 1.4; }
-.artists-label { margin-right: 4px; color: var(--muted); }
+.artists-label { color: var(--muted); }
 .artist { color: var(--text); }
 .artist:not(:last-child)::after { content: " ·"; color: var(--muted); }
 .preset .badge { flex: none; font-size: 13px; font-weight: 600; color: var(--accent); }
