@@ -96,7 +96,7 @@ button.icon:hover:not(:disabled) { color: var(--text); }
 body:has(#closeup[open]) #message { display: none; } /* The close-up shows the same message in its own status line. */
 
 /* Preset picker */
-#preset-panel { width: min(1240px, calc(100vw - 32px)); max-width: none; height: min(720px, calc(100dvh - 96px)); max-height: none;
+#preset-panel { width: calc(100vw - 32px); max-width: none; height: calc(100dvh - 88px); max-height: none;
   margin: 72px auto auto; padding: 0; overflow: hidden; animation: picker-in .16s ease-out; box-shadow: 0 24px 60px var(--shadow); }
 @keyframes picker-in { from { opacity: 0; transform: translateY(-10px); } }
 #preset-panel-inner { display: flex; flex-direction: column; gap: 14px; height: 100%; padding: 18px 24px 0; }
