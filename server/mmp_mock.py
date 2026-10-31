@@ -20,6 +20,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from mmp_groups import PresetGroups
 from mmp_session import EditorConflict, MODELS, PARAMETER_CHOICES, READ_RECONNECT_GAP, SAVED_READ_FAILURES, UNSCALED
 from mmp_web import dispatch, handle
 
@@ -48,6 +49,7 @@ class MockSession:
         self.saved_read_failures = 0
         self.read_reconnected_at = None
         self.stalled = False
+        self.groups = PresetGroups()
 
     def read(self, slot):
         if slot not in self.stored:
@@ -73,7 +75,11 @@ class MockSession:
                 'revision': f'{self.generation}:{self.document_revision}' if connected else None,
                 'dirty': self.dirty if connected else False,
                 'models': MODELS, 'parameter_choices': PARAMETER_CHOICES, 'unscaled': UNSCALED,
-                'last_save': self.last_save, 'last_undo': self.last_undo}
+                'last_save': self.last_save, 'last_undo': self.last_undo, 'preset_groups': self.groups.state}
+
+    def change_groups(self, request):
+        self.groups.apply(request)
+        return self.snapshot()
 
     def set_mode(self, mode):
         if mode not in ('ok', 'disconnected', 'fail', 'stall', 'noread', 'noread-stuck'):

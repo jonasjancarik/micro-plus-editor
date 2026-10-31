@@ -43,12 +43,16 @@
     <div class="panel-head">
       <h2 id="presets-title">Presets</h2>
       <span id="count"></span>
-      <label class="check"><input id="show-empty" type="checkbox"> <span id="show-empty-label">Show empty slots</span></label>
       <button id="close-presets" type="button">Close</button>
     </div>
     <label for="filter" class="visually-hidden">Find by name, number or sound</label>
     <input id="filter" type="search" placeholder="Find by name, number or sound" autocomplete="off">
+    <div class="panel-options">
+      <label class="check"><input id="sort-number" type="checkbox"> Sort by number</label>
+      <label class="check"><input id="show-empty" type="checkbox"> <span id="show-empty-label">Show empty slots</span></label>
+    </div>
     <div id="preset-groups" role="group" aria-label="Show one group of presets"></div>
+    <p id="picker-status" role="alert"></p>
     <div id="presets-scroll">
       <ol id="presets" aria-busy="true"></ol>
       <p id="empty" hidden>No presets match your search.</p>
@@ -124,6 +128,37 @@
     <div class="dialog-actions">
       <button value="cancel" formnovalidate>Cancel</button>
       <button id="copy-action" class="primary" value="confirm">Save copy</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="group-dialog" aria-labelledby="group-title">
+  <form id="group-form" method="dialog">
+    <h2 id="group-title"></h2>
+    <label for="group-name">Group name</label>
+    <input id="group-name" maxlength="24" required autocomplete="off">
+    <p id="group-error" class="field-error" role="alert"></p>
+    <div class="dialog-actions">
+      <button value="cancel" formnovalidate>Cancel</button>
+      <button id="group-action" class="primary" value="confirm">Create group</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="move-dialog" aria-labelledby="move-title">
+  <form id="move-form" method="dialog">
+    <h2 id="move-title"></h2>
+    <p>Groups only change how this page lists your presets. Nothing on your amp changes.</p>
+    <label for="move-target">Move it to</label>
+    <select id="move-target"></select>
+    <div id="move-new" hidden>
+      <label for="move-name">Name for the new group</label>
+      <input id="move-name" maxlength="24" autocomplete="off">
+    </div>
+    <p id="move-error" class="field-error" role="alert"></p>
+    <div class="dialog-actions">
+      <button value="cancel" formnovalidate>Cancel</button>
+      <button class="primary" value="confirm">Move</button>
     </div>
   </form>
 </dialog>

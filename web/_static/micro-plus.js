@@ -29,7 +29,12 @@ let renderedChanges = '';
 let formPreset = null;
 let advancedOpen = false;
 let showEmpty = storedFlag('mmp-show-empty');
+let sortByNumber = storedFlag('mmp-sort-by-number');
 let shownGroup = null; // The one preset group the picker is limited to, if any.
+let userGroups = { groups: [], assignments: {} }; // The groups made on this computer, from the server.
+let groupNameCurrent = null; // The group being renamed, whose own name isn't a clash.
+const GROUPS_API = '/api/micro-plus/groups';
+const NEW_GROUP = '__new__';
 const baselines = new Map(); // "generation:preset" → the saved document, for showing what changed.
 const pedalTabLabels = { stomp: 'Stomp', mod: 'Mod', amp: 'Amp', delay: 'Delay', reverb: 'Reverb' };
 
@@ -77,6 +82,7 @@ function clearOldNews() {
 
 // Talking to the server ----------------------------------------------------
 function adopt(next) {
+  if (next.preset_groups) userGroups = next.preset_groups;
   if (next.stalled) reconnectAfterStall = true;
   if (next.connected) {
     const reconnected = known && known.revision?.split(':')[0] !== next.revision?.split(':')[0];
@@ -369,24 +375,51 @@ const EMPTY_SLOTS = 'Empty slots';
 const factoryPresets = new Map(factoryPresetGroups.flatMap(group =>
   Object.entries(group.presets).map(([name, description]) => [name, { group: group.name, description }])));
 
+function movableGroups() { return [...userGroups.groups, YOUR_PRESETS, ...factoryPresetGroups.map(group => group.name)]; }
+function usualGroup(preset) { return factoryPresets.get(preset.name.trim())?.group ?? YOUR_PRESETS; }
 function presetGroup(preset) {
   if (isEmptySlot(preset)) return EMPTY_SLOTS;
-  return factoryPresets.get(preset.name.trim())?.group ?? YOUR_PRESETS;
+  const moved = userGroups.assignments[preset.preset];
+  return movableGroups().includes(moved) ? moved : usualGroup(preset);
 }
 function presetDescription(preset) { return factoryPresets.get(preset?.name?.trim())?.description ?? ''; }
 
+function smallButton(label, onClick, ariaLabel) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.textContent = label;
+  if (ariaLabel) button.setAttribute('aria-label', ariaLabel);
+  button.addEventListener('click', onClick);
+  return button;
+}
+
 function buildPresetList() {
   grid.replaceChildren();
-  const order = [YOUR_PRESETS, ...factoryPresetGroups.map(group => group.name), EMPTY_SLOTS];
-  const groups = order.map(group => [group, known.presets.filter(preset => presetGroup(preset) === group)])
-    .filter(([, presets]) => presets.length);
-  for (const [group, presets] of groups) {
-    const bank = document.createElement('li');
-    bank.className = 'bank';
-    bank.textContent = group;
-    grid.append(bank);
+  const groups = [...movableGroups(), EMPTY_SLOTS]
+    .map(group => [group, known.presets.filter(preset => presetGroup(preset) === group)])
+    .filter(([group, presets]) => presets.length || userGroups.groups.includes(group));
+  for (const [group, presets] of sortByNumber ? [[null, known.presets]] : groups) {
+    if (group) {
+      const bank = document.createElement('li');
+      bank.className = 'bank';
+      bank.dataset.group = group;
+      const heading = document.createElement('span');
+      heading.className = 'bank-name';
+      heading.textContent = group;
+      bank.append(heading);
+      if (userGroups.groups.includes(group)) {
+        bank.dataset.custom = 'true';
+        const note = document.createElement('span');
+        note.className = 'bank-note';
+        note.textContent = 'No presets yet. Choose Move on any preset to add it here.';
+        bank.append(smallButton('Rename', () => renameGroup(group), `Rename ${group}`),
+          smallButton('Delete', () => deleteGroup(group), `Delete ${group}`), note);
+      }
+      grid.append(bank);
+    }
     for (const preset of presets) {
       const item = document.createElement('li');
+      item.className = 'row';
       const button = document.createElement('button');
       button.type = 'button';
       button.className = isEmptySlot(preset) ? 'preset empty-slot' : 'preset';
@@ -411,16 +444,20 @@ function buildPresetList() {
       badge.className = 'badge';
       button.append(number, text, badge);
       item.append(button);
+      if (!isEmptySlot(preset)) {
+        const move = smallButton('Move', () => movePreset(preset.preset), `Move ${preset.name} to another group`);
+        move.className = 'move';
+        move.tabIndex = -1; // Reached with the right arrow from its preset, so the list stays one tab stop.
+        item.append(move);
+      }
       grid.append(item);
     }
   }
   const shown = groups.map(([group]) => group).filter(group => group !== EMPTY_SLOTS);
-  if (!shown.includes(shownGroup)) shownGroup = null;
+  if (sortByNumber || !shown.includes(shownGroup)) shownGroup = null;
+  $('preset-groups').hidden = sortByNumber;
   $('preset-groups').replaceChildren(...[null, ...shown].map(group => {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.textContent = group ?? 'All';
-    chip.addEventListener('click', () => {
+    const chip = smallButton(group ?? 'All', () => {
       shownGroup = group;
       filter.value = '';
       renderPresets();
@@ -428,7 +465,99 @@ function buildPresetList() {
     });
     chip.dataset.group = group ?? '';
     return chip;
-  }));
+  }), smallButton('+ New group', newGroup));
+}
+
+// Your own groups live on this computer, so changing them never touches the amp.
+function groupNameProblem(name, current = null) {
+  const taken = [...movableGroups(), EMPTY_SLOTS, 'All'].filter(group => group !== current);
+  const match = taken.find(group => group.toLocaleLowerCase() === name.toLocaleLowerCase());
+  return match ? `There's already a group called “${match}”. Choose another name.` : '';
+}
+
+async function changeGroups(body) {
+  setText($('picker-status'), '');
+  epoch++; // A reply already on its way would otherwise bring the old groups back for a moment.
+  try {
+    adopt(await post(GROUPS_API, body));
+    render();
+    return true;
+  } catch (error) {
+    setText($('picker-status'), error instanceof TypeError || error.name === 'TimeoutError'
+      ? "No reply from the Maneline app, so your groups didn't change." : error.message);
+    return false;
+  }
+}
+
+function askGroupName(title, action, value = '', current = null) {
+  const dialog = $('group-dialog');
+  setText($('group-title'), title);
+  setText($('group-action'), action);
+  setText($('group-error'), '');
+  $('group-name').value = value;
+  groupNameCurrent = current;
+  dialog.returnValue = 'cancel';
+  return new Promise(resolve => {
+    dialog.addEventListener('close', () => resolve(dialog.returnValue === 'confirm' ? $('group-name').value.trim() : null), { once: true });
+    dialog.showModal();
+  });
+}
+
+async function newGroup() {
+  const name = await askGroupName('New group', 'Create group');
+  if (name && await changeGroups({ action: 'create', name })) shownGroup = null;
+}
+
+async function renameGroup(group) {
+  const name = await askGroupName(`Rename “${group}”`, 'Rename', group, group);
+  if (!name || name === group) return;
+  const wasShown = shownGroup === group;
+  if (await changeGroups({ action: 'rename', name: group, new_name: name }) && wasShown) {
+    shownGroup = name;
+    renderPresets();
+  }
+}
+
+async function deleteGroup(group) {
+  const count = known.presets.filter(preset => presetGroup(preset) === group).length;
+  const text = count ? `${count === 1 ? 'Its preset goes' : `Its ${count} presets go`} back to where ${count === 1 ? 'it' : 'they'} started. Nothing on your amp changes.`
+    : 'This group has no presets in it.';
+  if (await confirmAction(`Delete “${group}”?`, text, 'Delete group')) await changeGroups({ action: 'delete', name: group });
+}
+
+function showMoveNameField() {
+  $('move-new').hidden = $('move-target').value !== NEW_GROUP;
+  if (!$('move-new').hidden) $('move-name').focus();
+  $('move-name').required = !$('move-new').hidden;
+}
+
+async function movePreset(number) {
+  const preset = presetByNumber(number);
+  const current = presetGroup(preset);
+  const usual = usualGroup(preset);
+  const select = $('move-target');
+  const option = (value, text) => { const entry = document.createElement('option'); entry.value = value; entry.textContent = text; return entry; };
+  select.replaceChildren(option(NEW_GROUP, 'New group…'),
+    ...movableGroups().map(group => option(group, group === usual ? `${group} (where it started)` : group)));
+  select.value = userGroups.groups.length || current !== YOUR_PRESETS ? current : NEW_GROUP;
+  setText($('move-title'), `Move “${preset.name}”`);
+  setText($('move-error'), '');
+  $('move-name').value = '';
+  const dialog = $('move-dialog');
+  dialog.returnValue = 'cancel';
+  const go = new Promise(resolve => dialog.addEventListener('close', () => resolve(dialog.returnValue === 'confirm'), { once: true }));
+  dialog.showModal();
+  showMoveNameField();
+  if (!await go) return;
+  let target = select.value;
+  if (target === NEW_GROUP) {
+    target = $('move-name').value.trim();
+    if (!await changeGroups({ action: 'create', name: target })) return;
+  }
+  if (target !== current) await changeGroups({ action: 'move', preset: number, group: target === usual ? null : target });
+  const row = grid.querySelector(`.preset[data-preset="${number}"]`);
+  if (row && !row.parentElement.hidden) { row.focus(); row.scrollIntoView({ block: 'nearest' }); }
+  else filter.focus();
 }
 
 function matchesSearch(preset, query) {
@@ -444,7 +573,7 @@ function visiblePresetButtons() {
 
 function renderPresets() {
   if (!known) return;
-  const names = JSON.stringify(known.presets);
+  const names = JSON.stringify([known.presets, userGroups, sortByNumber]);
   if (names !== renderedNames) {
     const hadFocus = grid.contains(document.activeElement) ? document.activeElement.dataset.preset : null;
     buildPresetList();
@@ -456,9 +585,17 @@ function renderPresets() {
   let visible = 0;
   let bank = null;
   let bankHasItems = false;
+  const settleBank = () => {
+    if (!bank) return;
+    // Your own group stays visible while it's empty, or there'd be nowhere to rename or delete it.
+    const keep = bank.dataset.custom && !query && (!shownGroup || shownGroup === bank.dataset.group);
+    bank.hidden = !bankHasItems && !keep;
+    const note = bank.querySelector('.bank-note');
+    if (note) note.hidden = bankHasItems;
+  };
   for (const item of grid.children) {
     if (item.classList.contains('bank')) {
-      if (bank) bank.hidden = !bankHasItems;
+      settleBank();
       bank = item;
       bankHasItems = false;
       continue;
@@ -475,8 +612,8 @@ function renderPresets() {
     if (active) button.setAttribute('aria-current', 'true'); else button.removeAttribute('aria-current');
     setText(button.querySelector('.badge'), number === switchingTo ? 'Switching…' : active ? 'Active' : '');
   }
-  if (bank) bank.hidden = !bankHasItems;
-  for (const chip of $('preset-groups').children) {
+  settleBank();
+  for (const chip of $('preset-groups').querySelectorAll('[data-group]')) {
     chip.setAttribute('aria-pressed', String(!query && chip.dataset.group === (shownGroup ?? '')));
   }
   grid.classList.toggle('unavailable', !state.connected);
@@ -487,7 +624,8 @@ function renderPresets() {
   setText($('count'), query ? `${visible} of ${known.presets.length}` : `${known.presets.length - emptyCount} presets`);
   setText($('show-empty-label'), `Show ${emptyCount} empty`);
   $('show-empty').checked = showEmpty;
-  $('empty').hidden = visible > 0;
+  $('sort-number').checked = sortByNumber;
+  $('empty').hidden = visible > 0 || !query;
 }
 
 function scrollToActive(block = 'nearest') {
@@ -1200,6 +1338,25 @@ $('show-empty').addEventListener('change', event => {
   storeFlag('mmp-show-empty', showEmpty);
   renderPresets();
 });
+$('sort-number').addEventListener('change', event => {
+  sortByNumber = event.target.checked;
+  storeFlag('mmp-sort-by-number', sortByNumber);
+  renderPresets();
+  scrollToActive('center');
+});
+$('move-target').addEventListener('change', showMoveNameField);
+$('group-form').addEventListener('submit', event => {
+  if (event.submitter?.value !== 'confirm') return;
+  const problem = groupNameProblem($('group-name').value.trim(), groupNameCurrent);
+  setText($('group-error'), problem);
+  if (problem) event.preventDefault();
+});
+$('move-form').addEventListener('submit', event => {
+  if (event.submitter?.value !== 'confirm' || $('move-target').value !== NEW_GROUP) return;
+  const problem = groupNameProblem($('move-name').value.trim());
+  setText($('move-error'), problem);
+  if (problem) event.preventDefault();
+});
 $('discard').addEventListener('click', async () => {
   await editsIdle();
   const expected = guard();
@@ -1231,8 +1388,10 @@ grid.addEventListener('click', event => {
   if (button) selectPreset(Number(button.dataset.preset));
 });
 grid.addEventListener('keydown', event => {
+  if (event.key === 'ArrowLeft' && event.target.closest('.move')) event.target.previousElementSibling.focus();
   const button = event.target.closest('.preset');
   if (!button) return;
+  if (event.key === 'ArrowRight') button.nextElementSibling?.focus();
   const buttons = visiblePresetButtons();
   const index = buttons.indexOf(button);
   const targets = { ArrowDown: index + 1, ArrowUp: index - 1, Home: 0, End: buttons.length - 1 };

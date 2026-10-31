@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from mmp_ble import Controller, KEEPALIVE, KEEPALIVE_INTERVAL, NAME, RESPONSE, SERVICE
+from mmp_groups import PresetGroups
 
 MODELS = json.loads(Path(__file__).with_name('mmp_models.json').read_text())
 PARAMETER_CHOICES = json.loads(Path(__file__).with_name('mmp_parameter_choices.json').read_text())
@@ -23,10 +24,11 @@ class EditorConflict(ValueError):
 
 
 class MicroPlusSession:
-    def __init__(self, device=None, log=None, backup_dir='_work/preset-backups'):
+    def __init__(self, device=None, log=None, backup_dir='_work/preset-backups', groups_path=None):
         self.device_id = device
         self.log = log
         self.backup_dir = Path(backup_dir)
+        self.groups = PresetGroups(groups_path)
         self.controller = None
         self.client = None
         self.error = None
@@ -56,7 +58,11 @@ class MicroPlusSession:
                 'revision': f'{self.generation}:{getattr(controller, "document_revision", 0)}' if connected else None,
                 'dirty': bool(getattr(controller, 'dirty', False)) if connected else False,
                 'models': MODELS, 'parameter_choices': PARAMETER_CHOICES, 'unscaled': UNSCALED, 'last_save': self.last_save,
-                'last_undo': self.last_undo}
+                'last_undo': self.last_undo, 'preset_groups': self.groups.state}
+
+    def change_groups(self, request):
+        self.groups.apply(request)  # Stays on this computer, so it works whether or not the amp is connected.
+        return self.snapshot()
 
     def require_controller(self):
         if not self.controller or not self.client or not self.client.is_connected:

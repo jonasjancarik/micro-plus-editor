@@ -12,6 +12,7 @@ from pathlib import Path
 from unittest.mock import AsyncMock, Mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from mmp_ble import Controller
+from mmp_groups import PresetGroups
 from mmp_protocol import presets_match
 from mmp_session import EditorConflict, MicroPlusSession, READ_RECONNECT_GAP, SAVED_READ_FAILURES
 from mmp_web import dispatch, HTTPError
@@ -399,6 +400,78 @@ class LimitedValueTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsNotNone(session.controller)
             self.assertIsNone(session.error)
             self.assertEqual(state['limited'], {'node': 'amp', 'parameter': 'gain', 'requested': 0.02, 'stored': 0.03})
+
+
+class PresetGroupStoreTests(unittest.TestCase):
+    def test_groups_survive_a_restart(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'groups.json'
+            groups = PresetGroups(path)
+            groups.apply({'action': 'create', 'name': ' Gig '})
+            groups.apply({'action': 'move', 'preset': 17, 'group': 'Gig'})
+            self.assertEqual(PresetGroups(path).state, {'groups': ['Gig'], 'assignments': {'17': 'Gig'}})
+
+    def test_rename_and_delete_carry_their_presets_along(self):
+        groups = PresetGroups()
+        groups.apply({'action': 'create', 'name': 'Gig'})
+        groups.apply({'action': 'move', 'preset': 17, 'group': 'Gig'})
+        groups.apply({'action': 'move', 'preset': 32, 'group': 'Rock'})
+        groups.apply({'action': 'rename', 'name': 'Gig', 'new_name': 'Live'})
+        self.assertEqual(groups.state['assignments'], {'17': 'Live', '32': 'Rock'})
+        groups.apply({'action': 'delete', 'name': 'Live'})
+        self.assertEqual(groups.state, {'groups': [], 'assignments': {'32': 'Rock'}})
+
+    def test_moving_to_no_group_returns_a_preset_to_its_usual_one(self):
+        groups = PresetGroups()
+        groups.apply({'action': 'move', 'preset': 32, 'group': 'Rock'})
+        groups.apply({'action': 'move', 'preset': 32, 'group': None})
+        self.assertEqual(groups.state['assignments'], {})
+
+    def test_bad_requests_change_nothing(self):
+        groups = PresetGroups()
+        groups.apply({'action': 'create', 'name': 'Gig'})
+        for request in ({'action': 'create', 'name': 'gig'}, {'action': 'create', 'name': '  '},
+                        {'action': 'create', 'name': 'x' * 25}, {'action': 'rename', 'name': 'Nope', 'new_name': 'A'},
+                        {'action': 'delete', 'name': 'Nope'}, {'action': 'move', 'preset': 0, 'group': 'Gig'},
+                        {'action': 'move', 'preset': True, 'group': 'Gig'}, {'action': 'other'}):
+            with self.assertRaises(ValueError):
+                groups.apply(request)
+        self.assertEqual(groups.state, {'groups': ['Gig'], 'assignments': {}})
+
+    def test_an_unreadable_file_is_set_aside_rather_than_overwritten(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'groups.json'
+            path.write_text('{not json')
+            with contextlib.redirect_stderr(io.StringIO()):
+                groups = PresetGroups(path)
+            self.assertEqual(groups.state['groups'], [])
+            self.assertEqual((Path(directory) / 'groups.json.unreadable').read_text(), '{not json')
+
+    def test_a_failed_write_keeps_the_previous_groups(self):
+        with tempfile.TemporaryDirectory() as directory:
+            blocker = Path(directory) / 'file'
+            blocker.write_text('')
+            groups = PresetGroups(blocker / 'groups.json')
+            with self.assertRaises(RuntimeError):
+                groups.apply({'action': 'create', 'name': 'Gig'})
+            self.assertEqual(groups.state['groups'], [])
+
+
+class PresetGroupRequestTests(unittest.IsolatedAsyncioTestCase):
+    headers = {'host': 'localhost:8080', 'origin': 'http://localhost:8080', 'content-type': 'application/json'}
+
+    async def test_groups_change_without_the_amp(self):
+        session = MicroPlusSession('device-id')
+        body = json.dumps({'action': 'create', 'name': 'Gig'}).encode()
+        _, _, result = await dispatch('POST', '/api/micro-plus/groups', self.headers, body, session)
+        self.assertEqual(json.loads(result)['preset_groups']['groups'], ['Gig'])
+
+    async def test_other_sites_cannot_change_groups(self):
+        session = MicroPlusSession('device-id')
+        body = json.dumps({'action': 'create', 'name': 'Gig'}).encode()
+        with self.assertRaises(HTTPError):
+            await dispatch('POST', '/api/micro-plus/groups', {**self.headers, 'origin': 'http://evil.example'}, body, session)
+        self.assertEqual(session.groups.state['groups'], [])
 
 
 class FactoryPresetGroupTests(unittest.TestCase):

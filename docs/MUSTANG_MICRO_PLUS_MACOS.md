@@ -45,9 +45,17 @@ top bar, or press `/`, to open the list of presets, which marks the active one. 
 70 factory presets are sorted into groups by sound, each with a short description, and
 anything else is listed under Your presets. Factory presets are recognised by name
 (see `web-app/web_ui/_static/micro-plus-presets.js`), so one you renamed moves to Your
-presets, and one you changed but kept the name of keeps its original description. The
-groups and descriptions are Maneline's own and aren't stored on the amp. Search by name
-or sound, or type a number to find exactly that slot. Empty slots are hidden until you
+presets, and one you changed but kept the name of keeps its original description. Choose
+Sort by number to drop the groups and list every preset in slot order.
+
+You can make your own groups and use Move on a preset to put it in any group. Moves
+belong to the preset's slot, so a preset keeps its group when renamed, and whatever you
+save over that slot takes its place in the group. Deleting a group only sends its presets
+back to where they started. The groups and descriptions are Maneline's own and aren't
+stored on the amp: your groups are in `_work/preset-groups.json` in the checkout the
+server runs from, so every browser using this server sees the same groups.
+
+Search by name, sound or group, or type a number to find exactly that slot. Empty slots are hidden until you
 ask for them. The arrows in the top bar and the `[` and `]` keys step through the
 listed presets in slot order. Selecting a
 preset waits for the amp to confirm the change. The display also follows preset
