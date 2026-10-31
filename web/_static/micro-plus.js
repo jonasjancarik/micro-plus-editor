@@ -1402,16 +1402,21 @@ $('save-copy').addEventListener('click', saveCopy);
 $('undo-save').addEventListener('click', undoSave);
 $('copy-target').addEventListener('change', renderCopyChoice);
 $('export-current').addEventListener('click', exportCurrentPreset);
-$('export-all').addEventListener('click', exportAllPresets);
+// These close the picker first: its dimmed layer would otherwise hide the messages they show on the page.
+$('export-all').addEventListener('click', () => { closePicker(); exportAllPresets(); });
 $('import-preset').addEventListener('click', () => $('import-file').click());
 $('import-file').addEventListener('change', event => {
   const [file] = event.target.files;
   event.target.value = ''; // So choosing the same file again still counts as a change.
-  if (file) importFromFile(file);
+  if (!file) return;
+  closePicker();
+  importFromFile(file);
 });
 $('import-choice').addEventListener('change', useChosenImport);
 $('import-target').addEventListener('change', renderImportChoice);
-$('export-dialog').addEventListener('close', () => { exportStopped = true; });
+$('export-dialog').addEventListener('close', () => {
+  if (!$('export-dialog').open) exportStopped = true; // Otherwise the next export has begun; the close event arrives late.
+});
 $('show-empty').addEventListener('change', event => {
   showEmpty = event.target.checked;
   storeFlag('mmp-show-empty', showEmpty);

@@ -151,14 +151,15 @@ what it replaces. It is available until the server restarts.
 
 ### Exporting and importing
 
-Below the board, **Export this preset** downloads the current preset as it's saved on
-the amp, so unsaved changes aren't in the file. **Export all presets** downloads every
-preset that isn't an empty slot, along with your groups, as one file. It reads the presets
+The export button beside the preset's name in the top bar downloads the current preset as
+it's saved on the amp, so unsaved changes aren't in the file. In the Presets panel,
+**Export all presets** downloads every preset that isn't an empty slot, along with your
+groups, as one file. It reads the presets
 one at a time and shows its progress, and other controls wait until it finishes. If a preset
 still can't be read after a few tries, or you cancel, no file is downloaded. Files are
 downloaded by the browser you're using, so this also works from a phone or another computer.
 
-**Import a preset** takes a file from either kind of export, or a backup from
+**Import a preset**, also in the Presets panel, takes a file from either kind of export, or a backup from
 `_work/preset-backups/`. If the file holds several presets, choose one, then choose its name
 and the slot to put it in. An import works like **Save as copy**: the slot's saved contents
 are backed up first, nothing is sent if that fails, the imported preset gets a new preset ID,
