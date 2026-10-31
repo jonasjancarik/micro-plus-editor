@@ -81,9 +81,9 @@ body:has(#closeup[open]) #message { display: none; } /* The close-up shows the s
 #preset-groups { display: flex; flex-wrap: wrap; flex: none; gap: 6px; }
 #preset-groups button { min-height: 30px; padding: 3px 11px; border-radius: 999px; font-size: 13px; font-weight: 400; color: var(--muted); }
 #preset-groups button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
-#presets { list-style: none; margin: 0; padding: 0; columns: 300px; column-gap: 24px; }
-#presets > li { break-inside: avoid; }
-.bank { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; padding: 14px 10px 4px; font-size: 13px; font-weight: 600; color: var(--muted); break-after: avoid; }
+/* Rows rather than columns, so a group always reads straight down from its heading. */
+#presets { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); column-gap: 24px; align-items: start; }
+.bank { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; grid-column: 1 / -1; padding: 14px 10px 4px; font-size: 13px; font-weight: 600; color: var(--muted); }
 .bank button { min-height: 26px; padding: 1px 6px; border: 0; background: none; font-size: 12px; font-weight: 400; color: var(--muted); }
 .bank-note { width: 100%; font-weight: 400; }
 .row { display: flex; align-items: center; gap: 2px; }
@@ -295,7 +295,7 @@ dialog input, dialog select { width: 100%; }
   main { padding: 6px 12px 112px; }
   #message { bottom: 104px; }
   #preset-panel { width: 100vw; height: 100dvh; max-width: none; margin: 0; border: 0; border-radius: 0; }
-  #presets { columns: auto; }
+  #presets { display: block; }
   #preset-groups { flex-wrap: nowrap; overflow-x: auto; margin: 0 -20px; padding: 0 20px 2px; scrollbar-width: none; }
   #preset-groups button { flex: none; min-height: 40px; }
   .move, .bank button { min-height: 40px; }
