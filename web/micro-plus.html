@@ -10,6 +10,7 @@
   <link rel="icon" href="/web_ui/_static/maneline-icon-512x512.png">
   <script src="/web_ui/_static/pedal-kit/pedal-kit.js" defer></script>
   <script src="/web_ui/_static/micro-plus-params.js" defer></script>
+  <script src="/web_ui/_static/micro-plus-presets.js" defer></script>
   <script src="/web_ui/_static/micro-plus.js" defer></script>
 </head>
 <body>
@@ -45,8 +46,9 @@
       <label class="check"><input id="show-empty" type="checkbox"> <span id="show-empty-label">Show empty slots</span></label>
       <button id="close-presets" type="button">Close</button>
     </div>
-    <label for="filter" class="visually-hidden">Find by name or number</label>
-    <input id="filter" type="search" placeholder="Find by name or number" autocomplete="off">
+    <label for="filter" class="visually-hidden">Find by name, number or sound</label>
+    <input id="filter" type="search" placeholder="Find by name, number or sound" autocomplete="off">
+    <div id="preset-groups" role="group" aria-label="Show one group of presets"></div>
     <div id="presets-scroll">
       <ol id="presets" aria-busy="true"></ol>
       <p id="empty" hidden>No presets match your search.</p>
@@ -62,6 +64,7 @@
     <div id="editor" hidden>
       <fieldset id="board-fields">
       <legend class="visually-hidden">Preset editor</legend>
+      <p id="preset-about" hidden></p>
       <p id="hint" class="hint">Select a pedal or the amp to adjust it. You'll hear your changes on the amp as you make them, but they aren't kept until you save.</p>
       <h2 class="visually-hidden">Your pedalboard</h2>
       <div id="board-area"><div id="board"></div></div>

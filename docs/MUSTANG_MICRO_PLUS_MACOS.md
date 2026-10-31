@@ -41,10 +41,15 @@ not reconnect the amplifier. The original Java/Lua USB mode is still launched
 with `scripts/run_web_cli.sh` without `--micro-plus`.
 
 The page is built around the board, and always dark. Select the preset name in the
-top bar, or press `/`, to open the list of presets, which marks the active one. Search
-by name, or type a number to find exactly that slot. Empty slots are hidden until you
+top bar, or press `/`, to open the list of presets, which marks the active one. The
+70 factory presets are sorted into groups by sound, each with a short description, and
+anything else is listed under Your presets. Factory presets are recognised by name
+(see `web-app/web_ui/_static/micro-plus-presets.js`), so one you renamed moves to Your
+presets, and one you changed but kept the name of keeps its original description. The
+groups and descriptions are Maneline's own and aren't stored on the amp. Search by name
+or sound, or type a number to find exactly that slot. Empty slots are hidden until you
 ask for them. The arrows in the top bar and the `[` and `]` keys step through the
-listed presets. Selecting a
+listed presets in slot order. Selecting a
 preset waits for the amp to confirm the change. The display also follows preset
 changes received from the device. Switching presets does not rewrite saved preset
 settings.

@@ -401,5 +401,16 @@ class LimitedValueTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(state['limited'], {'node': 'amp', 'parameter': 'gain', 'requested': 0.02, 'stored': 0.03})
 
 
+class FactoryPresetGroupTests(unittest.TestCase):
+    def test_every_factory_preset_has_one_group_and_a_description(self):
+        root = Path(__file__).resolve().parents[2]
+        source = (root / 'web-app/web_ui/_static/micro-plus-presets.js').read_text(encoding='utf-8')
+        groups = json.loads(source.split('factoryPresetGroups = ', 1)[1].rstrip().rstrip(';'))
+        names = [name for group in groups for name in group['presets']]
+        fixture = json.loads((root / 'scripts/mmp_mock_fixture.json').read_text(encoding='utf-8'))
+        self.assertCountEqual(names, fixture['names'][:70])
+        self.assertTrue(all(text for group in groups for text in group['presets'].values()))
+
+
 if __name__ == '__main__':
     unittest.main()

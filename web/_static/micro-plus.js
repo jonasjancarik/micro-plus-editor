@@ -29,6 +29,7 @@ let renderedChanges = '';
 let formPreset = null;
 let advancedOpen = false;
 let showEmpty = storedFlag('mmp-show-empty');
+let shownGroup = null; // The one preset group the picker is limited to, if any.
 const baselines = new Map(); // "generation:preset" → the saved document, for showing what changed.
 const pedalTabLabels = { stomp: 'Stomp', mod: 'Mod', amp: 'Amp', delay: 'Delay', reverb: 'Reverb' };
 
@@ -363,38 +364,78 @@ async function undoSave() {
 }
 
 // Preset list --------------------------------------------------------------
+const YOUR_PRESETS = 'Your presets';
+const EMPTY_SLOTS = 'Empty slots';
+const factoryPresets = new Map(factoryPresetGroups.flatMap(group =>
+  Object.entries(group.presets).map(([name, description]) => [name, { group: group.name, description }])));
+
+function presetGroup(preset) {
+  if (isEmptySlot(preset)) return EMPTY_SLOTS;
+  return factoryPresets.get(preset.name.trim())?.group ?? YOUR_PRESETS;
+}
+function presetDescription(preset) { return factoryPresets.get(preset?.name?.trim())?.description ?? ''; }
+
 function buildPresetList() {
   grid.replaceChildren();
-  for (const preset of known.presets) {
-    if ((preset.preset - 1) % 10 === 0) {
-      const bank = document.createElement('li');
-      bank.className = 'bank';
-      bank.textContent = `${preset.preset}–${Math.min(preset.preset + 9, known.presets.length)}`;
-      grid.append(bank);
+  const order = [YOUR_PRESETS, ...factoryPresetGroups.map(group => group.name), EMPTY_SLOTS];
+  const groups = order.map(group => [group, known.presets.filter(preset => presetGroup(preset) === group)])
+    .filter(([, presets]) => presets.length);
+  for (const [group, presets] of groups) {
+    const bank = document.createElement('li');
+    bank.className = 'bank';
+    bank.textContent = group;
+    grid.append(bank);
+    for (const preset of presets) {
+      const item = document.createElement('li');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = isEmptySlot(preset) ? 'preset empty-slot' : 'preset';
+      button.dataset.preset = preset.preset;
+      const number = document.createElement('span');
+      number.className = 'num';
+      number.textContent = preset.preset;
+      const text = document.createElement('span');
+      text.className = 'text';
+      const name = document.createElement('span');
+      name.className = 'name';
+      name.textContent = displayName(preset);
+      text.append(name);
+      const description = presetDescription(preset);
+      if (description) {
+        const about = document.createElement('span');
+        about.className = 'about';
+        about.textContent = description;
+        text.append(about);
+      }
+      const badge = document.createElement('span');
+      badge.className = 'badge';
+      button.append(number, text, badge);
+      item.append(button);
+      grid.append(item);
     }
-    const item = document.createElement('li');
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = isEmptySlot(preset) ? 'preset empty-slot' : 'preset';
-    button.dataset.preset = preset.preset;
-    const number = document.createElement('span');
-    number.className = 'num';
-    number.textContent = preset.preset;
-    const name = document.createElement('span');
-    name.className = 'name';
-    name.textContent = displayName(preset);
-    const badge = document.createElement('span');
-    badge.className = 'badge';
-    button.append(number, name, badge);
-    item.append(button);
-    grid.append(item);
   }
+  const shown = groups.map(([group]) => group).filter(group => group !== EMPTY_SLOTS);
+  if (!shown.includes(shownGroup)) shownGroup = null;
+  $('preset-groups').replaceChildren(...[null, ...shown].map(group => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.textContent = group ?? 'All';
+    chip.addEventListener('click', () => {
+      shownGroup = group;
+      filter.value = '';
+      renderPresets();
+      $('presets-scroll').scrollTop = 0;
+    });
+    chip.dataset.group = group ?? '';
+    return chip;
+  }));
 }
 
 function matchesSearch(preset, query) {
   if (!query) return true;
   if (/^\d+$/.test(query)) return preset.preset === Number(query); // Numbers mean slots, not "contains 7".
-  return displayName(preset).toLocaleLowerCase().includes(query);
+  return [displayName(preset), presetDescription(preset), presetGroup(preset)]
+    .some(text => text.toLocaleLowerCase().includes(query));
 }
 
 function visiblePresetButtons() {
@@ -426,13 +467,18 @@ function renderPresets() {
     const number = Number(button.dataset.preset);
     const preset = presetByNumber(number);
     const active = number === known.preset;
-    const wanted = query ? matchesSearch(preset, query) : showEmpty || !isEmptySlot(preset) || active;
+    const wanted = query ? matchesSearch(preset, query)
+      : shownGroup ? presetGroup(preset) === shownGroup
+      : showEmpty || !isEmptySlot(preset) || active;
     item.hidden = !wanted;
     if (wanted) { visible++; bankHasItems = true; }
     if (active) button.setAttribute('aria-current', 'true'); else button.removeAttribute('aria-current');
     setText(button.querySelector('.badge'), number === switchingTo ? 'Switching…' : active ? 'Active' : '');
   }
   if (bank) bank.hidden = !bankHasItems;
+  for (const chip of $('preset-groups').children) {
+    chip.setAttribute('aria-pressed', String(!query && chip.dataset.group === (shownGroup ?? '')));
+  }
   grid.classList.toggle('unavailable', !state.connected);
   grid.setAttribute('aria-busy', String(exclusive));
   const focusable = visiblePresetButtons();
@@ -1071,6 +1117,8 @@ function renderConnection() {
   if (known?.preset) {
     setText($('current-number'), state.connected ? `Preset ${known.preset}` : `Preset ${known.preset} (last known)`);
     setText($('current-name'), known.name || 'Unnamed preset');
+    setText($('preset-about'), presetDescription(presetByNumber(known.preset)));
+    $('preset-about').hidden = !$('preset-about').textContent;
   }
 }
 
@@ -1107,6 +1155,7 @@ function openPicker({ search = false } = {}) {
   const picker = $('preset-panel');
   if (picker.open || !known) return;
   filter.value = '';
+  shownGroup = null;
   renderPresets();
   picker.showModal();
   scrollToActive('center');
@@ -1166,7 +1215,7 @@ nameInput.addEventListener('keydown', event => {
   if (event.key === 'Enter' && !$('save').disabled) { event.preventDefault(); saveHere(); }
 });
 
-filter.addEventListener('input', renderPresets);
+filter.addEventListener('input', () => { shownGroup = null; renderPresets(); }); // Search always covers every group.
 filter.addEventListener('keydown', event => {
   const first = visiblePresetButtons()[0];
   if (event.key === 'Enter' && first) {
