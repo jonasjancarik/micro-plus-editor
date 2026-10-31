@@ -304,15 +304,22 @@ dialog input, dialog select { width: 100%; }
   #board { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--board-gap) 22px; padding: 38px 14px; }
   #board::before { top: 12px; left: 14px; }
   #board::after { bottom: 12px; right: 14px; }
-  .slot[data-node="stomp"] { grid-area: 1 / 1; }
-  .slot[data-node="mod"] { grid-area: 1 / 2; }
-  .slot[data-node="amp"] { grid-area: 2 / 1 / 3 / 3; }
-  .slot[data-node="delay"] { grid-area: 3 / 1; }
-  .slot[data-node="reverb"] { grid-area: 3 / 2; }
-  .slot[data-node="stomp"]::after, .slot[data-node="delay"]::after { right: -23px; width: 24px; }
-  .slot[data-node="mod"]::after, .slot[data-node="amp"]::after { top: 100%; right: 25%; width: 6px; height: 25px; margin: 0;
+  /* The usual shape: two pedals, the amp across the width, two pedals. */
+  .slot:nth-child(1) { grid-area: 1 / 1; }
+  .slot:nth-child(2) { grid-area: 1 / 2; }
+  .slot:nth-child(3) { grid-area: 2 / 1 / 3 / 3; }
+  .slot:nth-child(4) { grid-area: 3 / 1; }
+  .slot:nth-child(5) { grid-area: 3 / 2; }
+  .slot:is(:nth-child(1), :nth-child(4))::after { right: -23px; width: 24px; }
+  .slot:is(:nth-child(2), :nth-child(3))::after { top: 100%; right: 25%; width: 6px; height: 25px; margin: 0;
     border-block: 0; border-inline: 1px solid var(--cable-edge); }
-  .slot[data-node="amp"]::after { right: 75%; }
+  .slot:nth-child(3)::after { right: 75%; }
+  /* With the amp anywhere else that shape would misdraw the cable, so the chain runs straight down. */
+  #board:has(> .slot[data-node="amp"]:not(:nth-child(3))) { grid-template-columns: minmax(0, 1fr); }
+  #board:has(> .slot[data-node="amp"]:not(:nth-child(3))) > .slot { grid-area: auto; }
+  #board:has(> .slot[data-node="amp"]:not(:nth-child(3))) > .slot:not([data-node="amp"]) { width: 62%; margin-inline: auto; }
+  #board:has(> .slot[data-node="amp"]:not(:nth-child(3))) > .slot:not(:last-child)::after { top: 100%; left: 50%; right: auto; width: 6px; height: 25px; margin: 0 0 0 -3px;
+    border-block: 0; border-inline: 1px solid var(--cable-edge); }
 }
 @media (min-width: 640px) and (max-width: 1039px) {
   :root { --dial: 44px; --dial-label: 13px; --foot: 72px; --pedal-name: 18px; --pedal-name-font: var(--font-display); }

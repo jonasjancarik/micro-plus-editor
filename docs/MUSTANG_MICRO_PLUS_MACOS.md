@@ -100,6 +100,10 @@ A parameter change is acknowledged and its updated preset is read back before th
 browser accepts it. The editor queries the device's parameter type before
 writing, distinguishing continuous float controls from integer choices.
 
+The board is drawn in the order the sound travels, from the preset's connections, so it differs
+between presets: many put reverb before delay, and a few put modulation after the amp or the amp first.
+The positions themselves are the same five in every preset.
+
 Each amp and pedal has its own look. Amps are drawn as combos, stacks or rack units with their
 own covering and grille cloth, and each pedal has its own colour and finish. These are generic
 drawings made for this page, not pictures of the real gear. The styles are in

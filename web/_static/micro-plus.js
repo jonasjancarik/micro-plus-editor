@@ -692,6 +692,18 @@ function scrollToActive(block = 'nearest') {
 // Editor: building controls --------------------------------------------------
 function currentNodes() { return known?.document?.audioGraph.nodes ?? []; }
 function nodeById(id) { return currentNodes().find(node => node.nodeId === id); }
+// The nodes are stored in a fixed order, but the sound travels along the preset's connections.
+function signalOrder(nodes) {
+  const next = new Map((known?.document?.audioGraph.connections ?? []).filter(link => link.input.index === 0)
+    .map(link => [link.input.nodeId, link.output.nodeId]));
+  const ordered = [];
+  for (let id = next.get('preset'); id && id !== 'preset' && ordered.length < nodes.length; id = next.get(id)) {
+    const node = nodes.find(candidate => candidate.nodeId === id);
+    if (!node) break;
+    ordered.push(node);
+  }
+  return new Set(ordered).size === nodes.length ? ordered : nodes;
+}
 function nodeTitle(node) { return nodeLabels[node.nodeId] || parameterLabel(node.nodeId); }
 function modelName(node) {
   return (known.models[node.nodeId] || []).find(model => model.id === node.FenderId)?.name || 'Current model';
@@ -703,7 +715,7 @@ function specFor(node, parameter, value) {
 
 // Controls are only rebuilt when their shape changes, so focus and drags survive edits.
 function shapeKey() {
-  return JSON.stringify([selectedNode, currentNodes().map(node => [node.nodeId, node.FenderId,
+  return JSON.stringify([selectedNode, signalOrder(currentNodes()).map(node => [node.nodeId, node.FenderId,
     Object.entries(node.dspUnitParameters).map(([key, value]) => [key, specFor(node, key, value).kind])])]);
 }
 
@@ -729,7 +741,7 @@ function controlsFor(key) {
 function buildBoard() {
   const board = $('board');
   board.replaceChildren();
-  for (const node of currentNodes()) {
+  for (const node of signalOrder(currentNodes())) {
     const slot = document.createElement('div');
     slot.className = 'slot';
     slot.dataset.node = node.nodeId;
@@ -1055,7 +1067,7 @@ function openCloseup(nodeId) {
 // One button per position in signal order, so you can move around the board without closing the close-up.
 function renderCloseupTabs(changes) {
   const tabs = $('closeup-tabs');
-  const nodes = currentNodes();
+  const nodes = signalOrder(currentNodes());
   if ([...tabs.children].map(tab => tab.dataset.node).join() !== nodes.map(node => node.nodeId).join()) {
     tabs.replaceChildren(...nodes.map(node => {
       const tab = document.createElement('button');
