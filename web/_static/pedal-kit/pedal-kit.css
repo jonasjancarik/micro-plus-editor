@@ -9,9 +9,12 @@
 .screw.tl{top:9px;left:9px}.screw.tr{top:9px;right:9px}.screw.bl{bottom:9px;left:9px}.screw.br{bottom:9px;right:9px}
 .knobs{display:flex;flex-wrap:wrap;justify-content:center;margin-top:8px}
 .knob{position:relative;flex:0 0 33.33%;display:flex;flex-direction:column;align-items:center;min-width:0}
-.readout{height:20px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;visibility:hidden}
+.knob .readout{height:20px;min-height:0;padding:0 4px;border:0;border-radius:4px;background:none;color:inherit;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;cursor:text;visibility:hidden}
+.knob .readout:hover:not(:disabled){background:rgb(0 0 0/.18)}
+.pedal .knob input.readout-edit{width:68px;height:20px;min-height:0;padding:0 2px;border:0;border-radius:4px;background:#fff;color:#17110a;font-size:13px;font-weight:600;text-align:center;appearance:textfield}
+.readout-edit::-webkit-inner-spin-button{appearance:none}
 .knob.active .readout{visibility:visible}
-.knob input[type=range]{position:absolute;width:1px;height:1px;opacity:0;margin:0}
+.knob input[type=range]{position:absolute;width:1px;height:1px;min-height:0;opacity:0;margin:0;pointer-events:none}
 .dial{position:relative;width:84px;height:84px;border-radius:50%;cursor:grab;touch-action:none;user-select:none}
 .dial:active{cursor:grabbing}
 .knob input[type=range]:focus-visible+.dial{outline:3px solid #FAECE7;outline-offset:1px}

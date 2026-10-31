@@ -4,6 +4,8 @@ const PART = name => `/web_ui/_static/pedal-kit/${name}.png`;
 const partImage = (name, className) => `<img class="${className}" src="${PART(name)}" alt="" draggable="false">`;
 const KNOB_PAGE_SIZE = 6;
 const DRAG_DISTANCE = 150; // Pixels of dragging for a full turn.
+const FINE_DRAG = 0.2; // Holding Shift makes a drag this much finer.
+const WHEEL_DISTANCE = 20; // Pixels of scrolling for one hundredth of a turn.
 
 function knobAngle(value, min, max) { return -135 + 270 * (value - min) / (max - min); }
 
@@ -21,7 +23,7 @@ function scaleMarks() {
 function buildKnob({ label, value, min = 0, max = 10, step = 0.1, format = shown => Number(shown).toFixed(1), key }) {
   const knob = document.createElement('div');
   knob.className = 'knob';
-  knob.innerHTML = `<div class="readout"></div>
+  knob.innerHTML = `<button type="button" class="readout"></button>
     <input type="range" min="${min}" max="${max}" step="${step}" value="${value}">
     <div class="dial">${scaleMarks()}${partImage('knob', 'body')}${partImage('pointer', 'pointer')}</div>
     <div class="knob-label"></div>`;
@@ -31,11 +33,13 @@ function buildKnob({ label, value, min = 0, max = 10, step = 0.1, format = shown
   const pointer = knob.querySelector('.pointer');
   const readout = knob.querySelector('.readout');
   input.setAttribute('aria-label', label);
+  readout.setAttribute('aria-label', `Type a value for ${label}`);
   if (key) input.dataset.key = key;
   let hideTimer;
-  let startX = 0;
-  let startY = 0;
-  let startValue = 0;
+  let lastX = 0;
+  let lastY = 0;
+  let dragValue = 0;
+  let wheelPixels = 0;
   const range = () => Number(input.max) - Number(input.min);
   const paint = () => {
     pointer.style.transform = `rotate(${knobAngle(Number(input.value), Number(input.min), Number(input.max))}deg)`;
@@ -47,6 +51,11 @@ function buildKnob({ label, value, min = 0, max = 10, step = 0.1, format = shown
     clearTimeout(hideTimer);
     hideTimer = setTimeout(() => knob.classList.remove('active'), 900);
   };
+  const setValue = value => {
+    const before = input.value;
+    input.value = String(value);
+    if (input.value !== before) input.dispatchEvent(new Event('input', { bubbles: true }));
+  };
   input.repaintKnob = paint;
   input.addEventListener('input', () => {
     paint();
@@ -57,9 +66,9 @@ function buildKnob({ label, value, min = 0, max = 10, step = 0.1, format = shown
     if (input.disabled) return;
     dial.setPointerCapture(event.pointerId);
     knob.dragPointer = event.pointerId;
-    startX = event.clientX;
-    startY = event.clientY;
-    startValue = Number(input.value);
+    lastX = event.clientX;
+    lastY = event.clientY;
+    dragValue = Number(input.value);
     knob.classList.add('active');
     clearTimeout(hideTimer);
     input.focus({ preventScroll: true });
@@ -67,10 +76,50 @@ function buildKnob({ label, value, min = 0, max = 10, step = 0.1, format = shown
   });
   dial.addEventListener('pointermove', event => {
     if (!dial.hasPointerCapture(event.pointerId) || input.disabled) return;
-    const moved = (startY - event.clientY) + (event.clientX - startX);
-    const before = input.value;
-    input.value = String(startValue + moved / DRAG_DISTANCE * range());
-    if (input.value !== before) input.dispatchEvent(new Event('input', { bubbles: true }));
+    const moved = (lastY - event.clientY) + (event.clientX - lastX);
+    lastX = event.clientX;
+    lastY = event.clientY;
+    dragValue += moved / DRAG_DISTANCE * range() * (event.shiftKey ? FINE_DRAG : 1);
+    dragValue = Math.min(Number(input.max), Math.max(Number(input.min), dragValue));
+    setValue(dragValue);
+  });
+  dial.addEventListener('wheel', event => {
+    if (input.disabled) return;
+    // In a page that's scrolling, a knob passing under the pointer mustn't turn unless it was chosen first.
+    const scroller = knob.closest('dialog');
+    if (scroller?.scrollHeight > scroller?.clientHeight && document.activeElement !== input) return;
+    event.preventDefault();
+    wheelPixels += event.deltaY || event.deltaX;
+    const notches = Math.trunc(wheelPixels / WHEEL_DISTANCE);
+    if (!notches) return;
+    wheelPixels -= notches * WHEEL_DISTANCE;
+    setValue(Number(input.value) - notches * Math.max(Number(input.step), range() / 100));
+  }, { passive: false });
+  readout.addEventListener('click', () => {
+    const editor = document.createElement('input');
+    editor.type = 'number';
+    editor.step = 'any';
+    editor.className = 'readout-edit';
+    editor.value = input.value;
+    editor.setAttribute('aria-label', label);
+    readout.hidden = true;
+    readout.after(editor);
+    editor.select();
+    let finished = false;
+    const finish = keep => {
+      if (finished) return;
+      finished = true;
+      if (keep && editor.value !== '') setValue(editor.value);
+      editor.remove();
+      readout.hidden = false;
+      input.focus({ preventScroll: true });
+    };
+    editor.addEventListener('blur', () => finish(true));
+    editor.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== 'Escape') return;
+      event.preventDefault(); // Escape here cancels the typing, not the window around it.
+      finish(event.key === 'Enter');
+    });
   });
   dial.addEventListener('pointerup', showBriefly);
   dial.addEventListener('pointercancel', showBriefly);
