@@ -101,7 +101,7 @@ browser accepts it. The editor queries the device's parameter type before
 writing, distinguishing continuous float controls from integer choices.
 
 To rename a preset, select the pencil beside its name in the top bar, then save as
-usual. On a phone, **Save** and **Save as copy** stay at
+usual. On a phone, **Save** and its menu stay at
 the bottom of the screen, and **Discard changes** appears only when there's something
 to discard. The top bar counts unsaved changes. A pedal with changes is outlined on the board,
 changed knobs are marked with a dot, and the close-up offers to undo that pedal's
@@ -137,7 +137,7 @@ values observed on the device and may not contain every option supported by the
 firmware. Amplifier choices currently cover the app's 25 guitar models. An
 unsupported value is reported as an error, not success.
 
-**Save** replaces the active preset, and **Save as copy** writes to another slot,
+**Save** replaces the active preset, and **Save as copy**, in the menu on the arrow beside **Save**, writes to another slot,
 defaulting to the first empty one. Both confirmations name the preset being
 replaced. Before writing, the server reads that slot's saved definition and writes
 a JSON backup under `_work/preset-backups/`. If the backup cannot be created, no
@@ -151,7 +151,7 @@ what it replaces. It is available until the server restarts.
 
 ### Exporting and importing
 
-The export button beside the preset's name in the top bar downloads the current preset as
+**Export this preset**, in the menu on the arrow beside **Save**, downloads the current preset as
 it's saved on the amp, so unsaved changes aren't in the file. In the Presets panel,
 **Export all presets** downloads every preset that isn't an empty slot, along with your
 groups, as one file. It reads the presets

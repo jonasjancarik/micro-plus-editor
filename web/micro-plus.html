@@ -34,9 +34,6 @@
     <button id="rename" type="button" class="icon" aria-label="Rename this preset" title="Rename this preset" disabled>
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.9 2.6a1.5 1.5 0 0 1 2.1 0l.4.4a1.5 1.5 0 0 1 0 2.1l-8 8-3.1.7.7-3.1 7.9-8.1Z"/><path d="m9.5 4 2.5 2.5"/></svg>
     </button>
-    <button id="export-current" type="button" class="icon" aria-label="Export this preset" title="Export this preset" disabled>
-      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v7.5"/><path d="M4.75 7 8 10.25 11.25 7"/><path d="M2.5 13.5h11"/></svg>
-    </button>
     <button id="next" type="button" class="icon" aria-label="Next preset" title="Next preset ( ] )">&#8250;</button>
   </div>
   <p id="connection" data-state="connecting"><span class="dot" aria-hidden="true"></span><span id="connection-text">Connecting</span></p>
@@ -54,8 +51,16 @@
   <div class="actions">
     <span id="dirty"></span>
     <button id="discard" type="button" disabled>Discard changes</button>
-    <button id="save-copy" type="button" disabled>Save as copy</button>
-    <button id="save" type="button" class="primary" disabled>Save</button>
+    <div class="save-split">
+      <button id="save" type="button" class="primary" disabled>Save</button>
+      <button id="save-more" type="button" class="primary" aria-label="More ways to save" title="More ways to save" aria-expanded="false" aria-controls="save-menu" disabled>
+        <svg class="chevron" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg>
+      </button>
+      <div id="save-menu" hidden>
+        <button id="save-copy" type="button" disabled>Save as copy</button>
+        <button id="export-current" type="button" disabled>Export this preset</button>
+      </div>
+    </div>
   </div>
 </header>
 

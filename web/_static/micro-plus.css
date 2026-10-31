@@ -71,10 +71,10 @@ label { display: block; }
 #current-name { font-size: 23px; font-weight: 600; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chevron { width: 14px; height: 14px; flex: none; fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 #open-presets:disabled .chevron { display: none; }
-:is(#rename, #export-current) svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+#rename svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .name-edit { display: none; align-items: center; gap: 8px; min-width: 0; }
 .now.renaming .name-edit { display: flex; }
-.now.renaming :is(#open-presets, #rename, #export-current) { display: none; }
+.now.renaming :is(#open-presets, #rename) { display: none; }
 #preset-name { width: 13em; min-width: 0; font-family: var(--font-display); font-size: 20px; font-weight: 600; }
 #name-count { flex: none; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 button.icon { width: 38px; padding: 0; font-size: 22px; line-height: 1; flex: none; background: none; border-color: transparent; color: var(--muted); }
@@ -86,7 +86,16 @@ button.icon:hover:not(:disabled) { color: var(--text); }
 .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .actions button:not(.primary) { background: none; border-color: transparent; color: var(--muted); }
 .actions button:not(.primary):hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
-#save { min-width: 84px; }
+#save { min-width: 84px; border-radius: 8px 0 0 8px; }
+.save-split { position: relative; display: flex; gap: 1px; }
+#save-more { display: grid; place-items: center; width: 34px; padding: 0; border-radius: 0 8px 8px 0; }
+#save-more .chevron { stroke: currentColor; transition: transform .15s; }
+#save-more[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+#save-menu { position: absolute; z-index: 6; top: calc(100% + 6px); right: 0; display: flex; flex-direction: column; gap: 2px; width: max-content;
+  padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px var(--shadow); }
+#save-menu[hidden] { display: none; }
+.actions #save-menu button { text-align: left; color: var(--text); }
+.actions #save-menu button:disabled { color: var(--muted); }
 #dirty { font-size: 14px; font-weight: 600; color: var(--warn); margin-right: 4px; }
 
 .theme-switch { display: flex; flex: none; gap: 2px; }
@@ -165,7 +174,7 @@ main { flex: 1; width: 100%; max-width: 1560px; margin: 0 auto; padding: 8px cla
 #preset-about:has(+ #preset-artists:not([hidden])) { margin-bottom: 2px; }
 #preset-artists { margin: 0 0 16px; font-size: 15px; }
 /* Until the amp is found, there's nothing to save or step through. */
-body:has(#waiting:not([hidden])) :is(.actions, .shortcuts, #export-current, #prev, #next, #rename) { display: none; }
+body:has(#waiting:not([hidden])) :is(.actions, .shortcuts, #prev, #next, #rename) { display: none; }
 
 /* The board: a textured mat with a cable running between the positions. */
 #board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 1.5fr) repeat(2, minmax(0, 1fr)); gap: var(--board-gap);
@@ -381,6 +390,10 @@ dialog input, dialog select { width: 100%; }
   .actions #dirty:empty { display: none; }
   .actions button { flex: 1 1 auto; padding: 5px 8px; }
   .actions button:not(.primary) { border-color: var(--line); color: var(--text); }
+  .save-split { flex: 1 1 auto; }
+  #save-more { flex: none; width: 44px; padding: 0; }
+  #save-menu { top: auto; bottom: calc(100% + 6px); }
+  .actions #save-menu button { flex: none; min-height: 44px; padding: 5px 14px; border-color: transparent; }
   main { padding: 6px 12px 112px; }
   #message { bottom: 104px; }
   #preset-panel { width: 100vw; height: 100dvh; max-width: none; margin: 0; border: 0; border-radius: 0; }

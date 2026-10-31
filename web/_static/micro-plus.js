@@ -1358,6 +1358,17 @@ function closeCloseup() {
   else selectedNode = null;
 }
 
+// Save menu ------------------------------------------------------------------
+function closeSaveMenu() {
+  $('save-menu').hidden = true;
+  $('save-more').setAttribute('aria-expanded', 'false');
+}
+function toggleSaveMenu() {
+  const open = $('save-menu').hidden;
+  $('save-menu').hidden = !open;
+  $('save-more').setAttribute('aria-expanded', String(open));
+}
+
 // Preset picker --------------------------------------------------------------
 function openPicker({ search = false } = {}) {
   const picker = $('preset-panel');
@@ -1399,6 +1410,15 @@ $('prev').addEventListener('click', () => stepPreset(-1));
 $('next').addEventListener('click', () => stepPreset(1));
 $('save').addEventListener('click', saveHere);
 $('save-copy').addEventListener('click', saveCopy);
+$('save-more').addEventListener('click', toggleSaveMenu);
+// Runs before the chosen item's own handler, so a dialog it opens hands focus back to the arrow rather than a hidden item.
+$('save-menu').addEventListener('click', () => { closeSaveMenu(); $('save-more').focus(); }, { capture: true });
+document.addEventListener('click', event => { if (!event.target.closest('.save-split')) closeSaveMenu(); });
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Escape' || $('save-menu').hidden) return;
+  closeSaveMenu();
+  $('save-more').focus();
+});
 $('undo-save').addEventListener('click', undoSave);
 $('copy-target').addEventListener('change', renderCopyChoice);
 $('export-current').addEventListener('click', exportCurrentPreset);

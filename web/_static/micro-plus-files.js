@@ -173,5 +173,6 @@ async function importFromFile(file) {
 
 function renderPresetFiles() {
   const unavailable = exclusive || !state.connected;
-  for (const id of ['export-current', 'export-all', 'import-preset']) $(id).disabled = unavailable;
+  for (const id of ['export-current', 'save-more', 'export-all', 'import-preset']) $(id).disabled = unavailable;
+  if (unavailable) closeSaveMenu();
 }
