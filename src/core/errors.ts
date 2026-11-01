@@ -9,3 +9,6 @@ export class AmpError extends Error {}
 
 /** A backup couldn't be made or read, so nothing was written to the amp. */
 export class BackupError extends Error {}
+
+/** Something kept on this device couldn't be saved. The amp isn't involved. */
+export class StorageError extends Error {}
