@@ -139,6 +139,29 @@
    "3500130a112a0f0a0b456469746f7220746573741063"
   ]
  },
+ "snapshotFields": [
+  "compare_presets",
+  "connected",
+  "connected_since",
+  "connections",
+  "device",
+  "dirty",
+  "document",
+  "error",
+  "last_save",
+  "last_undo",
+  "models",
+  "name",
+  "parameter_choices",
+  "phase",
+  "preset",
+  "preset_groups",
+  "presets",
+  "revision",
+  "saved_presets",
+  "stalled",
+  "unscaled"
+ ],
  "order": {
   "standard": [
    "stomp",

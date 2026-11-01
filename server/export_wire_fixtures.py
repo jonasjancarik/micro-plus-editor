@@ -10,6 +10,7 @@ from mmp_ble import Frames, KEEPALIVE, fields, packet, select_preset, varint
 from mmp_protocol import (CURRENT, READ_PRESET, REPLACE_NODE, SAVE_AS, SAVE_CURRENT, SET_PARAMETER, fragments,
                           parameter_payload, parameter_value, request, save_current_payload, signal_order,
                           wire_bytes, wire_string, wire_uint, with_signal_order)
+from mmp_session import MicroPlusSession
 
 ROOT = Path(__file__).resolve().parents[1]
 document = json.loads((ROOT / 'server/mmp_mock_fixture.json').read_text())['document']
@@ -50,6 +51,7 @@ commands = {
     'parameterReplies': [{'hex': reply.hex(), 'value': parameter_value(dict(fields(reply)))} for reply in replies],
     'save': {name: save_current_payload(name, slot).hex() for name, slot in (('Editor test', 100), ('Zvuk č', 1))},
     'commands': {name: [part.hex() for part in fragments(request(kind, body))] for name, (kind, body) in commands.items()},
+    'snapshotFields': sorted(MicroPlusSession().snapshot()),
     'order': {'standard': standard, 'found': signal_order(ordered), 'moved': moved,
               'connections': with_signal_order(document, moved)['audioGraph']['connections']},
 }, indent=1) + '\n')
