@@ -3,6 +3,9 @@
 Read when connecting a Micro Plus over Bluetooth, running its browser controls,
 or developing its BLE protocol.
 
+This page describes the Python version. The page now also runs on TypeScript, without the server; see
+[REAL_AMP_CHECK.md](REAL_AMP_CHECK.md) for where that stands.
+
 The editor can read, switch, edit and save Micro Plus presets using Bleak's
 CoreBluetooth backend. The browser editor supports amplifier/effect model
 selection, parameter changes, preset names, and saving to the current slot or
@@ -43,7 +46,7 @@ unless you choose one with the icons in the top bar. Select the preset name in t
 top bar, or press `/`, to open the list of presets, which marks the active one. The
 70 factory presets are sorted into groups by sound, each with a short description, and
 anything else is listed under Your presets. Factory presets are recognised by name
-(see `web/_static/micro-plus-presets.js`), so one you renamed moves to Your
+(see `src/app/presets.ts`), so one you renamed moves to Your
 presets, and one you changed but kept the name of keeps its original description. Switch
 from In groups to By number to list every preset in slot order instead.
 
@@ -118,7 +121,7 @@ sends the whole preset to the amp, backed up and read back like an import, and o
 Each amp and pedal has its own look. Amps are drawn as combos, stacks or rack units with their
 own covering and grille cloth, and each pedal has its own colour and finish. These are generic
 drawings made for this page, not pictures of the real gear. The styles are in
-`web/_static/micro-plus-looks.css`.
+`src/app/micro-plus-looks.css`.
 
 To rename a preset, select the pencil beside its name in the top bar, then save as
 usual. On a phone, **Save** and its menu stay at

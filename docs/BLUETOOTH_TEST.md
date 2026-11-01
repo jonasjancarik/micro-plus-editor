@@ -18,10 +18,10 @@ To run it, stop anything else connected to the amp, then:
 
 ```sh
 pnpm install
-pnpm bluetooth-test
+pnpm dev
 ```
 
-Open http://localhost:5175 in Chrome. Each run is saved in `_work/bluetooth-test/`, with a copy of
+Open http://localhost:5175/web/bluetooth-test.html in Chrome. Each run is saved in `_work/bluetooth-test/`, with a copy of
 slot 100 taken before the write. Add `?idle=3` for a shorter wait. To reach the page from a phone,
 run `adb reverse tcp:5175 tcp:5175`.
 

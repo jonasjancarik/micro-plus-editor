@@ -7,4 +7,8 @@ if [ ! -x "$python" ]; then
     echo 'See docs/MUSTANG_MICRO_PLUS_MACOS.md for setup.' >&2
     exit 1
 fi
+if [ ! -f dist/index.html ]; then
+    echo 'The page has not been built yet. Run: pnpm install && pnpm build' >&2
+    exit 1
+fi
 exec "$python" server/mmp_web.py "$@"
