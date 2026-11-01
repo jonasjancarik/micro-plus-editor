@@ -152,7 +152,8 @@ test('notices the knob on the amp being turned', async ({ page }) => {
 
 test('says what the amp stored when it limits a value', async ({ page }) => {
   await open(page);
-  const knob = page.locator('#board .knob input').first();
+  await page.locator('#board .pedal .name').first().click();
+  const knob = page.locator('#closeup-body .knob input').first();
   const key = await knob.getAttribute('data-key');
   const [node, parameter] = key!.split('/');
   const stored = await inSim<number>(page, `simulator.document.audioGraph.nodes.find((entry) => entry.nodeId === '${node}').dspUnitParameters['${parameter}']`);
