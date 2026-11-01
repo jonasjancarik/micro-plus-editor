@@ -1,95 +1,101 @@
-'use strict';
-const $ = id => document.getElementById(id);
-const API = '/api/micro-plus';
-const EDITOR_API = '/api/micro-plus/editor';
-const MESSAGE_SECONDS = 8;
-const DOUBLE_TAP_MS = 350;
+import { backend, NoReplyError } from './backend';
+import { choiceLabels, controlSpec, formatKnob, knobLabel, nodeLabels, parameterLabel, splitParameters } from './params';
+import { factoryPresetGroups } from './presets';
+import { slotOptions, exportAllPresets, exportCurrentPreset, importFromFile, renderImportChoice, renderPresetFiles, setUpBackups, stopExport, useChosenImport } from './files';
+import { compareKeys, comparePresets, comparedDocuments, playQueuedCompared, renderCompare, setComparePresets, setUpCompare, toggleCompared } from './compare';
+import { buildFootswitch, buildPedal, knobAngle, partImage, setPedalOn } from './pedal-kit';
 
-let state = { connected: false, presets: [], models: {} }; // Latest server reply.
-let known = null; // Latest connected reply; stays on screen while the amp is away.
-let reachable = true;
-let requestRunning = false;
-let exclusive = false; // A switch, save or model change owns the amp.
-let switchingTo = null;
-let epoch = 0; // Discards polls that started before a write.
-let reconnectNotice = false;
-let checkingAfterNoReply = false;
-let reconnectAfterStall = false;
+export const $ = (id: string): any => document.getElementById(id);
+export const API = '/api/micro-plus';
+export const EDITOR_API = '/api/micro-plus/editor';
+export const MESSAGE_SECONDS = 8;
+export const DOUBLE_TAP_MS = 350;
 
-const pendingEdits = new Map(); // "node/parameter" → newest value not yet sent.
-let inFlightKey = null;
-let sending = false;
-let idleWaiters = [];
-let dragging = null;
+export let state: any = { connected: false, presets: [], models: {} }; // Latest snapshot.
+export let known: any = null; // Latest connected reply; stays on screen while the amp is away.
+export let reachable = true;
+export let requestRunning = false;
+export let exclusive = false; // A switch, save or model change owns the amp.
+export let switchingTo = null;
+export let epoch = 0; // Discards polls that started before a write.
+export let reconnectNotice = false;
+export let checkingAfterNoReply = false;
+export let reconnectAfterStall = false;
 
-let selectedNode = null; // The pedal open in the close-up.
-let builtKey = '';
-let renderedNames = '';
-let renderedChanges = '';
-let formPreset = null;
-let advancedOpen = false;
-let showEmpty = storedFlag('mmp-show-empty');
-let renaming = false;
-let nameBeforeRenaming = '';
-let sortByNumber = storedFlag('mmp-sort-by-number');
-let shownGroup = null; // The one preset group the picker is limited to, if any.
-let userGroups = { groups: [], assignments: {} }; // The groups made on this computer, from the server.
-let savedPresets = {}; // Slot → the name of a preset seen to be saved there, from the server.
-let groupNameCurrent = null; // The group being renamed, whose own name isn't a clash.
-const GROUPS_API = '/api/micro-plus/groups';
-const NEW_GROUP = '__new__';
-const baselines = new Map(); // "generation:preset" → the saved document, for showing what changed.
-const pedalTabLabels = { stomp: 'Stomp', mod: 'Mod', amp: 'Amp', delay: 'Delay', reverb: 'Reverb' };
+export const pendingEdits = new Map(); // "node/parameter" → newest value not yet sent.
+export let inFlightKey = null;
+export let sending = false;
+export let idleWaiters = [];
+export let dragging = null;
 
-const grid = $('presets');
-const filter = $('filter');
-const nameInput = $('preset-name');
-const editorFields = $('editor');
+export let selectedNode = null; // The pedal open in the close-up.
+export let builtKey = '';
+export let renderedNames = '';
+export let renderedChanges = '';
+export let formPreset = null;
+export let advancedOpen = false;
+export let showEmpty = storedFlag('mmp-show-empty');
+export let renaming = false;
+export let nameBeforeRenaming = '';
+export let sortByNumber = storedFlag('mmp-sort-by-number');
+export let shownGroup = null; // The one preset group the picker is limited to, if any.
+export let userGroups = { groups: [], assignments: {} }; // The groups made on this device.
+export let savedPresets = {}; // Slot → the name of a preset seen to be saved there.
+export let groupNameCurrent = null; // The group being renamed, whose own name isn't a clash.
+export const GROUPS_API = '/api/micro-plus/groups';
+export const NEW_GROUP = '__new__';
+export const baselines = new Map(); // "generation:preset" → the saved document, for showing what changed.
+export const pedalTabLabels = { stomp: 'Stomp', mod: 'Mod', amp: 'Amp', delay: 'Delay', reverb: 'Reverb' };
 
-function storedFlag(key) {
+export const grid = $('presets');
+export const filter = $('filter');
+export const nameInput = $('preset-name');
+export const editorFields = $('editor');
+
+export function storedFlag(key) {
   try { return localStorage.getItem(key) === '1'; } catch { return false; }
 }
-function storeFlag(key, value) {
+export function storeFlag(key, value) {
   try { localStorage.setItem(key, value ? '1' : '0'); } catch { /* Only a convenience. */ }
 }
-function setText(element, text) {
+export function setText(element, text) {
   if (element.textContent !== text) element.textContent = text; // Keeps live regions quiet.
 }
-function isEmptySlot(preset) { return !preset.name || /^empty$/i.test(preset.name.trim()); }
-function displayName(preset) { return isEmptySlot(preset) ? 'Empty' : preset.name; }
-function presetByNumber(number) { return known?.presets.find(preset => preset.preset === number); }
-function guard() { return { preset: state.preset, revision: state.revision }; }
-function documentName() { return known?.document?.info.displayName.trim() ?? ''; }
-function nameChanged() { return Boolean(known?.document) && nameInput.value.trim() !== documentName(); }
-function shownName() { // A new name shows straight away, though it isn't kept until you save.
+export function isEmptySlot(preset) { return !preset.name || /^empty$/i.test(preset.name.trim()); }
+export function displayName(preset) { return isEmptySlot(preset) ? 'Empty' : preset.name; }
+export function presetByNumber(number) { return known?.presets.find(preset => preset.preset === number); }
+export function guard() { return { preset: state.preset, revision: state.revision }; }
+export function documentName() { return known?.document?.info.displayName.trim() ?? ''; }
+export function nameChanged() { return Boolean(known?.document) && nameInput.value.trim() !== documentName(); }
+export function shownName() { // A new name shows straight away, though it isn't kept until you save.
   return (formPreset === known?.preset && nameChanged() && nameInput.value.trim()) || known?.name || 'Unnamed preset';
 }
-function startRenaming() {
+export function startRenaming() {
   renaming = true;
   nameBeforeRenaming = nameInput.value;
   document.querySelector('.now').classList.add('renaming');
   nameInput.focus();
   nameInput.select();
 }
-function closeRenaming() {
+export function closeRenaming() {
   renaming = false;
   document.querySelector('.now').classList.remove('renaming');
 }
-function stopRenaming({ restore = false, refocus = false } = {}) {
+export function stopRenaming({ restore = false, refocus = false } = {}) {
   if (!renaming) return;
   closeRenaming();
   nameInput.value = (restore ? nameBeforeRenaming : nameInput.value).trim() || documentName();
   if (refocus) $('rename').focus();
   render();
 }
-function editsWaiting() { return sending || pendingEdits.size > 0; }
+export function editsWaiting() { return sending || pendingEdits.size > 0; }
 // The amp keeps calling a preset edited even after every setting is back to its saved value.
-function edited() { return Boolean(known?.dirty) && !(baseline() && changesFromSaved().length === 0); }
-function hasChanges() { return edited() || nameChanged() || editsWaiting(); }
+export function edited() { return Boolean(known?.dirty) && !(baseline() && changesFromSaved().length === 0); }
+export function hasChanges() { return edited() || nameChanged() || editsWaiting(); }
 
 // Messages -----------------------------------------------------------------
-let messageTimer;
-function showMessage(text, kind = '', { outlastsReconnect = false } = {}) {
+export let messageTimer;
+export function showMessage(text, kind = '', { outlastsReconnect = false } = {}) {
   const message = $('message');
   message.hidden = !text;
   message.dataset.kind = kind;
@@ -99,17 +105,17 @@ function showMessage(text, kind = '', { outlastsReconnect = false } = {}) {
   // Problems stay until they're dealt with; good news shouldn't sit there for the rest of the session.
   if (text && kind !== 'error') messageTimer = setTimeout(clearOldNews, MESSAGE_SECONDS * 1000);
 }
-function clearOldNews() {
+export function clearOldNews() {
   if (exclusive) return; // Still the progress of a running operation, which replaces it when done.
   showMessage('');
   renderStatus();
 }
 
-// Talking to the server ----------------------------------------------------
-function adopt(next) {
+// Talking to the session ----------------------------------------------------
+export function adopt(next) {
   if (next.preset_groups) userGroups = next.preset_groups;
   if (next.saved_presets) savedPresets = next.saved_presets;
-  if (next.compare_presets) comparePresets = next.compare_presets;
+  if (next.compare_presets) setComparePresets(next.compare_presets);
   if (next.document && !next.dirty) comparedDocuments.set(next.preset, next.document);
   if (next.stalled) reconnectAfterStall = true;
   if (next.connected) {
@@ -132,21 +138,21 @@ function adopt(next) {
   state = next;
 }
 
-function baselineKey(snapshot) { return `${snapshot.revision?.split(':')[0]}:${snapshot.preset}`; }
+export function baselineKey(snapshot) { return `${snapshot.revision?.split(':')[0]}:${snapshot.preset}`; }
 
 // A page opened after edits never saw the preset clean, so it asks the amp for the saved one.
 // Without it the page still works and only can't list the changes, so a few tries are enough.
-const SAVED_COPY_TRIES = 3;
-const SAVED_COPY_RETRY_MS = 1500;
-const savedCopyTries = new Map();
-let savedCopyRunning = false;
+export const SAVED_COPY_TRIES = 3;
+export const SAVED_COPY_RETRY_MS = 1500;
+export const savedCopyTries = new Map();
+export let savedCopyRunning = false;
 // While the amp calls the preset edited and the saved copy hasn't arrived, nobody knows yet whether anything differs.
-function savedCopyUnknown() { return state.connected && Boolean(known?.dirty && known.document) && !baseline(); }
-function savedCopyGaveUp() {
+export function savedCopyUnknown() { return state.connected && Boolean(known?.dirty && known.document) && !baseline(); }
+export function savedCopyGaveUp() {
   return savedCopyUnknown() && !savedCopyRunning && (savedCopyTries.get(baselineKey(known)) ?? 0) >= SAVED_COPY_TRIES;
 }
-function checkingForChanges() { return savedCopyUnknown() && !savedCopyGaveUp() && !nameChanged() && !editsWaiting(); }
-async function fetchSavedCopy() {
+export function checkingForChanges() { return savedCopyUnknown() && !savedCopyGaveUp() && !nameChanged() && !editsWaiting(); }
+export async function fetchSavedCopy() {
   if (savedCopyRunning || !known?.dirty || !known.document || baseline()) return;
   const key = baselineKey(known);
   const tries = savedCopyTries.get(key) ?? 0;
@@ -157,7 +163,7 @@ async function fetchSavedCopy() {
     const reply = await post(EDITOR_API, { action: 'saved-copy', preset: known.preset, revision: known.revision });
     baselines.set(key, reply.saved_document);
   } catch {
-    // The server may have just started reconnecting, so a poll gets to report that before this counts as giving up.
+    // The session may have just started reconnecting, so a poll gets to report that before this counts as giving up.
     await new Promise(resolve => setTimeout(resolve, SAVED_COPY_RETRY_MS));
   } finally {
     savedCopyRunning = false;
@@ -165,14 +171,12 @@ async function fetchSavedCopy() {
   }
 }
 
-async function readState() {
+export async function readState() {
   if (requestRunning || exclusive || editsWaiting() || document.hidden) return;
   requestRunning = true;
   const started = epoch;
   try {
-    const response = await fetch(API, { signal: AbortSignal.timeout(5000) });
-    if (!response.ok) throw new Error('Unexpected reply');
-    const next = await response.json();
+    const next = await backend.read();
     if (started === epoch) { reachable = true; adopt(next); }
   } catch {
     if (started === epoch) { reachable = false; state = { ...state, connected: false, error: null }; }
@@ -182,22 +186,16 @@ async function readState() {
   }
 }
 
-async function post(url, body) {
-  const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body), signal: AbortSignal.timeout(45000) });
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error || 'The Micro Plus did not confirm the change.');
-  return result;
-}
+export function post(url, body) { return backend.post(url, body); }
 
-function failureText(error) {
-  if (!(error instanceof TypeError || error.name === 'TimeoutError')) return error.message;
+export function failureText(error) {
+  if (!(error instanceof NoReplyError)) return error.message;
   checkingAfterNoReply = true;
   return 'No reply from the editor app, so this change may or may not have reached the amp. Checking…';
 }
 
 // Live edits: the newest value per control wins, and controls stay usable while one is being sent.
-function queueEdit(node, parameter, value) {
+export function queueEdit(node, parameter, value) {
   pendingEdits.set(`${node}/${parameter}`, { node, parameter, value });
   showMessage('');
   reconnectNotice = false;
@@ -205,7 +203,7 @@ function queueEdit(node, parameter, value) {
   renderStatus();
 }
 
-async function pumpEdits() {
+export async function pumpEdits() {
   if (sending || exclusive) return;
   const [key, edit] = pendingEdits.entries().next().value ?? [];
   if (!key || !state.connected) {
@@ -236,19 +234,19 @@ async function pumpEdits() {
   }
 }
 
-function showLimited({ node: nodeId, parameter, stored }) {
+export function showLimited({ node: nodeId, parameter, stored }) {
   const node = nodeById(nodeId);
   if (node) showMessage(`${knobLabel(parameter)} stopped at ${describeValue(node, parameter, stored)}, which is as far as the amp goes here.`);
 }
 
-function editsIdle() {
-  return new Promise(resolve => {
+export function editsIdle() {
+  return new Promise<void>(resolve => {
     if (editsWaiting()) idleWaiters.push(resolve); else resolve();
   });
 }
 
 // Operations that need the amp to themselves.
-async function exclusiveOperation(url, body, progress, onSuccess) {
+export async function exclusiveOperation(url, body, progress, onSuccess?) {
   await editsIdle();
   if (exclusive || !state.connected) { switchingTo = null; return false; }
   exclusive = true;
@@ -279,13 +277,13 @@ async function exclusiveOperation(url, body, progress, onSuccess) {
   return success;
 }
 
-function restoreFocus(key) {
+export function restoreFocus(key) {
   if (document.activeElement && document.activeElement !== document.body) return;
   editorFields.querySelector(`[data-key="${CSS.escape(key)}"]:not(.field)`)?.focus({ preventScroll: true });
 }
 
 // Dialogs ------------------------------------------------------------------
-function confirmAction(title, text, action) {
+export function confirmAction(title, text, action) {
   const dialog = $('confirm-dialog');
   $('confirm-title').textContent = title;
   $('confirm-text').textContent = text;
@@ -297,17 +295,17 @@ function confirmAction(title, text, action) {
   });
 }
 
-function stillSameEditor(expected) {
+export function stillSameEditor(expected) {
   if (state.preset === expected.preset && state.revision === expected.revision) return true;
   showMessage('This preset changed since you loaded it. Review its current settings, then try again.', 'error');
   return false;
 }
 
-const SAVE_CAUTION = 'The editor keeps a backup first, and you can undo the save afterwards. '
+export const SAVE_CAUTION = 'The editor keeps a backup first, and you can undo the save afterwards. '
   + 'Saving is still experimental and has only been tested on a spare slot.';
 
 // Preset switching ---------------------------------------------------------
-async function selectPreset(number, { discard = false } = {}) {
+export async function selectPreset(number, { discard = false } = {}) {
   closePicker();
   if (exclusive || !state.connected) return;
   if (number === state.preset && !discard) return;
@@ -326,7 +324,7 @@ async function selectPreset(number, { discard = false } = {}) {
   playQueuedCompared(switched);
 }
 
-function stepPreset(direction) {
+export function stepPreset(direction) {
   if (!known?.presets.length) return;
   const candidates = known.presets.filter(preset => showEmpty || !isEmptySlot(preset) || preset.preset === known.preset);
   const index = candidates.findIndex(preset => preset.preset === known.preset);
@@ -334,7 +332,7 @@ function stepPreset(direction) {
 }
 
 // Saving -------------------------------------------------------------------
-async function saveHere() {
+export async function saveHere() {
   const name = nameInput.value.trim();
   if (!name) { startRenaming(); return; }
   await editsIdle();
@@ -351,7 +349,7 @@ async function saveHere() {
     });
 }
 
-function renderCopyChoice() {
+export function renderCopyChoice() {
   const preset = presetByNumber(Number($('copy-target').value));
   if (!preset) return;
   const occupied = !isEmptySlot(preset);
@@ -359,7 +357,7 @@ function renderCopyChoice() {
   setText($('copy-action'), occupied ? `Replace preset ${preset.preset}` : `Save to preset ${preset.preset}`);
 }
 
-async function saveCopy() {
+export async function saveCopy() {
   await editsIdle();
   const expected = guard();
   const select = $('copy-target');
@@ -382,7 +380,7 @@ async function saveCopy() {
       ? `Saved to preset ${target}.` : `Saved a copy to preset ${target}. You're still editing preset ${state.preset}.`));
 }
 
-async function undoSave() {
+export async function undoSave() {
   const save = state.last_save;
   if (!save) return;
   await editsIdle();
@@ -398,21 +396,21 @@ async function undoSave() {
 }
 
 // Preset list --------------------------------------------------------------
-const YOUR_PRESETS = 'Your presets';
-const EMPTY_SLOTS = 'Empty slots';
-const factoryPresets = new Map(factoryPresetGroups.flatMap(group =>
+export const YOUR_PRESETS = 'Your presets';
+export const EMPTY_SLOTS = 'Empty slots';
+export const factoryPresets = new Map(factoryPresetGroups.flatMap(group =>
   Object.entries(group.presets).map(([name, preset]) => [name, { group: group.name, ...preset }])));
 
-function movableGroups() { return [...userGroups.groups, YOUR_PRESETS, ...factoryPresetGroups.map(group => group.name)]; }
-function usualGroup(preset) { return factoryPresets.get(preset.name.trim())?.group ?? YOUR_PRESETS; }
-function presetGroup(preset) {
+export function movableGroups() { return [...userGroups.groups, YOUR_PRESETS, ...factoryPresetGroups.map(group => group.name)]; }
+export function usualGroup(preset) { return factoryPresets.get(preset.name.trim())?.group ?? YOUR_PRESETS; }
+export function presetGroup(preset) {
   if (isEmptySlot(preset)) return EMPTY_SLOTS;
   const moved = userGroups.assignments[preset.preset];
   return movableGroups().includes(moved) ? moved : usualGroup(preset);
 }
-function presetDescription(preset) { return factoryPresets.get(preset?.name?.trim())?.description ?? ''; }
-function presetArtists(preset) { return factoryPresets.get(preset?.name?.trim())?.artists ?? []; }
-function showArtists(element, artists) {
+export function presetDescription(preset) { return factoryPresets.get(preset?.name?.trim())?.description ?? ''; }
+export function presetArtists(preset) { return (factoryPresets.get(preset?.name?.trim()) as any)?.artists ?? []; }
+export function showArtists(element, artists) {
   const label = document.createElement('span');
   label.className = 'artists-label';
   label.textContent = 'Close to';
@@ -424,14 +422,14 @@ function showArtists(element, artists) {
   }));
 }
 // Unlabelled presets came with the amp.
-function presetOrigin(preset) {
+export function presetOrigin(preset) {
   if (!preset || isEmptySlot(preset)) return '';
   const name = preset.name.trim();
   if (!factoryPresets.has(name)) return 'Yours';
   return savedPresets[preset.preset] === name ? 'Edited' : '';
 }
 
-function smallButton(label, onClick, ariaLabel) {
+export function smallButton(label, onClick, ariaLabel?) {
   const button = document.createElement('button');
   button.type = 'button';
   button.textContent = label;
@@ -440,7 +438,7 @@ function smallButton(label, onClick, ariaLabel) {
   return button;
 }
 
-function buildPresetList() {
+export function buildPresetList() {
   grid.replaceChildren();
   const groups = [...movableGroups(), EMPTY_SLOTS]
     .map(group => [group, known.presets.filter(preset => presetGroup(preset) === group)])
@@ -534,14 +532,14 @@ function buildPresetList() {
   }), smallButton('+ New group', newGroup));
 }
 
-// Your own groups live on this computer, so changing them never touches the amp.
-function groupNameProblem(name, current = null) {
+// Your own groups live on this device, so changing them never touches the amp.
+export function groupNameProblem(name, current = null) {
   const taken = [...movableGroups(), EMPTY_SLOTS, 'All'].filter(group => group !== current);
   const match = taken.find(group => group.toLocaleLowerCase() === name.toLocaleLowerCase());
   return match ? `There's already a group called “${match}”. Choose another name.` : '';
 }
 
-async function changeGroups(body) {
+export async function changeGroups(body) {
   setText($('picker-status'), '');
   epoch++; // A reply already on its way would otherwise bring the old groups back for a moment.
   try {
@@ -549,13 +547,13 @@ async function changeGroups(body) {
     render();
     return true;
   } catch (error) {
-    setText($('picker-status'), error instanceof TypeError || error.name === 'TimeoutError'
+    setText($('picker-status'), error instanceof NoReplyError
       ? "No reply from the editor app, so your groups didn't change." : error.message);
     return false;
   }
 }
 
-function askGroupName(title, action, value = '', current = null) {
+export function askGroupName(title, action, value = '', current = null) {
   const dialog = $('group-dialog');
   setText($('group-title'), title);
   setText($('group-action'), action);
@@ -569,12 +567,12 @@ function askGroupName(title, action, value = '', current = null) {
   });
 }
 
-async function newGroup() {
+export async function newGroup() {
   const name = await askGroupName('New group', 'Create group');
   if (name && await changeGroups({ action: 'create', name })) shownGroup = null;
 }
 
-async function renameGroup(group) {
+export async function renameGroup(group) {
   const name = await askGroupName(`Rename “${group}”`, 'Rename', group, group);
   if (!name || name === group) return;
   const wasShown = shownGroup === group;
@@ -584,20 +582,20 @@ async function renameGroup(group) {
   }
 }
 
-async function deleteGroup(group) {
+export async function deleteGroup(group) {
   const count = known.presets.filter(preset => presetGroup(preset) === group).length;
   const text = count ? `${count === 1 ? 'Its preset goes' : `Its ${count} presets go`} back to where ${count === 1 ? 'it' : 'they'} started. Nothing on your amp changes.`
     : 'This group has no presets in it.';
   if (await confirmAction(`Delete “${group}”?`, text, 'Delete group')) await changeGroups({ action: 'delete', name: group });
 }
 
-function showMoveNameField() {
+export function showMoveNameField() {
   $('move-new').hidden = $('move-target').value !== NEW_GROUP;
   if (!$('move-new').hidden) $('move-name').focus();
   $('move-name').required = !$('move-new').hidden;
 }
 
-async function movePreset(number) {
+export async function movePreset(number) {
   const preset = presetByNumber(number);
   const current = presetGroup(preset);
   const usual = usualGroup(preset);
@@ -626,20 +624,20 @@ async function movePreset(number) {
   else filter.focus();
 }
 
-const searchText = text => text.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase(); // So "motley" finds Mötley Crüe.
+export const searchText = text => text.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase(); // So "motley" finds Mötley Crüe.
 
-function matchesSearch(preset, query) {
+export function matchesSearch(preset, query) {
   if (!query) return true;
   if (/^\d+$/.test(query)) return preset.preset === Number(query); // Numbers mean slots, not "contains 7".
   return [displayName(preset), presetDescription(preset), ...presetArtists(preset), presetGroup(preset), presetOrigin(preset)]
     .some(text => searchText(text).includes(query));
 }
 
-function visiblePresetButtons() {
+export function visiblePresetButtons() {
   return [...grid.querySelectorAll('.preset')].filter(button => !button.parentElement.hidden);
 }
 
-function renderPresets() {
+export function renderPresets() {
   if (!known) return;
   const names = JSON.stringify([known.presets, userGroups, savedPresets, sortByNumber]);
   if (names !== renderedNames) {
@@ -703,15 +701,15 @@ function renderPresets() {
   $('empty').hidden = visible > 0 || !query;
 }
 
-function scrollToActive(block = 'nearest') {
+export function scrollToActive(block = 'nearest') {
   grid.querySelector('[aria-current="true"]')?.scrollIntoView({ block });
 }
 
 // Editor: building controls --------------------------------------------------
-function currentNodes() { return known?.document?.audioGraph.nodes ?? []; }
-function nodeById(id) { return currentNodes().find(node => node.nodeId === id); }
+export function currentNodes() { return known?.document?.audioGraph.nodes ?? []; }
+export function nodeById(id) { return currentNodes().find(node => node.nodeId === id); }
 // The nodes are stored in a fixed order, but the sound travels along the preset's connections.
-function signalOrder(nodes, graph = known?.document?.audioGraph) {
+export function signalOrder(nodes, graph = known?.document?.audioGraph) {
   const next = new Map((graph?.connections ?? []).filter(link => link.input.index === 0)
     .map(link => [link.input.nodeId, link.output.nodeId]));
   const ordered = [];
@@ -722,41 +720,41 @@ function signalOrder(nodes, graph = known?.document?.audioGraph) {
   }
   return new Set(ordered).size === nodes.length ? ordered : nodes;
 }
-function nodeTitle(node) { return nodeLabels[node.nodeId] || parameterLabel(node.nodeId); }
-function modelName(node) {
+export function nodeTitle(node) { return nodeLabels[node.nodeId] || parameterLabel(node.nodeId); }
+export function modelName(node) {
   return (known.models[node.nodeId] || []).find(model => model.id === node.FenderId)?.name || 'Current model';
 }
-function specFor(node, parameter, value) {
+export function specFor(node, parameter, value) {
   return controlSpec(parameter, value, (known.unscaled?.[node.FenderId] || []).includes(parameter),
     known.parameter_choices?.[parameter], node.FenderId);
 }
 
 // Controls are only rebuilt when their shape changes, so focus and drags survive edits.
-function shapeKey() {
+export function shapeKey() {
   return JSON.stringify([selectedNode, signalOrder(currentNodes()).map(node => [node.nodeId, node.FenderId,
     Object.entries(node.dspUnitParameters).map(([key, value]) => [key, specFor(node, key, value).kind])])]);
 }
 
-const nodeColours = { stomp: '#fe6a38', mod: '#2bc4a0', amp: '#5d5a54', delay: '#5a9bea', reverb: '#a184ea' };
-const addLabels = { stomp: 'Add a stompbox', mod: 'Add modulation', delay: 'Add a delay', reverb: 'Add a reverb' };
+export const nodeColours = { stomp: '#fe6a38', mod: '#2bc4a0', amp: '#5d5a54', delay: '#5a9bea', reverb: '#a184ea' };
+export const addLabels = { stomp: 'Add a stompbox', mod: 'Add modulation', delay: 'Add a delay', reverb: 'Add a reverb' };
 
-function isEmptyNode(node) { return node.FenderId === 'DUBS_Unknown'; }
-function hasBypass(node) { return 'bypass' in node.dspUnitParameters && !isEmptyNode(node); }
-function specOfNode(node) { return key => specFor(node, key, node.dspUnitParameters[key]); }
+export function isEmptyNode(node) { return node.FenderId === 'DUBS_Unknown'; }
+export function hasBypass(node) { return 'bypass' in node.dspUnitParameters && !isEmptyNode(node); }
+export function specOfNode(node) { return key => specFor(node, key, node.dspUnitParameters[key]); }
 
-function bindBypass(input, node) {
+export function bindBypass(input, node) {
   input.addEventListener('change', () => {
     for (const twin of controlsFor(`${node.nodeId}/bypass`)) writeControl(twin, !input.checked);
     queueEdit(node.nodeId, 'bypass', !input.checked);
   });
 }
 
-function controlsFor(key) {
+export function controlsFor(key) {
   return editorFields.querySelectorAll(`[data-key="${CSS.escape(key)}"]:not(.field)`);
 }
 
 // The board: one small pedal per position, joined by a cable.
-function buildBoard() {
+export function buildBoard() {
   const board = $('board');
   board.replaceChildren();
   for (const node of signalOrder(currentNodes())) {
@@ -829,18 +827,18 @@ function buildBoard() {
   }
 }
 
-// Moving pedals. A new order waits on the server and reaches the amp when the preset is saved.
-function boardOrder() { return [...$('board').children].map(slot => slot.dataset.node); }
+// Moving pedals. A new order waits in the session and reaches the amp when the preset is saved.
+export function boardOrder() { return [...$('board').children].map(slot => slot.dataset.node); }
 
-async function changeOrder(order, afterwards) {
+export async function changeOrder(order, afterwards?) {
   const moved = await exclusiveOperation(EDITOR_API, { action: 'order', ...guard(), order }, 'Moving the pedal…',
     () => hasChanges() ? "You'll hear the new order after you save." : '');
-  if (!moved) builtKey = ''; // Put the board back to what the server has.
+  if (!moved) builtKey = ''; // Put the board back to what the session has.
   render();
   afterwards?.();
 }
 
-function buildMoveButtons(node) {
+export function buildMoveButtons(node) {
   const row = document.createElement('div');
   row.className = 'slot-move';
   const order = signalOrder(currentNodes()).map(entry => entry.nodeId);
@@ -848,7 +846,7 @@ function buildMoveButtons(node) {
   for (const [step, mark, towards] of [[-1, '‹', 'your guitar'], [1, '›', 'your headphones']]) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = mark;
+    button.textContent = String(mark);
     button.dataset.move = `${node.nodeId}/${step}`;
     button.title = `Move ${nodeTitle(node).toLowerCase()} closer to ${towards}`;
     button.setAttribute('aria-label', button.title);
@@ -868,16 +866,16 @@ function buildMoveButtons(node) {
 }
 
 // Dragging is for a mouse or pen. On a touch screen a drag has to scroll the page, so the arrows do this there.
-let boardDrag = null;
+export let boardDrag = null;
 
-function placeDragged(event) {
+export function placeDragged(event) {
   const { slot, grabX, grabY } = boardDrag;
   slot.style.transform = '';
   const home = slot.getBoundingClientRect();
   slot.style.transform = `translate(${event.clientX - home.left - grabX}px, ${event.clientY - home.top - grabY}px)`;
 }
 
-function moveDragged(event) {
+export function moveDragged(event) {
   if (!boardDrag || event.pointerId !== boardDrag.pointerId) return;
   const { slot } = boardDrag;
   if (!boardDrag.moving) {
@@ -902,7 +900,7 @@ function moveDragged(event) {
   placeDragged(event);
 }
 
-function endDrag(event, { cancelled = false } = {}) {
+export function endDrag(event, { cancelled = false } = {}) {
   if (!boardDrag || (event.pointerId !== undefined && event.pointerId !== boardDrag.pointerId)) return;
   const { slot, moving, before, pointerId } = boardDrag;
   boardDrag = null;
@@ -925,14 +923,14 @@ function endDrag(event, { cancelled = false } = {}) {
   if (order.join() !== before.join()) changeOrder(order);
 }
 
-function cancelDrag(event) {
+export function cancelDrag(event) {
   if (event.key !== 'Escape' || !boardDrag) return;
   event.stopPropagation();
   endDrag({}, { cancelled: true });
 }
 
-$('board').addEventListener('dragstart', event => event.preventDefault());
-$('board').addEventListener('pointerdown', event => {
+$('board').addEventListener('dragstart', (event: any) => event.preventDefault());
+$('board').addEventListener('pointerdown', (event: any) => {
   const slot = event.target.closest('.slot');
   if (!slot || event.button !== 0 || event.pointerType === 'touch' || boardDrag || exclusive || !state.connected
     || event.target.closest('.foot, .slot-move')) return;
@@ -942,11 +940,11 @@ $('board').addEventListener('pointerdown', event => {
   window.addEventListener('keydown', cancelDrag, true);
 });
 $('board').addEventListener('pointermove', moveDragged);
-window.addEventListener('pointermove', event => { if (boardDrag && !boardDrag.moving) moveDragged(event); });
+window.addEventListener('pointermove', (event: any) => { if (boardDrag && !boardDrag.moving) moveDragged(event); });
 window.addEventListener('pointerup', endDrag);
-window.addEventListener('pointercancel', event => endDrag(event, { cancelled: true }));
+window.addEventListener('pointercancel', (event: any) => endDrag(event, { cancelled: true }));
 
-function buildKnobSpec(node, parameter) {
+export function buildKnobSpec(node, parameter) {
   const value = node.dspUnitParameters[parameter];
   const spec = specFor(node, parameter, value);
   const shown = value * spec.scale;
@@ -954,7 +952,7 @@ function buildKnobSpec(node, parameter) {
     step: spec.step, format: text => formatKnob(spec, text), key: `${node.nodeId}/${parameter}` };
 }
 
-function bindKnobs(root, node) {
+export function bindKnobs(root, node) {
   for (const input of root.querySelectorAll('.knob input')) {
     const parameter = input.dataset.key.split('/')[1];
     const spec = specFor(node, parameter, node.dspUnitParameters[parameter]);
@@ -963,13 +961,13 @@ function bindKnobs(root, node) {
     let downX = 0;
     let downY = 0;
     let lastTap = 0;
-    dial.addEventListener('pointerdown', event => {
+    dial.addEventListener('pointerdown', (event: any) => {
       dragging = input;
       downX = event.clientX;
       downY = event.clientY;
     });
     // Counted by hand because not every phone browser reports a double tap, and a knob swallows the gesture anyway.
-    dial.addEventListener('pointerup', event => {
+    dial.addEventListener('pointerup', (event: any) => {
       if (Math.hypot(event.clientX - downX, event.clientY - downY) > 5) { lastTap = 0; return; }
       const second = event.timeStamp - lastTap < DOUBLE_TAP_MS;
       lastTap = second ? 0 : event.timeStamp;
@@ -979,7 +977,7 @@ function bindKnobs(root, node) {
   }
 }
 
-function buildField(node, parameter, value) {
+export function buildField(node, parameter, value) {
   const spec = specFor(node, parameter, value);
   const key = `${node.nodeId}/${parameter}`;
   const id = `control-${node.nodeId}-${parameter}`;
@@ -1046,7 +1044,7 @@ function buildField(node, parameter, value) {
   return field;
 }
 
-function resetButton(node, parameter) {
+export function resetButton(node, parameter) {
   const reset = document.createElement('button');
   reset.type = 'button';
   reset.className = 'reset';
@@ -1062,13 +1060,13 @@ function resetButton(node, parameter) {
   return reset;
 }
 
-function resetToSaved(nodeId, parameter, saved) {
+export function resetToSaved(nodeId, parameter, saved) {
   queueEdit(nodeId, parameter, saved);
   for (const control of controlsFor(`${nodeId}/${parameter}`)) writeControl(control, saved);
 }
 
 // Changing the model replaces the pedal's settings, so the saved model goes back first and its settings after it.
-async function restorePedal(nodeId) {
+export async function restorePedal(nodeId) {
   const model = changesFromSaved().find(change => change.nodeId === nodeId && change.savedModel);
   if (model && !await exclusiveOperation(EDITOR_API, { action: 'model', ...guard(), node: nodeId, model: model.savedModel },
     'Changing model…')) return;
@@ -1077,7 +1075,7 @@ async function restorePedal(nodeId) {
   }
 }
 
-function stepModel(node, direction) {
+export function stepModel(node, direction) {
   // Stepping is for trying sounds, so it passes over the choice that removes the pedal.
   const choices = (known.models[node.nodeId] || []).filter(model => model.id !== 'DUBS_Unknown');
   const index = choices.findIndex(model => model.id === node.FenderId);
@@ -1085,7 +1083,7 @@ function stepModel(node, direction) {
   if (model) exclusiveOperation(EDITOR_API, { action: 'model', ...guard(), node: node.nodeId, model: model.id }, `Changing to ${model.name}…`);
 }
 
-function buildModelPicker(node) {
+export function buildModelPicker(node) {
   const row = document.createElement('div');
   row.className = 'model-row';
   const label = document.createElement('label');
@@ -1115,7 +1113,7 @@ function buildModelPicker(node) {
       const step = document.createElement('button');
       step.type = 'button';
       step.className = 'icon';
-      step.textContent = text;
+      step.textContent = String(text);
       step.dataset.key = `${node.nodeId}/#model${direction}`;
       step.title = `Try the ${word} ${what}`;
       step.setAttribute('aria-label', step.title);
@@ -1127,7 +1125,7 @@ function buildModelPicker(node) {
 }
 
 // The close-up: the chosen pedal at full size, with anything less common tucked away below it.
-function buildCloseup() {
+export function buildCloseup() {
   const body = $('closeup-body');
   body.replaceChildren();
   const node = nodeById(selectedNode);
@@ -1179,7 +1177,7 @@ function buildCloseup() {
   }
 }
 
-function buildUndoButton(node) {
+export function buildUndoButton(node) {
   const undo = document.createElement('button');
   undo.type = 'button';
   undo.id = 'closeup-undo';
@@ -1189,7 +1187,7 @@ function buildUndoButton(node) {
   return undo;
 }
 
-function openCloseup(nodeId) {
+export function openCloseup(nodeId) {
   selectedNode = nodeId;
   builtKey = '';
   renderEditor();
@@ -1200,7 +1198,7 @@ function openCloseup(nodeId) {
 }
 
 // One button per position in signal order, so you can move around the board without closing the close-up.
-function renderCloseupTabs(changes) {
+export function renderCloseupTabs(changes) {
   const tabs = $('closeup-tabs');
   const nodes = signalOrder(currentNodes());
   if ([...tabs.children].map(tab => tab.dataset.node).join() !== nodes.map(node => node.nodeId).join()) {
@@ -1227,7 +1225,7 @@ function renderCloseupTabs(changes) {
 }
 
 // Editor: keeping controls in step with the amp ------------------------------
-function writeControl(control, value) {
+export function writeControl(control, value) {
   if (control.type === 'checkbox') {
     const isBypass = control.dataset.key.endsWith('/bypass');
     control.checked = isBypass ? !value : Boolean(value);
@@ -1253,7 +1251,7 @@ function writeControl(control, value) {
   }
 }
 
-function syncControl(control) {
+export function syncControl(control) {
   const key = control.dataset.key;
   if (!key || key === inFlightKey || pendingEdits.has(key) || control === dragging) return;
   const typing = document.activeElement === control && (control.type === 'number' || control.type === 'text');
@@ -1265,17 +1263,17 @@ function syncControl(control) {
   if (parameter in node.dspUnitParameters) writeControl(control, node.dspUnitParameters[parameter]);
 }
 
-function baseline() { return known ? baselines.get(baselineKey(known)) : null; }
-function baselineValue(nodeId, parameter) {
+export function baseline() { return known ? baselines.get(baselineKey(known)) : null; }
+export function baselineValue(nodeId, parameter) {
   const node = baseline()?.audioGraph.nodes.find(entry => entry.nodeId === nodeId);
   const current = nodeById(nodeId);
   return node && current && node.FenderId === current.FenderId ? node.dspUnitParameters[parameter] : undefined;
 }
-function sameValue(a, b) {
+export function sameValue(a, b) {
   return typeof a === 'number' && typeof b === 'number' ? Math.abs(a - b) < 1e-4 : a === b;
 }
 
-function changesFromSaved() {
+export function changesFromSaved() {
   const saved = baseline();
   if (!saved) return [];
   const changes = [];
@@ -1305,7 +1303,7 @@ function changesFromSaved() {
   return changes;
 }
 
-function describeValue(node, parameter, value) {
+export function describeValue(node, parameter, value) {
   if (parameter === 'bypass') return value ? 'Off' : 'On';
   if (typeof value === 'boolean') return value ? 'On' : 'Off';
   if (typeof value === 'string') return choiceLabels[value] || parameterLabel(value);
@@ -1314,7 +1312,7 @@ function describeValue(node, parameter, value) {
   return Number(value.toPrecision(4)).toLocaleString();
 }
 
-function renderChanges(changes) {
+export function renderChanges(changes) {
   const named = nameChanged();
   const count = changes.length + (named ? 1 : 0);
   $('changes').hidden = count === 0;
@@ -1349,9 +1347,10 @@ function renderChanges(changes) {
   }
 }
 
-function renderEditor() {
+export function renderEditor() {
   const available = Boolean(known?.document);
   $('waiting').hidden = available;
+  renderWaiting();
   editorFields.hidden = !available;
   if (!available) return;
   if (selectedNode && !nodeById(selectedNode)) closeCloseup();
@@ -1408,7 +1407,7 @@ function renderEditor() {
 }
 
 // Status, top bar and banners ------------------------------------------------
-function renderStatus() {
+export function renderStatus() {
   const count = changesFromSaved().length + (nameChanged() ? 1 : 0);
   const checking = checkingForChanges();
   const unsaved = state.connected && hasChanges() && !checking;
@@ -1432,6 +1431,15 @@ function renderStatus() {
   if (nameInput.disabled) closeRenaming();
   $('open-presets').disabled = !known;
   if (known?.preset) document.title = `${unsaved ? '• ' : ''}${known.preset} · ${shownName()} · Micro Plus editor`;
+}
+
+export function renderWaiting() {
+  const needsClick = state.phase === 'waiting' && backend.connect && !backend.unsupported;
+  $('connect').hidden = !needsClick;
+  setText($('waiting-title'), needsClick ? 'Connect to your Micro Plus' : backend.unsupported ? "Bluetooth isn't available here" : 'Looking for your Micro Plus');
+  setText($('waiting-text'), backend.unsupported ?? (needsClick
+    ? 'Turn on the amp and close Fender Tone on your other devices, then choose your amp from the list.'
+    : 'Turn on the amp and close Fender Tone on your other devices. This page connects by itself once the amp is found.'));
 }
 
 function renderConnection() {
@@ -1460,7 +1468,7 @@ function renderConnection() {
     banner = `${state.stalled ? '' : 'Lost the connection to your Micro Plus. '}${reason}This page shows the last settings it read and will reconnect by itself.${edits}`;
   } else {
     connection.dataset.state = 'connecting';
-    label = 'Connecting…';
+    label = state.phase === 'waiting' ? 'Not connected' : 'Connecting…';
     if (state.error) banner = state.error;
   }
   setText($('connection-text'), label);
@@ -1483,7 +1491,7 @@ function renderConnection() {
   }
 }
 
-function renderLastSave() {
+export function renderLastSave() {
   const save = state.connected ? state.last_save : null;
   $('last-save').hidden = !save;
   $('undo-save').disabled = exclusive || editsWaiting();
@@ -1494,7 +1502,7 @@ function renderLastSave() {
   }
 }
 
-function render() {
+export function render() {
   const previousActive = grid.querySelector('[aria-current="true"]')?.dataset.preset;
   renderConnection();
   renderPresets();
@@ -1508,24 +1516,24 @@ function render() {
 }
 
 // Close-up -----------------------------------------------------------------------
-function closeCloseup() {
+export function closeCloseup() {
   if ($('closeup').open) $('closeup').close();
   else selectedNode = null;
 }
 
 // Save menu ------------------------------------------------------------------
-function closeSaveMenu() {
+export function closeSaveMenu() {
   $('save-menu').hidden = true;
   $('save-more').setAttribute('aria-expanded', 'false');
 }
-function toggleSaveMenu() {
+export function toggleSaveMenu() {
   const open = $('save-menu').hidden;
   $('save-menu').hidden = !open;
   $('save-more').setAttribute('aria-expanded', String(open));
 }
 
 // Preset picker --------------------------------------------------------------
-function openPicker({ search = false } = {}) {
+export function openPicker({ search = false } = {}) {
   const picker = $('preset-panel');
   if (picker.open || !known) return;
   filter.value = '';
@@ -1537,7 +1545,7 @@ function openPicker({ search = false } = {}) {
   const typing = search || window.matchMedia('(pointer: fine)').matches;
   (typing ? filter : grid.querySelector('.preset[tabindex="0"]') ?? filter).focus({ preventScroll: true });
 }
-function closePicker() {
+export function closePicker() {
   if ($('preset-panel').open) $('preset-panel').close();
 }
 
@@ -1557,10 +1565,10 @@ $('closeup').addEventListener('close', () => {
   $('board').querySelector(`[data-node="${opened}"] button`)?.focus({ preventScroll: true });
 });
 // Selecting the dimmed area around the close-up closes it; the backdrop's clicks land on the dialog itself.
-$('closeup').addEventListener('click', event => { if (event.target === $('closeup')) closeCloseup(); });
+$('closeup').addEventListener('click', (event: any) => { if (event.target === $('closeup')) closeCloseup(); });
 $('open-presets').addEventListener('click', () => openPicker());
 $('close-presets').addEventListener('click', closePicker);
-$('preset-panel').addEventListener('click', event => { if (event.target === $('preset-panel')) closePicker(); });
+$('preset-panel').addEventListener('click', (event: any) => { if (event.target === $('preset-panel')) closePicker(); });
 $('prev').addEventListener('click', () => stepPreset(-1));
 $('next').addEventListener('click', () => stepPreset(1));
 $('save').addEventListener('click', saveHere);
@@ -1568,8 +1576,8 @@ $('save-copy').addEventListener('click', saveCopy);
 $('save-more').addEventListener('click', toggleSaveMenu);
 // Runs before the chosen item's own handler, so a dialog it opens hands focus back to the arrow rather than a hidden item.
 $('save-menu').addEventListener('click', () => { closeSaveMenu(); $('save-more').focus(); }, { capture: true });
-document.addEventListener('click', event => { if (!event.target.closest('.save-split')) closeSaveMenu(); });
-document.addEventListener('keydown', event => {
+document.addEventListener('click', (event: any) => { if (!event.target.closest('.save-split')) closeSaveMenu(); });
+document.addEventListener('keydown', (event: any) => {
   if (event.key !== 'Escape' || $('save-menu').hidden) return;
   closeSaveMenu();
   $('save-more').focus();
@@ -1580,7 +1588,7 @@ $('export-current').addEventListener('click', exportCurrentPreset);
 // These close the picker first: its dimmed layer would otherwise hide the messages they show on the page.
 $('export-all').addEventListener('click', () => { closePicker(); exportAllPresets(); });
 $('import-preset').addEventListener('click', () => $('import-file').click());
-$('import-file').addEventListener('change', event => {
+$('import-file').addEventListener('change', (event: any) => {
   const [file] = event.target.files;
   event.target.value = ''; // So choosing the same file again still counts as a change.
   if (!file) return;
@@ -1590,20 +1598,20 @@ $('import-file').addEventListener('change', event => {
 $('import-choice').addEventListener('change', useChosenImport);
 $('import-target').addEventListener('change', renderImportChoice);
 $('export-dialog').addEventListener('close', () => {
-  if (!$('export-dialog').open) exportStopped = true; // Otherwise the next export has begun; the close event arrives late.
+  if (!$('export-dialog').open) stopExport(); // Otherwise the next export has begun; the close event arrives late.
 });
-$('show-empty').addEventListener('change', event => {
+$('show-empty').addEventListener('change', (event: any) => {
   showEmpty = event.target.checked;
   storeFlag('mmp-show-empty', showEmpty);
   renderPresets();
 });
-function listPresets(byNumber) {
+export function listPresets(byNumber) {
   sortByNumber = byNumber;
   storeFlag('mmp-sort-by-number', sortByNumber);
   renderPresets();
   scrollToActive('center');
 }
-function showTheme() {
+export function showTheme() {
   const theme = document.documentElement.dataset.theme ?? 'auto';
   for (const button of document.querySelectorAll('[data-theme-choice]')) {
     button.setAttribute('aria-pressed', String(button.dataset.themeChoice === theme));
@@ -1622,13 +1630,13 @@ showTheme();
 $('view-groups').addEventListener('click', () => listPresets(false));
 $('view-number').addEventListener('click', () => listPresets(true));
 $('move-target').addEventListener('change', showMoveNameField);
-$('group-form').addEventListener('submit', event => {
+$('group-form').addEventListener('submit', (event: any) => {
   if (event.submitter?.value !== 'confirm') return;
   const problem = groupNameProblem($('group-name').value.trim(), groupNameCurrent);
   setText($('group-error'), problem);
   if (problem) event.preventDefault();
 });
-$('move-form').addEventListener('submit', event => {
+$('move-form').addEventListener('submit', (event: any) => {
   if (event.submitter?.value !== 'confirm' || $('move-target').value !== NEW_GROUP) return;
   const problem = groupNameProblem($('move-name').value.trim());
   setText($('move-error'), problem);
@@ -1645,7 +1653,7 @@ $('discard').addEventListener('click', async () => {
   }
 });
 nameInput.addEventListener('input', () => { renderEditor(); renderStatus(); });
-nameInput.addEventListener('keydown', event => {
+nameInput.addEventListener('keydown', (event: any) => {
   if (event.key === 'Enter') { event.preventDefault(); stopRenaming({ refocus: true }); }
   if (event.key === 'Escape') { event.preventDefault(); stopRenaming({ restore: true, refocus: true }); }
 });
@@ -1653,7 +1661,7 @@ nameInput.addEventListener('blur', () => stopRenaming());
 $('rename').addEventListener('click', startRenaming);
 
 filter.addEventListener('input', () => { shownGroup = null; renderPresets(); }); // Search always covers every group.
-filter.addEventListener('keydown', event => {
+filter.addEventListener('keydown', (event: any) => {
   const first = visiblePresetButtons()[0];
   if (event.key === 'Enter' && first) {
     event.preventDefault();
@@ -1663,11 +1671,11 @@ filter.addEventListener('keydown', event => {
     first.focus();
   }
 });
-grid.addEventListener('click', event => {
+grid.addEventListener('click', (event: any) => {
   const button = event.target.closest('.preset');
   if (button) selectPreset(Number(button.dataset.preset));
 });
-grid.addEventListener('keydown', event => {
+grid.addEventListener('keydown', (event: any) => {
   if (event.target.closest('.row-tools')) {
     if (event.key === 'ArrowLeft') (event.target.previousElementSibling ?? event.target.closest('.row').firstElementChild).focus();
     if (event.key === 'ArrowRight') event.target.nextElementSibling?.focus();
@@ -1685,7 +1693,7 @@ grid.addEventListener('keydown', event => {
     else if (event.key === 'ArrowUp') filter.focus();
   }
 });
-document.addEventListener('keydown', event => {
+document.addEventListener('keydown', (event: any) => {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
     event.preventDefault(); // Never the browser's "save this page".
     if (!document.querySelector('dialog[open]:not(#closeup)') && !$('save').disabled) {
@@ -1704,6 +1712,15 @@ document.addEventListener('keydown', event => {
 
 $('changes').open = window.matchMedia('(min-width: 861px)').matches; // There's room for the list beside everything else.
 
+$('connect').addEventListener('click', () => {
+  backend.connect();
+  readState();
+});
 setUpCompare();
+setUpBackups();
 readState();
 setInterval(readState, 1000);
+
+export function setExclusive(value) { exclusive = value; }
+export function bumpEpoch() { epoch++; }
+export function clearFormPreset() { formPreset = null; }

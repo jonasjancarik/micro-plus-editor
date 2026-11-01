@@ -1,15 +1,15 @@
-'use strict';
+
 // Assembles a pedal from the shared parts. A pedal only needs a name, a colour and its knobs.
-const PART = name => `/web_ui/_static/pedal-kit/${name}.png`;
-const partImage = (name, className) => `<img class="${className}" src="${PART(name)}" alt="" draggable="false">`;
-const KNOB_PAGE_SIZE = 6;
-const DRAG_DISTANCE = 150; // Pixels of dragging for a full turn.
-const FINE_DRAG = 0.2; // Holding Shift makes a drag this much finer.
-const WHEEL_DISTANCE = 20; // Pixels of scrolling for one hundredth of a turn.
+export const PART = name => `${(import.meta as any).env.BASE_URL}pedal-kit/${name}.png`;
+export const partImage = (name, className) => `<img class="${className}" src="${PART(name)}" alt="" draggable="false">`;
+export const KNOB_PAGE_SIZE = 6;
+export const DRAG_DISTANCE = 150; // Pixels of dragging for a full turn.
+export const FINE_DRAG = 0.2; // Holding Shift makes a drag this much finer.
+export const WHEEL_DISTANCE = 20; // Pixels of scrolling for one hundredth of a turn.
 
-function knobAngle(value, min, max) { return -135 + 270 * (value - min) / (max - min); }
+export function knobAngle(value, min, max) { return -135 + 270 * (value - min) / (max - min); }
 
-function scaleMarks() {
+export function scaleMarks() {
   let marks = '';
   for (let step = 0; step <= 10; step++) {
     const angle = (-135 + 27 * step) * Math.PI / 180;
@@ -20,7 +20,7 @@ function scaleMarks() {
 }
 
 // The hidden native slider keeps arrow keys and screen readers working; dragging just sets its value.
-function buildKnob({ label, value, min = 0, max = 10, step = 0.1, format = shown => Number(shown).toFixed(1), key }) {
+export function buildKnob({ label, value, min = 0, max = 10, step = 0.1, format = shown => Number(shown).toFixed(1), key }) {
   const knob = document.createElement('div');
   knob.className = 'knob';
   knob.innerHTML = `<button type="button" class="readout"></button>
@@ -56,16 +56,16 @@ function buildKnob({ label, value, min = 0, max = 10, step = 0.1, format = shown
     input.value = String(value);
     if (input.value !== before) input.dispatchEvent(new Event('input', { bubbles: true }));
   };
-  input.repaintKnob = paint;
+  (input as any).repaintKnob = paint;
   input.addEventListener('input', () => {
     paint();
-    if (dial.hasPointerCapture?.(knob.dragPointer)) return; // The number stays up until the drag ends.
+    if (dial.hasPointerCapture?.((knob as any).dragPointer)) return; // The number stays up until the drag ends.
     showBriefly();
   });
-  dial.addEventListener('pointerdown', event => {
+  dial.addEventListener('pointerdown', (event: any) => {
     if (input.disabled) return;
     dial.setPointerCapture(event.pointerId);
-    knob.dragPointer = event.pointerId;
+    (knob as any).dragPointer = event.pointerId;
     lastX = event.clientX;
     lastY = event.clientY;
     dragValue = Number(input.value);
@@ -74,7 +74,7 @@ function buildKnob({ label, value, min = 0, max = 10, step = 0.1, format = shown
     input.focus({ preventScroll: true });
     event.preventDefault();
   });
-  dial.addEventListener('pointermove', event => {
+  dial.addEventListener('pointermove', (event: any) => {
     if (!dial.hasPointerCapture(event.pointerId) || input.disabled) return;
     const moved = (lastY - event.clientY) + (event.clientX - lastX);
     lastX = event.clientX;
@@ -83,7 +83,7 @@ function buildKnob({ label, value, min = 0, max = 10, step = 0.1, format = shown
     dragValue = Math.min(Number(input.max), Math.max(Number(input.min), dragValue));
     setValue(dragValue);
   });
-  dial.addEventListener('wheel', event => {
+  dial.addEventListener('wheel', (event: any) => {
     if (input.disabled) return;
     // In a page that's scrolling, a knob passing under the pointer mustn't turn unless it was chosen first.
     const scroller = knob.closest('dialog');
@@ -115,7 +115,7 @@ function buildKnob({ label, value, min = 0, max = 10, step = 0.1, format = shown
       input.focus({ preventScroll: true });
     };
     editor.addEventListener('blur', () => finish(true));
-    editor.addEventListener('keydown', event => {
+    editor.addEventListener('keydown', (event: any) => {
       if (event.key !== 'Enter' && event.key !== 'Escape') return;
       event.preventDefault(); // Escape here cancels the typing, not the window around it.
       finish(event.key === 'Enter');
@@ -128,7 +128,7 @@ function buildKnob({ label, value, min = 0, max = 10, step = 0.1, format = shown
 }
 
 // A real checkbox, so it can carry the on/off state and be used from the keyboard.
-function buildFootswitch(name, on = true, key) {
+export function buildFootswitch(name, on = true, key) {
   const foot = document.createElement('label');
   foot.className = 'foot';
   foot.innerHTML = `<input type="checkbox">${partImage('foot-up', 'raised')}${partImage('foot-down', 'pressed')}`;
@@ -139,9 +139,9 @@ function buildFootswitch(name, on = true, key) {
   return foot;
 }
 
-function setPedalOn(pedal, on) { pedal.classList.toggle('off', !on); }
+export function setPedalOn(pedal, on) { pedal.classList.toggle('off', !on); }
 
-function buildKnobArea(knobs) {
+export function buildKnobArea(knobs) {
   const area = document.createElement('div');
   area.className = 'knob-area';
   const pages = [];
@@ -173,7 +173,7 @@ function buildKnobArea(knobs) {
   return area;
 }
 
-function buildPedal({ name, colour, knobs, footswitch = true, on = true, lightInk = false, bypassKey }) {
+export function buildPedal({ name, colour, knobs, footswitch = true, on = true, lightInk = false, bypassKey }) {
   const pedal = document.createElement('div');
   pedal.className = lightInk ? 'pedal light-ink' : 'pedal';
   pedal.style.setProperty('--tint', colour);

@@ -14,9 +14,10 @@ from mmp_ble import Controller, KEEPALIVE, KEEPALIVE_INTERVAL, NAME, RESPONSE, S
 from mmp_groups import CompareList, PresetGroups, SavedPresets
 from mmp_protocol import signal_order, with_signal_order
 
-MODELS = json.loads(Path(__file__).with_name('mmp_models.json').read_text())
-PARAMETER_CHOICES = json.loads(Path(__file__).with_name('mmp_parameter_choices.json').read_text())
-UNSCALED = json.loads(Path(__file__).with_name('mmp_parameter_hints.json').read_text())
+DATA = Path(__file__).resolve().parents[1] / 'src/data'
+MODELS = json.loads((DATA / 'models.json').read_text())
+PARAMETER_CHOICES = json.loads((DATA / 'parameter_choices.json').read_text())
+UNSCALED = json.loads((DATA / 'parameter_hints.json').read_text())
 SAVED_READ_FAILURES = 3  # The amp has been seen to stop answering these while its connection still looks healthy.
 READ_RECONNECT_GAP = 300  # Seconds. If reconnecting doesn't help, trying again every few reads wouldn't either.
 PRESET_POSITIONS = {'stomp', 'mod', 'amp', 'delay', 'reverb'}  # Every preset read from the amp has exactly these.

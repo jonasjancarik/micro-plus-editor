@@ -1,39 +1,37 @@
-'use strict';
-// Exporting presets to files and importing one into a slot. Loaded first; micro-plus.js provides the page's helpers.
-const BACKUP_FORMAT = 'maneline-micro-plus-backup-v1';
-const LIBRARY_FORMAT = 'maneline-micro-plus-library-v1';
-const MAX_IMPORT_FILE = 4 * 1024 * 1024; // Far more than 100 presets, so a wrong file is refused before it's read.
-const READ_ATTEMPTS = 4; // With the pauses, long enough for the server's own reconnect after a stalled read.
-const READ_RETRY_MS = 5000;
-const NOT_A_PRESET_FILE = "This file doesn't contain a Micro Plus preset. Choose a file exported from this page.";
+import { backend } from './backend';
+import { saveTextFile } from './save-file';
+import { $, EDITOR_API, SAVE_CAUTION, bumpEpoch, clearFormPreset, closeSaveMenu, displayName, editsIdle, exclusive, exclusiveOperation, guard, hasChanges, isEmptySlot, known, post, presetByNumber, readState, render, setExclusive, setText, showMessage, state, stillSameEditor, userGroups } from './main';
 
-let exportStopped = false;
-let importEntries = [];
+// Exporting presets to files and importing one into a slot. main.ts provides the page's helpers.
+export const BACKUP_FORMAT = 'maneline-micro-plus-backup-v1';
+export const LIBRARY_FORMAT = 'maneline-micro-plus-library-v1';
+export const MAX_IMPORT_FILE = 4 * 1024 * 1024; // Far more than 100 presets, so a wrong file is refused before it's read.
+export const READ_ATTEMPTS = 4; // With the pauses, long enough for the session's own reconnect after a stalled read.
+export const READ_RETRY_MS = 5000;
+export const NOT_A_PRESET_FILE = "This file doesn't contain a Micro Plus preset. Choose a file exported from this page.";
 
-function slotOptions() {
+export let exportStopped = false;
+export let importEntries = [];
+
+export function slotOptions() {
   return known.presets.map(preset => {
     const option = document.createElement('option');
-    option.value = preset.preset;
+    option.value = String(preset.preset);
     option.textContent = `${preset.preset} · ${displayName(preset)}`;
     return option;
   });
 }
 
 // Exporting ----------------------------------------------------------------
-function fileSafe(name) {
+export function fileSafe(name) {
   return name.trim().replace(/[^\p{L}\p{N}_-]+/gu, '-').replace(/^-+|-+$/g, '') || 'preset';
 }
 
-function downloadJson(filename, content) {
-  const url = URL.createObjectURL(new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' }));
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url));
+export function downloadJson(filename, content) {
+  saveTextFile(filename, JSON.stringify(content, null, 2)).catch(error => showMessage(`Couldn't save the file: ${error.message}`, 'error'));
 }
 
-async function readForExport(slot) {
+export async function readForExport(slot) {
   for (let attempt = 1; ; attempt++) {
     try {
       return (await post(EDITOR_API, { action: 'read-slot', slot })).saved_document;
@@ -45,11 +43,11 @@ async function readForExport(slot) {
 }
 
 // Returns every preset asked for, or nothing: a file missing some presets could pass for a full backup.
-async function readPresets(slots) {
+export async function readPresets(slots) {
   await editsIdle();
   if (exclusive || !state.connected) return null;
-  exclusive = true;
-  epoch++;
+  setExclusive(true);
+  bumpEpoch();
   exportStopped = false;
   showMessage('');
   render();
@@ -74,14 +72,14 @@ async function readPresets(slots) {
       'error', { outlastsReconnect: true }); // A reconnect doesn't bring the missing file back.
   } finally {
     if (dialog.open) dialog.close();
-    exclusive = false;
+    setExclusive(false);
     render();
     readState();
   }
   return null;
 }
 
-async function exportCurrentPreset() {
+export async function exportCurrentPreset() {
   const slot = state.preset;
   const presets = await readPresets([slot]);
   if (!presets) return;
@@ -93,7 +91,7 @@ async function exportCurrentPreset() {
     : `Exported “${name}”.`);
 }
 
-async function exportAllPresets() {
+export async function exportAllPresets() {
   const presets = await readPresets(known.presets.filter(preset => !isEmptySlot(preset)).map(preset => preset.preset));
   if (!presets) return;
   const exported = new Date();
@@ -105,7 +103,7 @@ async function exportAllPresets() {
 }
 
 // Importing ----------------------------------------------------------------
-function presetsInFile(text) {
+export function presetsInFile(text) {
   let data;
   try { data = JSON.parse(text); } catch { throw new Error(NOT_A_PRESET_FILE); }
   const entries = Array.isArray(data?.presets) ? data.presets : [data];
@@ -115,9 +113,9 @@ function presetsInFile(text) {
   return presets;
 }
 
-function chosenImport() { return importEntries[Number($('import-choice').value)]; }
+export function chosenImport() { return importEntries[Number($('import-choice').value)]; }
 
-function renderImportChoice() {
+export function renderImportChoice() {
   const target = presetByNumber(Number($('import-target').value));
   if (!target) return;
   const occupied = !isEmptySlot(target);
@@ -126,9 +124,9 @@ function renderImportChoice() {
   setText($('import-action'), occupied ? `Replace preset ${target.preset}` : `Import to preset ${target.preset}`);
 }
 
-function useChosenImport() { $('import-name').value = chosenImport().preset.info.displayName.trim().slice(0, 16); }
+export function useChosenImport() { $('import-name').value = chosenImport().preset.info.displayName.trim().slice(0, 16); }
 
-async function importFromFile(file) {
+export async function importFromFile(file) {
   try {
     if (file.size > MAX_IMPORT_FILE) throw new Error(NOT_A_PRESET_FILE);
     importEntries = presetsInFile(await file.text());
@@ -144,7 +142,7 @@ async function importFromFile(file) {
   const choice = $('import-choice');
   choice.replaceChildren(...importEntries.map((entry, index) => {
     const option = document.createElement('option');
-    option.value = index;
+    option.value = String(index);
     option.textContent = (entry.slot ? `${entry.slot} · ` : '') + entry.preset.info.displayName.trim();
     return option;
   }));
@@ -166,13 +164,60 @@ async function importFromFile(file) {
   const name = $('import-name').value.trim();
   await exclusiveOperation(EDITOR_API, { action: 'import', ...guard(), target, name, document: chosenImport().preset },
     `Backing up preset ${target} and importing “${name}”…`, () => {
-      if (target === state.preset) formPreset = null;
+      if (target === state.preset) clearFormPreset();
       return `Imported “${name}” to preset ${target}.`;
     });
 }
 
-function renderPresetFiles() {
+export function renderPresetFiles() {
   const unavailable = exclusive || !state.connected;
   for (const id of ['export-current', 'save-more', 'export-all', 'import-preset']) $(id).disabled = unavailable;
   if (unavailable) closeSaveMenu();
+}
+
+export function stopExport() { exportStopped = true; }
+
+// Backups ------------------------------------------------------------------
+function backupLine(entry) {
+  const item = document.createElement('li');
+  const text = document.createElement('span');
+  text.textContent = `Preset ${entry.preset}, before the change on ${new Date(entry.time).toLocaleString()}`;
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.textContent = 'Download';
+  button.addEventListener('click', async () => {
+    try {
+      await saveTextFile(entry.name, await backend.readBackup(entry.name));
+    } catch (error) {
+      setText($('backups-empty'), error.message);
+      $('backups-empty').hidden = false;
+    }
+  });
+  item.append(text, button);
+  return item;
+}
+
+async function downloadAllBackups(entries) {
+  const backups = [];
+  for (const entry of entries) backups.push({ file: entry.name, ...JSON.parse(await backend.readBackup(entry.name)) });
+  const day = new Date().toISOString().slice(0, 10);
+  await saveTextFile(`micro-plus-backups-${day}.json`, JSON.stringify({ format: 'maneline-micro-plus-backups-v1', backups }, null, 2));
+}
+
+async function openBackups() {
+  const entries = await backend.listBackups();
+  $('backups-list').replaceChildren(...entries.map(backupLine));
+  setText($('backups-empty'), 'There are no backups yet.');
+  $('backups-empty').hidden = entries.length > 0;
+  $('backups-all').hidden = entries.length < 2;
+  $('backups-all').onclick = () => downloadAllBackups(entries).catch(error => {
+    setText($('backups-empty'), `Couldn't download them: ${error.message}`);
+    $('backups-empty').hidden = false;
+  });
+  $('backups-dialog').showModal();
+}
+
+export function setUpBackups() {
+  $('open-backups').hidden = !backend.listBackups;
+  $('open-backups').addEventListener('click', openBackups);
 }

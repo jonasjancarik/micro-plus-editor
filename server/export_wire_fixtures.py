@@ -13,7 +13,7 @@ from mmp_protocol import (CURRENT, READ_PRESET, REPLACE_NODE, SAVE_AS, SAVE_CURR
 from mmp_session import MicroPlusSession
 
 ROOT = Path(__file__).resolve().parents[1]
-document = json.loads((ROOT / 'server/mmp_mock_fixture.json').read_text())['document']
+document = json.loads((ROOT / 'src/data/mock_fixture.json').read_text())['document']
 raw = json.dumps(document, separators=(',', ':')).encode()
 compressed = lz4.block.compress(raw, store_size=False)
 payload = wire_uint(1, 99) + wire_bytes(2, compressed) + wire_uint(3, 1) + wire_string(4, 'Simulator preset')

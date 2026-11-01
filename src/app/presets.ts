@@ -1,10 +1,10 @@
-'use strict';
+
 // Groups and descriptions for the 70 presets the Micro Plus ships with, matched by name.
 // Written from each preset's stored amp and effects, using the model names the editor shows. Where the
 // Mustang GT has a preset of the same name, Fender's notes on its sound informed the wording.
 // Artists are a rough idea of who each preset is close to: a judgement from its settings and name, not from
 // Fender or from listening. Presets with no reasonably well-known match have none.
-const factoryPresetGroups = [
+export const factoryPresetGroups = [
   {"name": "Clean", "presets": {
     "Acoustic Gtr Sim": {"description": "Makes an electric guitar sound closer to an acoustic, with compression, chorus and a large hall."},
     "Country Twang": {"description": "Very clean '65 Deluxe with compression, delay and spring reverb, for country picking.", "artists": ["Brad Paisley", "Vince Gill"]},

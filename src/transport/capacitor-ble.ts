@@ -1,17 +1,34 @@
 import { BleClient } from '@capacitor-community/bluetooth-le';
 import { REQUEST, RESPONSE, SERVICE, type BleTransport } from './types';
 
+const REMEMBERED = 'mmp-amp';
+
+function remembered(): string | undefined {
+  try {
+    return localStorage.getItem(REMEMBERED) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function remember(id: string): void {
+  try {
+    localStorage.setItem(REMEMBERED, id);
+  } catch { /* It only saves choosing the amp again next time. */ }
+}
+
 export class CapacitorBleTransport implements BleTransport {
-  private chosen?: string;
+  private chosen = remembered();
   private connected = false;
   private withoutResponse = false;
   private notifyListener: (data: Uint8Array) => void = () => {};
   private disconnectListeners = new Set<() => void>();
 
   async connect(): Promise<void> {
+    await BleClient.initialize({ androidNeverForLocation: true });
     if (!this.chosen) {
-      await BleClient.initialize({ androidNeverForLocation: true });
       this.chosen = (await BleClient.requestDevice({ services: [SERVICE] })).deviceId;
+      remember(this.chosen);
     }
     const chosen = this.chosen;
     await BleClient.connect(chosen, () => {

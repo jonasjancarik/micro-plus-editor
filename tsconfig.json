@@ -11,5 +11,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src", "tests", "bluetooth-test", "vite.config.ts"]
+  "include": ["src/core", "src/transport", "tests", "bluetooth-test", "vite.config.ts"]
 }

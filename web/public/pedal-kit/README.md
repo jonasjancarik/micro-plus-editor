@@ -1,6 +1,6 @@
 # Pedal parts
 
-Shared parts for drawing pedals in the browser. `buildPedal()` in `pedal-kit.js`
+Shared parts for drawing pedals in the browser. `buildPedal()` in `src/app/pedal-kit.ts`
 assembles a pedal from a name, a colour and a list of knobs, so a new pedal needs
 no new artwork. `web/pedal-kit.html` previews two examples, and the Micro Plus
 editor builds its board and close-ups from the same parts.
@@ -13,4 +13,4 @@ because the grey darkens it.
 
 The amp coverings, grille cloths and pedal finishes (`tolex-*`, `tweed`, `grille-*`, `enamel-*`,
 `brushed-metal` and `sparkle-metal`) came the same way. Only the Micro Plus board uses them, through
-`micro-plus-looks.css`. The neutral ones are tinted with a multiply blend, so one image gives many colours.
+`src/app/micro-plus-looks.css`. The neutral ones are tinted with a multiply blend, so one image gives many colours.

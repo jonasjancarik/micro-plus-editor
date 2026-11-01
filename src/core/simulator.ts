@@ -1,11 +1,11 @@
 // A simulated amp, for working on the page and for trying out failures without Bluetooth.
-import fixture from '../../server/mmp_mock_fixture.json';
+import fixture from '../data/mock_fixture.json';
 import { isPresetNumber } from './commands';
 import { MODELS, PARAMETER_CHOICES, UNSCALED } from './data';
-import { AmpError, EditorConflict, InputError } from './errors';
+import { AmpError, BackupError, EditorConflict, InputError } from './errors';
 import { CompareList, PresetGroups, SavedPresets } from './groups';
 import { withSignalOrder, type ParameterValue, type Preset, type PresetNode } from './preset';
-import { prepareImport, READ_RECONNECT_GAP_MS, SAVED_READ_FAILURES, type EditorSession, type LastSave, type LastUndo, type SavedDocument, type Snapshot } from './session';
+import { backupEntry, prepareImport, READ_RECONNECT_GAP_MS, SAVED_READ_FAILURES, type BackupEntry, type EditorSession, type LastSave, type LastUndo, type SavedDocument, type Snapshot } from './session';
 
 const FIXTURE = fixture as unknown as { names: string[]; active: number; document: Preset };
 const STALL_MS = 8000;
@@ -85,6 +85,16 @@ export class SimulatedSession implements EditorSession {
   async changeCompare(request: Record<string, unknown>): Promise<Snapshot> {
     await this.compare.apply(request);
     return this.snapshot();
+  }
+
+  async listBackups(): Promise<BackupEntry[]> {
+    return [...this.backups.keys()].map(backupEntry).filter((entry) => entry !== null).sort((a, b) => b.time - a.time);
+  }
+
+  async readBackupFile(name: string): Promise<string> {
+    const backup = this.backups.get(name);
+    if (!backup) throw new BackupError("Couldn't read that backup.");
+    return JSON.stringify({ format: 'maneline-micro-plus-backup-v1', slot: backupEntry(name)!.preset, preset: backup.preset }, null, 2);
   }
 
   /** normal behaviour, or the amp disappears, stops confirming writes, or stops sending saved presets. */

@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from mmp_session import EditorConflict, MicroPlusSession
 
-WEB_ROOT = Path(__file__).resolve().parents[1] / 'web'
+WEB_ROOT = Path(__file__).resolve().parents[1] / 'dist'  # The built page: pnpm build.
 MAX_BODY = 1024
 MAX_EDITOR_BODY = 64 * 1024  # Imports carry a whole preset, and the amp's own are under 3 KB.
 
@@ -86,8 +86,8 @@ async def dispatch(method, path, headers, body, session, allowed_hosts=None):
     if method != 'GET':
         raise HTTPError(405, 'This page only supports GET requests.')
     if path in ('/', '/index.html', '/micro-plus'):
-        path = '/micro-plus.html'
-    target = (WEB_ROOT / path.removeprefix('/web_ui/').lstrip('/')).resolve()
+        path = '/index.html'
+    target = (WEB_ROOT / path.lstrip('/')).resolve()
     if not target.is_relative_to(WEB_ROOT.resolve()) or not target.is_file():
         raise HTTPError(404, 'Page not found.')
     return 200, mimetypes.guess_type(target.name)[0] or 'application/octet-stream', target.read_bytes()

@@ -6,16 +6,11 @@
   <meta name="color-scheme" content="dark light">
   <script>try { const theme = localStorage.getItem('mmp-theme'); if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme; } catch { /* Follows the system instead. */ }</script>
   <title>Mustang Micro Plus editor</title>
-  <link rel="stylesheet" href="/web_ui/_static/pedal-kit/pedal-kit.css">
-  <link rel="stylesheet" href="/web_ui/_static/micro-plus.css">
-  <link rel="stylesheet" href="/web_ui/_static/micro-plus-looks.css">
-  <link rel="icon" href="/web_ui/_static/icon.svg">
-  <script src="/web_ui/_static/pedal-kit/pedal-kit.js" defer></script>
-  <script src="/web_ui/_static/micro-plus-params.js" defer></script>
-  <script src="/web_ui/_static/micro-plus-presets.js" defer></script>
-  <script src="/web_ui/_static/micro-plus-files.js" defer></script>
-  <script src="/web_ui/_static/micro-plus-compare.js" defer></script>
-  <script src="/web_ui/_static/micro-plus.js" defer></script>
+  <link rel="stylesheet" href="/src/app/pedal-kit.css">
+  <link rel="stylesheet" href="/src/app/micro-plus.css">
+  <link rel="stylesheet" href="/src/app/micro-plus-looks.css">
+  <link rel="icon" href="/icon.svg">
+  <script type="module" src="/src/app/start.ts"></script>
 </head>
 <body>
 <header id="topbar">
@@ -93,6 +88,7 @@
       <div id="preset-files">
         <button id="export-all" type="button" disabled>Export all presets</button>
         <button id="import-preset" type="button" disabled>Import a preset</button>
+        <button id="open-backups" type="button" hidden>Backups</button>
         <input id="import-file" type="file" accept=".json,application/json" hidden>
       </div>
       <button id="close-presets" type="button">Close</button>
@@ -118,8 +114,9 @@
 
 <main>
     <div id="waiting">
-      <h1>Looking for your Micro Plus</h1>
-      <p>Turn on the amp and close Fender Tone on your other devices. This page connects by itself once the amp is found.</p>
+      <h1 id="waiting-title">Looking for your Micro Plus</h1>
+      <p id="waiting-text">Turn on the amp and close Fender Tone on your other devices. This page connects by itself once the amp is found.</p>
+      <button id="connect" type="button" class="primary" hidden>Connect to your amp</button>
     </div>
     <div id="editor" hidden>
       <fieldset id="board-fields">
@@ -211,6 +208,19 @@
     <div class="dialog-actions">
       <button value="cancel" formnovalidate>Cancel</button>
       <button id="import-action" class="primary" value="confirm">Import</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="backups-dialog" aria-labelledby="backups-title">
+  <form method="dialog">
+    <h2 id="backups-title">Backups</h2>
+    <p>Before every save, undo and import, the editor keeps a copy of the preset it's about to replace. These copies stay on this device. Download them if you want to keep them somewhere safer.</p>
+    <ul id="backups-list"></ul>
+    <p id="backups-empty" hidden>There are no backups yet.</p>
+    <div class="dialog-actions">
+      <button id="backups-all" type="button" hidden>Download all</button>
+      <button class="primary" value="close" autofocus>Close</button>
     </div>
   </form>
 </dialog>

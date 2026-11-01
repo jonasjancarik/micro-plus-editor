@@ -1,4 +1,5 @@
 """HTTP contracts and persistent Bluetooth ownership, without hardware."""
+import tempfile
 import asyncio
 import contextlib
 import json
@@ -57,10 +58,12 @@ class HTTPTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(caught.exception.status, 404)
 
     async def test_root_serves_micro_plus_controls(self):
-        code, content_type, body = await dispatch('GET', '/', self.headers, b'', self.session)
+        with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / 'index.html').write_text('<title>Mustang Micro Plus editor</title>')
+            with patch('mmp_web.WEB_ROOT', Path(directory)):
+                code, content_type, body = await dispatch('GET', '/', self.headers, b'', self.session)
         self.assertEqual((code, content_type), (200, 'text/html'))
         self.assertIn(b'Mustang Micro Plus', body)
-        self.assertIn(b'micro-plus.js', body)
 
 
 class PersistentTests(unittest.IsolatedAsyncioTestCase):

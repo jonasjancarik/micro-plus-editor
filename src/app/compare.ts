@@ -1,38 +1,42 @@
+import { NoReplyError } from './backend';
+import { knobLabel } from './params';
+import { $, EDITOR_API, adopt, bumpEpoch, describeValue, displayName, editsWaiting, exclusive, hasBypass, hasChanges, isEmptyNode, isEmptySlot, known, modelName, pedalTabLabels, post, presetByNumber, render, selectPreset, setText, showMessage, signalOrder, state, storeFlag, storedFlag, switchingTo } from './main';
+
 // Comparing presets: a short list to jump between by ear, whatever their slot numbers.
-const COMPARE_API = '/api/micro-plus/compare';
-const COMPARED_POSITIONS = ['amp', 'stomp', 'mod', 'delay', 'reverb'];
-const COMPARED_SETTINGS_SHOWN = 3;
-let comparePresets = []; // The slots in the list, from the server.
-let compareQueued = null; // The last preset asked for during a switch, which plays once that switch ends.
-let compareDifferencesOpen = false;
-let compareReading = false;
-let compareTabbed = false;
-let compareChipsKey = '';
-let compareTableKey = '';
-const comparedDocuments = new Map(); // Slot → its saved document, so the table never has to change preset.
-const compareUnreadable = new Set();
+export const COMPARE_API = '/api/micro-plus/compare';
+export const COMPARED_POSITIONS = ['amp', 'stomp', 'mod', 'delay', 'reverb'];
+export const COMPARED_SETTINGS_SHOWN = 3;
+export let comparePresets = []; // The slots in the list.
+export let compareQueued = null; // The last preset asked for during a switch, which plays once that switch ends.
+export let compareDifferencesOpen = false;
+export let compareReading = false;
+export let compareTabbed = false;
+export let compareChipsKey = '';
+export let compareTableKey = '';
+export const comparedDocuments = new Map(); // Slot → its saved document, so the table never has to change preset.
+export const compareUnreadable = new Set();
 
-function compareTarget() { return compareQueued ?? switchingTo ?? known?.preset; }
+export function compareTarget() { return compareQueued ?? switchingTo ?? known?.preset; }
 
-async function changeCompare(body) {
+export async function changeCompare(body) {
   setText($('picker-status'), '');
-  epoch++; // A reply already on its way would otherwise bring the old list back for a moment.
+  bumpEpoch(); // A reply already on its way would otherwise bring the old list back for a moment.
   try {
     adopt(await post(COMPARE_API, body));
     render();
   } catch (error) {
-    const text = error instanceof TypeError || error.name === 'TimeoutError'
+    const text = error instanceof NoReplyError
       ? "No reply from the editor app, so your compare list didn't change." : error.message;
     if ($('preset-panel').open) setText($('picker-status'), text);
     else showMessage(text, 'error');
   }
 }
 
-function toggleCompared(number) {
+export function toggleCompared(number) {
   changeCompare({ action: comparePresets.includes(number) ? 'remove' : 'add', preset: number });
 }
 
-function jumpToCompared(number) {
+export function jumpToCompared(number) {
   if (switchingTo != null) { // The amp can't be interrupted, so only the latest choice is kept.
     compareQueued = number === switchingTo ? null : number;
     renderCompare();
@@ -41,19 +45,19 @@ function jumpToCompared(number) {
   }
 }
 
-function playNextCompared() {
+export function playNextCompared() {
   const position = comparePresets.indexOf(compareTarget());
   jumpToCompared(comparePresets[(position + 1) % comparePresets.length]);
 }
 
-function playQueuedCompared(switched) {
+export function playQueuedCompared(switched) {
   const next = compareQueued;
   compareQueued = null;
   if (switched && next && next !== state.preset) selectPreset(next);
   else renderCompare();
 }
 
-function buildCompareChips() {
+export function buildCompareChips() {
   $('compare-presets').replaceChildren(...comparePresets.map((number, index) => {
     const preset = presetByNumber(number);
     const chip = document.createElement('button');
@@ -62,23 +66,23 @@ function buildCompareChips() {
     chip.dataset.preset = number;
     chip.title = `Preset ${number}`;
     const key = document.createElement('kbd');
-    key.textContent = index + 1;
+    key.textContent = String(index + 1);
     chip.append(key, preset ? displayName(preset) : `Preset ${number}`);
     chip.addEventListener('click', () => jumpToCompared(number));
     return chip;
   }));
 }
 
-function comparedModelName(node) {
+export function comparedModelName(node) {
   if (isEmptyNode(node)) return 'Nothing';
   // A model can sit in a position other than the one it's listed under.
-  const model = Object.values(known.models).flat().find(candidate => candidate.id === node.FenderId);
+  const model = (Object.values(known.models).flat() as any[]).find(candidate => candidate.id === node.FenderId);
   const name = model?.name ?? modelName(node);
   return hasBypass(node) && node.dspUnitParameters.bypass ? `${name}, off` : name;
 }
 
 // One row per position. Where every preset has the same model, its knobs are what can differ.
-function comparedPositionRow(position, documents) {
+export function comparedPositionRow(position, documents) {
   const nodes = documents.map(document => document?.audioGraph.nodes.find(node => node.nodeId === position));
   const present = nodes.filter(Boolean);
   const models = present.map(comparedModelName);
@@ -97,14 +101,14 @@ function comparedPositionRow(position, documents) {
   };
 }
 
-function comparedOrderRow(documents) {
+export function comparedOrderRow(documents) {
   const orders = documents.map(document => document
     && signalOrder(document.audioGraph.nodes, document.audioGraph).map(node => pedalTabLabels[node.nodeId]).join(' → '));
   return { label: 'Order', differs: new Set(orders.filter(Boolean)).size > 1,
     cells: orders.map(text => text && { text, details: [] }) };
 }
 
-function buildCompareTable(documents) {
+export function buildCompareTable(documents) {
   const table = document.createElement('table');
   const head = table.createTHead().insertRow();
   head.append(document.createElement('td'));
@@ -139,7 +143,7 @@ function buildCompareTable(documents) {
   return table;
 }
 
-async function readComparedDocuments() {
+export async function readComparedDocuments() {
   if (!compareDifferencesOpen || compareReading || exclusive || editsWaiting() || !state.connected) return;
   const slot = comparePresets.find(number => !comparedDocuments.has(number) && !compareUnreadable.has(number));
   if (!slot) return;
@@ -154,14 +158,14 @@ async function readComparedDocuments() {
   }
 }
 
-function setCompareDifferences(open) {
+export function setCompareDifferences(open) {
   compareDifferencesOpen = open;
   storeFlag('mmp-compare-differences', open);
   compareUnreadable.clear();
   renderCompare();
 }
 
-function renderCompare() {
+export function renderCompare() {
   if (!known) return;
   const current = presetByNumber(known.preset);
   const listed = comparePresets.includes(known.preset);
@@ -210,18 +214,18 @@ function renderCompare() {
   }
 }
 
-function setUpCompare() {
+export function setUpCompare() {
   compareDifferencesOpen = storedFlag('mmp-compare-differences');
   $('compare-toggle').addEventListener('click', () => toggleCompared(known.preset));
   $('compare-differences').addEventListener('click', () => setCompareDifferences(!compareDifferencesOpen));
   $('compare-clear').addEventListener('click', () => changeCompare({ action: 'clear' }));
   window.addEventListener('pointerdown', () => { compareTabbed = false; }, true);
-  window.addEventListener('keydown', event => { if (event.key === 'Tab') compareTabbed = true; }, true);
+  window.addEventListener('keydown', (event: any) => { if (event.key === 'Tab') compareTabbed = true; }, true);
 }
 
 // Space belongs to a control only when Tab took you there; a clicked button keeps focus but isn't being aimed at.
 // The browser can't say which: any key press makes a clicked button count as keyboard-focused too.
-function compareKeys(event) {
+export function compareKeys(event) {
   if (event.repeat || !known) return;
   if (event.key === 'c' || event.key === 'C') {
     if (!$('compare-toggle').hidden) toggleCompared(known.preset);
@@ -235,3 +239,5 @@ function compareKeys(event) {
     playNextCompared();
   }
 }
+
+export function setComparePresets(slots) { comparePresets = slots; }

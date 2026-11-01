@@ -4,7 +4,7 @@ import { defineConfig, type Plugin } from 'vite';
 
 const RESULTS = resolve(import.meta.dirname, '_work/bluetooth-test');
 
-// Saves what the test page reports, so a run can be read after it has finished or while it goes on.
+// Saves what the Bluetooth test page reports, so a run can be read after it has finished or while it goes on.
 function saveResults(): Plugin {
   return {
     name: 'save-bluetooth-test-results',
@@ -30,9 +30,10 @@ function saveResults(): Plugin {
 }
 
 export default defineConfig({
-  root: resolve(import.meta.dirname, 'bluetooth-test'),
-  server: { host: '0.0.0.0', port: 5175, strictPort: true, fs: { allow: [import.meta.dirname] } },
-  build: { outDir: resolve(import.meta.dirname, 'dist'), emptyOutDir: true },
+  root: import.meta.dirname,
+  publicDir: 'web/public',
+  server: { host: '0.0.0.0', port: 5175, strictPort: true, watch: { ignored: ['**/android/**', '**/ios/**', '**/_work/**', '**/server/**'] } },
+  build: { outDir: resolve(import.meta.dirname, 'dist'), emptyOutDir: true, target: 'es2022' },
   base: './',
   plugins: [saveResults()],
   test: { root: import.meta.dirname, include: ['tests/**/*.test.ts'] },

@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "micro-plus-simulator",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["server/mmp_mock.py", "--port", "8092"],
-      "port": 8092
+      "name": "micro-plus-editor",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev"],
+      "port": 5175
     }
   ]
 }

@@ -55,6 +55,14 @@ export interface Snapshot {
   limited?: { node: string; parameter: string; requested: unknown; stored: number };
 }
 
+export interface BackupEntry {
+  name: string;
+  /** The preset it holds a copy of. */
+  preset: number;
+  /** When it was made, in milliseconds. */
+  time: number;
+}
+
 export interface SavedDocument {
   preset?: number;
   revision?: string;
@@ -76,6 +84,16 @@ export interface EditorSession {
   readSlot(slot: unknown): Promise<SavedDocument>;
   changeGroups(request: Record<string, unknown>): Promise<Snapshot>;
   changeCompare(request: Record<string, unknown>): Promise<Snapshot>;
+  listBackups(): Promise<BackupEntry[]>;
+  readBackupFile(name: string): Promise<string>;
+}
+
+/** Reads what a backup's file name says, newest first once sorted. Returns null for a name that isn't a backup's. */
+export function backupEntry(name: string): BackupEntry | null {
+  const match = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})\.(\d{3})Z(?:-\d+)?-preset-(\d{3})\.json$/.exec(name);
+  if (!match) return null;
+  const [year, month, day, hour, minute, second, ms, preset] = match.slice(1).map(Number) as [number, number, number, number, number, number, number, number];
+  return { name, preset, time: Date.UTC(year, month - 1, day, hour, minute, second, ms) };
 }
 
 export const newPresetId = () => crypto.randomUUID().toUpperCase();
@@ -232,6 +250,7 @@ export class MicroPlusSession implements EditorSession {
       save: 'The save could not be verified. Reconnecting to read the device; check the result before saving again.',
       undo: 'The undo could not be verified. Reconnecting to read the device; check the result before saving again.',
       import: 'The import could not be verified. Reconnecting to read the device; check the result before saving again.',
+      'connection check': 'Your Micro Plus stopped answering while this page was in the background, so the editor is reconnecting to it.',
       'saved preset read': 'Your Micro Plus stopped answering, so the editor is reconnecting to it.',
       'preset selection': 'The Micro Plus did not confirm the switch, so it may already be on the new preset. Reconnecting to check.',
     };
@@ -354,6 +373,26 @@ export class MicroPlusSession implements EditorSession {
       throw new BackupError('Could not create a backup of the preset, so nothing was saved.');
     }
     return name;
+  }
+
+  async listBackups(): Promise<BackupEntry[]> {
+    const names = await this.store.list(this.backupFolder);
+    return names.map(backupEntry).filter((entry) => entry !== null).sort((a, b) => b.time - a.time);
+  }
+
+  async readBackupFile(name: string): Promise<string> {
+    const text = backupEntry(name) && await this.store.read(`${this.backupFolder}/${name}`);
+    if (!text) throw new BackupError("Couldn't read that backup.");
+    return text;
+  }
+
+  /** Asks the amp for something harmless, and reconnects if it doesn't answer. */
+  checkConnection(): Promise<void> {
+    return this.inTurn(async () => {
+      const amp = this.connectedAmp();
+      if (!amp) return;
+      await this.confirming('connection check', () => amp.refreshCurrent());
+    }).catch(() => {}); // The page learns of this from the next snapshot.
   }
 
   private recordSave(target: number, name: string, backup: string): void {

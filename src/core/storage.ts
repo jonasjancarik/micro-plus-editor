@@ -10,6 +10,8 @@ export interface FileStore {
   create(name: string, text: string): Promise<void>;
   /** Keeps a file that couldn't be understood, under a name that won't be read again. */
   setAside(name: string): Promise<void>;
+  /** The names of the files directly in a folder, or nothing if there's no such folder. */
+  list(folder: string): Promise<string[]>;
 }
 
 export class MemoryStore implements FileStore {
@@ -33,6 +35,33 @@ export class MemoryStore implements FileStore {
     if (text === undefined) return;
     this.files.set(`${name}.unreadable`, text);
     this.files.delete(name);
+  }
+
+  async list(folder: string): Promise<string[]> {
+    const start = `${folder}/`;
+    return [...this.files.keys()].filter((name) => name.startsWith(start)).map((name) => name.slice(start.length))
+      .filter((name) => !name.includes('/'));
+  }
+}
+
+/** Stands in when the browser offers no storage: nothing to read, and every write fails, so no save goes ahead without a backup. */
+export class UnavailableStore implements FileStore {
+  async read(): Promise<string | null> {
+    return null;
+  }
+
+  async write(): Promise<void> {
+    throw new Error('On-device storage is not available');
+  }
+
+  async create(): Promise<void> {
+    throw new Error('On-device storage is not available');
+  }
+
+  async setAside(): Promise<void> {}
+
+  async list(): Promise<string[]> {
+    return [];
   }
 }
 
@@ -86,5 +115,19 @@ export class OpfsStore implements FileStore {
     let folder = this.root;
     for (const part of parts) folder = await folder.getDirectoryHandle(part);
     await folder.removeEntry(file);
+  }
+
+  async list(folder: string): Promise<string[]> {
+    const names: string[] = [];
+    try {
+      let handle = this.root;
+      for (const part of folder.split('/')) handle = await handle.getDirectoryHandle(part);
+      for await (const [name, entry] of (handle as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries()) {
+        if (entry.kind === 'file') names.push(name);
+      }
+    } catch (error) {
+      if (!isMissing(error)) throw error;
+    }
+    return names;
   }
 }

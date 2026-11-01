@@ -22,10 +22,10 @@ import uuid
 from pathlib import Path
 from mmp_groups import CompareList, PresetGroups, SavedPresets
 from mmp_protocol import with_signal_order
-from mmp_session import EditorConflict, MODELS, PARAMETER_CHOICES, READ_RECONNECT_GAP, SAVED_READ_FAILURES, UNSCALED, prepare_import
+from mmp_session import DATA, EditorConflict, MODELS, PARAMETER_CHOICES, READ_RECONNECT_GAP, SAVED_READ_FAILURES, UNSCALED, prepare_import
 from mmp_web import dispatch, handle
 
-FIXTURE = json.loads(Path(__file__).with_name('mmp_mock_fixture.json').read_text())
+FIXTURE = json.loads((DATA / 'mock_fixture.json').read_text())
 STALL_SECONDS, RECONNECT_SECONDS = 8, 3
 
 

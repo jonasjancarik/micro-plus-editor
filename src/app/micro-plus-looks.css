@@ -3,8 +3,8 @@
 /* Amps: a cabinet with a handle, a control strip, and grille cloth over its speakers. */
 /* :where keeps these defaults weak enough for a single model to override. */
 :where(.slot[data-node="amp"]) .board-pedal {
-  --cover: url(/web_ui/_static/pedal-kit/tolex-black.jpg); --cover-colour: #7a7a7a; --cover-size: 110px;
-  --cloth: url(/web_ui/_static/pedal-kit/grille-silver.jpg); --cloth-size: 96px; --cloth-shade: rgb(0 0 0/.12);
+  --cover: url(/pedal-kit/tolex-black.jpg); --cover-colour: #7a7a7a; --cover-size: 110px;
+  --cloth: url(/pedal-kit/grille-silver.jpg); --cloth-size: 96px; --cloth-shade: rgb(0 0 0/.12);
   --strip: linear-gradient(#d8d2c2, #a9a292); --strip-ink: #1d1712; --plate: #ead9b4; --plate-ink: #1d1712;
   --one-speaker: radial-gradient(circle at 50% 62%, rgb(0 0 0/.42) 0 30%, rgb(0 0 0/.1) 46%, transparent 60%);
   --two-speakers: radial-gradient(circle at 28% 62%, rgb(0 0 0/.42) 0 17%, rgb(0 0 0/.1) 25%, transparent 32%),
@@ -44,26 +44,26 @@
 
 /* Materials */
 .pedal:is([data-model="ACD_Champ57GT"], [data-model="ACD_Deluxe57GT"], [data-model="ACD_Twin57GT"], [data-model="ACD_Bassman59GT"]) {
-  --cover: url(/web_ui/_static/pedal-kit/tweed.jpg); --cover-size: 120px; --cover-colour: #d9cdbb;
-  --cloth: url(/web_ui/_static/pedal-kit/grille-oxblood.jpg); --cloth-shade: rgb(30 8 8/.3); }
+  --cover: url(/pedal-kit/tweed.jpg); --cover-size: 120px; --cover-colour: #d9cdbb;
+  --cloth: url(/pedal-kit/grille-oxblood.jpg); --cloth-shade: rgb(30 8 8/.3); }
 .pedal:is([data-model="ACD_Bassbreaker15GT"], [data-model="ACD_Bassbreaker15MedGT"], [data-model="ACD_Bassbreaker15HighGT"]) {
-  --cover: url(/web_ui/_static/pedal-kit/tolex-cream.jpg); --cover-colour: #7b7f85; --cloth-shade: rgb(0 0 0/.42); --plate: #1c1c1e; --plate-ink: #eeeae0; }
-.pedal[data-model="ACD_ExcelsiorGT"] { --cover: url(/web_ui/_static/pedal-kit/tolex-cream.jpg); --cover-colour: #6d4a2e;
-  --cloth: url(/web_ui/_static/pedal-kit/grille-wheat.jpg); --strip: linear-gradient(#c9c2ae, #8f8877); }
-.pedal[data-model="ACD_SuperSonicGT"] { --cover: url(/web_ui/_static/pedal-kit/tolex-cream.jpg); --cover-colour: #e4d3ac;
-  --cloth: url(/web_ui/_static/pedal-kit/grille-oxblood.jpg); --cloth-shade: rgb(30 8 8/.3); --strip: linear-gradient(#26231f, #15130f); --strip-ink: #eeeae0; }
-.pedal[data-model="ACD_SilvertoneGT"] { --cover: url(/web_ui/_static/pedal-kit/tolex-cream.jpg); --cover-colour: #39555a; --strip: linear-gradient(#cfd2cc, #93988f); }
-.pedal[data-model="ACD_Ac30TbGT"] { --cloth: url(/web_ui/_static/pedal-kit/grille-wheat.jpg); --cloth-shade: rgb(60 25 5/.4); --strip: linear-gradient(#b98a55, #7f5730); }
+  --cover: url(/pedal-kit/tolex-cream.jpg); --cover-colour: #7b7f85; --cloth-shade: rgb(0 0 0/.42); --plate: #1c1c1e; --plate-ink: #eeeae0; }
+.pedal[data-model="ACD_ExcelsiorGT"] { --cover: url(/pedal-kit/tolex-cream.jpg); --cover-colour: #6d4a2e;
+  --cloth: url(/pedal-kit/grille-wheat.jpg); --strip: linear-gradient(#c9c2ae, #8f8877); }
+.pedal[data-model="ACD_SuperSonicGT"] { --cover: url(/pedal-kit/tolex-cream.jpg); --cover-colour: #e4d3ac;
+  --cloth: url(/pedal-kit/grille-oxblood.jpg); --cloth-shade: rgb(30 8 8/.3); --strip: linear-gradient(#26231f, #15130f); --strip-ink: #eeeae0; }
+.pedal[data-model="ACD_SilvertoneGT"] { --cover: url(/pedal-kit/tolex-cream.jpg); --cover-colour: #39555a; --strip: linear-gradient(#cfd2cc, #93988f); }
+.pedal[data-model="ACD_Ac30TbGT"] { --cloth: url(/pedal-kit/grille-wheat.jpg); --cloth-shade: rgb(60 25 5/.4); --strip: linear-gradient(#b98a55, #7f5730); }
 .pedal:is([data-model="ACD_Plexi87GT"], [data-model="ACD_Jcm800GT"]) { --strip: linear-gradient(#d9bd77, #a4843f); --plate: #17140f; --plate-ink: #e8d59a; }
-.pedal[data-model="ACD_Plexi87GT"] { --cloth: url(/web_ui/_static/pedal-kit/grille-wheat.jpg); }
-.pedal[data-model="ACD_Jcm800GT"] { --cloth: url(/web_ui/_static/pedal-kit/grille-black.jpg); --cloth-shade: transparent; }
-.pedal[data-model="ACD_Rect2GT"] { --cloth: url(/web_ui/_static/pedal-kit/grille-black.jpg); --cloth-shade: transparent; --strip: linear-gradient(#9b9fa3, #5e6266); --plate: #b9bdc1; }
-.pedal[data-model="ACD_Or120GT"] { --cover: url(/web_ui/_static/pedal-kit/tolex-cream.jpg); --cover-colour: #e0702a;
-  --cloth: url(/web_ui/_static/pedal-kit/grille-wheat.jpg); --strip: linear-gradient(#f0ece2, #c7c1b1); --plate: #17140f; --plate-ink: #f2a062; }
-.pedal[data-model="ACD_DR103GT"] { --cloth: url(/web_ui/_static/pedal-kit/grille-wheat.jpg); --cloth-shade: rgb(0 0 0/.3); --strip: linear-gradient(#26231f, #15130f); --strip-ink: #eeeae0; --plate: #f0ece2; }
-.pedal[data-model="ACD_BE100GT"] { --cloth: url(/web_ui/_static/pedal-kit/grille-wheat.jpg); --cloth-shade: rgb(0 0 0/.5); --strip: linear-gradient(#26231f, #15130f); --strip-ink: #e6c98a; }
-.pedal[data-model="ACD_Evh3GT"] { --cloth: url(/web_ui/_static/pedal-kit/grille-black.jpg); --cloth-shade: transparent; --strip: linear-gradient(#26231f, #15130f); --strip-ink: #eeeae0; --plate: #b52a22; --plate-ink: #fff; }
-.pedal[data-model="ACD_UberschallGT"] { --cloth: url(/web_ui/_static/pedal-kit/grille-black.jpg); --cloth-shade: transparent; --strip: linear-gradient(#3f6fb5, #24467c); --strip-ink: #f1f4fa; --plate: #24467c; --plate-ink: #f1f4fa; }
+.pedal[data-model="ACD_Plexi87GT"] { --cloth: url(/pedal-kit/grille-wheat.jpg); }
+.pedal[data-model="ACD_Jcm800GT"] { --cloth: url(/pedal-kit/grille-black.jpg); --cloth-shade: transparent; }
+.pedal[data-model="ACD_Rect2GT"] { --cloth: url(/pedal-kit/grille-black.jpg); --cloth-shade: transparent; --strip: linear-gradient(#9b9fa3, #5e6266); --plate: #b9bdc1; }
+.pedal[data-model="ACD_Or120GT"] { --cover: url(/pedal-kit/tolex-cream.jpg); --cover-colour: #e0702a;
+  --cloth: url(/pedal-kit/grille-wheat.jpg); --strip: linear-gradient(#f0ece2, #c7c1b1); --plate: #17140f; --plate-ink: #f2a062; }
+.pedal[data-model="ACD_DR103GT"] { --cloth: url(/pedal-kit/grille-wheat.jpg); --cloth-shade: rgb(0 0 0/.3); --strip: linear-gradient(#26231f, #15130f); --strip-ink: #eeeae0; --plate: #f0ece2; }
+.pedal[data-model="ACD_BE100GT"] { --cloth: url(/pedal-kit/grille-wheat.jpg); --cloth-shade: rgb(0 0 0/.5); --strip: linear-gradient(#26231f, #15130f); --strip-ink: #e6c98a; }
+.pedal[data-model="ACD_Evh3GT"] { --cloth: url(/pedal-kit/grille-black.jpg); --cloth-shade: transparent; --strip: linear-gradient(#26231f, #15130f); --strip-ink: #eeeae0; --plate: #b52a22; --plate-ink: #fff; }
+.pedal[data-model="ACD_UberschallGT"] { --cloth: url(/pedal-kit/grille-black.jpg); --cloth-shade: transparent; --strip: linear-gradient(#3f6fb5, #24467c); --strip-ink: #f1f4fa; --plate: #24467c; --plate-ink: #f1f4fa; }
 
 /* Preamps and the acoustic simulator have no speaker: they're rack units, a brushed panel with ears and no cloth. */
 .pedal:is([data-model="ACD_LinearGainGT"], [data-model="ACD_StudioTubePreampGT"], [data-model="ACD_AcousticSimGT"]) { --panel: #c6c8ca; --strip: none; }
@@ -71,12 +71,12 @@
 .pedal[data-model="ACD_AcousticSimGT"] { --panel: #d3b483; }
 .pedal:is([data-model="ACD_LinearGainGT"], [data-model="ACD_StudioTubePreampGT"], [data-model="ACD_AcousticSimGT"])::before { display: none; }
 .slot[data-node="amp"] .pedal:is([data-model="ACD_LinearGainGT"], [data-model="ACD_StudioTubePreampGT"], [data-model="ACD_AcousticSimGT"]) .face {
-  aspect-ratio: 5 / 3; border-radius: 4px; background: url(/web_ui/_static/pedal-kit/brushed-metal.jpg) 0 0 / 220px; background-color: var(--panel); }
+  aspect-ratio: 5 / 3; border-radius: 4px; background: url(/pedal-kit/brushed-metal.jpg) 0 0 / 220px; background-color: var(--panel); }
 .pedal:is([data-model="ACD_LinearGainGT"], [data-model="ACD_StudioTubePreampGT"], [data-model="ACD_AcousticSimGT"]) .open-pedal::before { display: none; }
 .pedal:is([data-model="ACD_LinearGainGT"], [data-model="ACD_StudioTubePreampGT"], [data-model="ACD_AcousticSimGT"]) .mini-dials { box-shadow: none; }
 
 /* Pedals: each model has its own paint and finish. Dark knobs would sink into some of them, so each sits on a pale ring. */
-:where(.slot:not([data-node="amp"])) .board-pedal { --finish: url(/web_ui/_static/pedal-kit/enamel-neutral.jpg); --finish-size: 180px; --paint: var(--tint); --ink: #17110a; color: var(--ink); }
+:where(.slot:not([data-node="amp"])) .board-pedal { --finish: url(/pedal-kit/enamel-neutral.jpg); --finish-size: 180px; --paint: var(--tint); --ink: #17110a; color: var(--ink); }
 .slot:not([data-node="amp"]) .board-pedal .face { border-radius: 10px; color: var(--ink); background-color: var(--paint); background-image: var(--finish); background-size: var(--finish-size);
   --face-edges: inset 0 0 0 1px rgb(0 0 0/.45), inset 0 2px 1px rgb(255 255 255/.28), inset 0 -3px 2px rgb(0 0 0/.45); }
 .slot:not([data-node="amp"]) .board-pedal.off .face { filter: saturate(.4) brightness(.75); }
@@ -86,8 +86,8 @@
 .slot:not([data-node="amp"]) .mini-dial::before { content: ""; position: absolute; inset: -3px; border-radius: 50%; background: linear-gradient(#f3ecd8, #b9b09a); box-shadow: 0 1px 3px rgb(0 0 0/.6); }
 .slot:not([data-node="amp"]) .mini-label { margin-top: 6px; }
 
-.pedal.board-pedal { --brushed: url(/web_ui/_static/pedal-kit/brushed-metal.jpg); --sparkle: url(/web_ui/_static/pedal-kit/sparkle-metal.jpg); --light-ink: #f4efe2; }
-.pedal[data-model="ACD_Greenbox"] { --finish: url(/web_ui/_static/pedal-kit/enamel-green.jpg); --finish-size: cover; --paint: transparent; --ink: #f0ecdd; }
+.pedal.board-pedal { --brushed: url(/pedal-kit/brushed-metal.jpg); --sparkle: url(/pedal-kit/sparkle-metal.jpg); --light-ink: #f4efe2; }
+.pedal[data-model="ACD_Greenbox"] { --finish: url(/pedal-kit/enamel-green.jpg); --finish-size: cover; --paint: transparent; --ink: #f0ecdd; }
 .pedal[data-model="ACD_Greenbox"] .name { text-shadow: 0 1px 2px rgb(0 0 0/.6); }
 .pedal[data-model="ACD_LargeOverdrive"] { --paint: #e0a233; }
 .pedal[data-model="ACD_MythicDrive"] { --paint: #d4b172; --finish: var(--brushed); }
