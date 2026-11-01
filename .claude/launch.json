@@ -4,7 +4,7 @@
     {
       "name": "micro-plus-simulator",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["scripts/mmp_mock.py", "--port", "8092"],
+      "runtimeArgs": ["server/mmp_mock.py", "--port", "8092"],
       "port": 8092
     }
   ]

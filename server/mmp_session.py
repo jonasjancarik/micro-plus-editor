@@ -131,7 +131,7 @@ class MicroPlusSession:
             'save': 'The save could not be verified. Reconnecting to read the device; check the result before saving again.',
             'undo': 'The undo could not be verified. Reconnecting to read the device; check the result before saving again.',
             'import': 'The import could not be verified. Reconnecting to read the device; check the result before saving again.',
-            'saved preset read': 'Your Micro Plus stopped answering, so Maneline is reconnecting to it.',
+            'saved preset read': 'Your Micro Plus stopped answering, so the editor is reconnecting to it.',
             'preset selection': 'The Micro Plus did not confirm the switch, so it may already be on the new preset. '
                                 'Reconnecting to check.'}
         self.error = messages.get(action, f'The Micro Plus did not confirm the {action}. '

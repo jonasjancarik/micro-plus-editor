@@ -176,7 +176,7 @@ class MockSession:
                     self.read_reconnected_at is None or now - self.read_reconnected_at >= READ_RECONNECT_GAP):
                 self.read_reconnected_at = now
                 self.stalled = True
-                self.error = 'Your Micro Plus stopped answering, so Maneline is reconnecting to it.'
+                self.error = 'Your Micro Plus stopped answering, so the editor is reconnecting to it.'
                 after = 'ok' if self.mode == 'noread' else 'noread-stuck'
                 self.mode = 'disconnected'
                 asyncio.get_running_loop().call_later(RECONNECT_SECONDS, self.set_mode, after)

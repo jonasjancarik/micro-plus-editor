@@ -666,8 +666,8 @@ def five_positions():
 class BoardLookTests(unittest.TestCase):
     def test_every_model_has_its_own_look_on_the_board(self):
         root = Path(__file__).resolve().parents[2]
-        looks = (root / 'web-app/web_ui/_static/micro-plus-looks.css').read_text(encoding='utf-8')
-        models = json.loads((root / 'scripts/mmp_models.json').read_text(encoding='utf-8'))
+        looks = (root / 'web/_static/micro-plus-looks.css').read_text(encoding='utf-8')
+        models = json.loads((root / 'server/mmp_models.json').read_text(encoding='utf-8'))
         for position, choices in models.items():
             for model in choices:
                 if model['id'] != 'DUBS_Unknown' and model['id'] not in ('ACD_Deluxe65GT',):  # The default amp look.
@@ -677,10 +677,10 @@ class BoardLookTests(unittest.TestCase):
 class FactoryPresetGroupTests(unittest.TestCase):
     def test_every_factory_preset_has_one_group_and_a_description(self):
         root = Path(__file__).resolve().parents[2]
-        source = (root / 'web-app/web_ui/_static/micro-plus-presets.js').read_text(encoding='utf-8')
+        source = (root / 'web/_static/micro-plus-presets.js').read_text(encoding='utf-8')
         groups = json.loads(source.split('factoryPresetGroups = ', 1)[1].rstrip().rstrip(';'))
         names = [name for group in groups for name in group['presets']]
-        fixture = json.loads((root / 'scripts/mmp_mock_fixture.json').read_text(encoding='utf-8'))
+        fixture = json.loads((root / 'server/mmp_mock_fixture.json').read_text(encoding='utf-8'))
         self.assertCountEqual(names, fixture['names'][:70])
         presets = [preset for group in groups for preset in group['presets'].values()]
         self.assertTrue(all(preset['description'] for preset in presets))

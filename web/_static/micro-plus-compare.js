@@ -22,7 +22,7 @@ async function changeCompare(body) {
     render();
   } catch (error) {
     const text = error instanceof TypeError || error.name === 'TimeoutError'
-      ? "No reply from the Maneline app, so your compare list didn't change." : error.message;
+      ? "No reply from the editor app, so your compare list didn't change." : error.message;
     if ($('preset-panel').open) setText($('picker-status'), text);
     else showMessage(text, 'error');
   }

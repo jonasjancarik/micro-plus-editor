@@ -1,6 +1,6 @@
 """Micro Plus preset decoding and protobuf wire encoding.
 
-Schemas: spod/fmmp/protobuf/ltx. Transport framing: Maneline's Tone captures.
+Schemas: spod/fmmp/protobuf/ltx. Transport framing: the Maneline project's Tone captures.
 """
 import copy
 import json

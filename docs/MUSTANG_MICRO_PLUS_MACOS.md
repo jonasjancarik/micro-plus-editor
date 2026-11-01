@@ -3,7 +3,7 @@
 Read when connecting a Micro Plus over Bluetooth, running its browser controls,
 or developing its BLE protocol.
 
-Maneline can read, switch, edit and save Micro Plus presets using Bleak's
+The editor can read, switch, edit and save Micro Plus presets using Bleak's
 CoreBluetooth backend. The browser editor supports amplifier/effect model
 selection, parameter changes, preset names, and saving to the current slot or
 another slot. The USB cable can remain connected for audio and power.
@@ -12,12 +12,11 @@ library at once is not implemented.
 
 ## Setup
 
-Use Python 3.11 or later with Bleak installed. The Python environment created by
-`scripts/rebuild_sdk.sh` includes Bleak, or create an isolated environment:
+Use Python 3.11 or later with Bleak installed, for example in an isolated environment:
 
 ```sh
-uv venv _work/mmp-venv
-uv pip install --python _work/mmp-venv/bin/python -r scripts/requirements-mmp.txt
+uv venv .venv
+uv pip install --python .venv/bin/python -r server/requirements.txt
 ```
 
 Turn on the Micro Plus and close Fender Tone on other devices. macOS may ask
@@ -31,29 +30,27 @@ so start the server from Terminal or another app with Bluetooth access.
 ## Browser controls
 
 ```sh
-bash scripts/run_web_cli.sh --micro-plus
+./run.sh
 ```
 
-Open `http://localhost:8080`. This launch mode serves the Micro Plus page from
-`web-app/web_ui`. The page has its own stylesheet, follows the system light or
+Open `http://localhost:8080`. The server serves the page from `web`. The page has its own stylesheet, follows the system light or
 dark setting, and needs no internet connection. It owns one persistent BLE
 connection shared by all browser clients; browser refreshes and preset clicks do
-not reconnect the amplifier. The original Java/Lua USB mode is still launched
-with `scripts/run_web_cli.sh` without `--micro-plus`.
+not reconnect the amplifier.
 
 The page is built around the board. It follows your system's light or dark setting
 unless you choose one with the icons in the top bar. Select the preset name in the
 top bar, or press `/`, to open the list of presets, which marks the active one. The
 70 factory presets are sorted into groups by sound, each with a short description, and
 anything else is listed under Your presets. Factory presets are recognised by name
-(see `web-app/web_ui/_static/micro-plus-presets.js`), so one you renamed moves to Your
+(see `web/_static/micro-plus-presets.js`), so one you renamed moves to Your
 presets, and one you changed but kept the name of keeps its original description. Switch
 from In groups to By number to list every preset in slot order instead.
 
 You can make your own groups and use Move on a preset to put it in any group. Moves
 belong to the preset's slot, so a preset keeps its group when renamed, and whatever you
 save over that slot takes its place in the group. Deleting a group only sends its presets
-back to where they started. The groups and descriptions are Maneline's own and aren't
+back to where they started. The groups and descriptions are this editor's own and aren't
 stored on the amp: your groups are in `_work/preset-groups.json` in the checkout the
 server runs from, so every browser using this server sees the same groups.
 
@@ -75,7 +72,7 @@ that way, and only when the amp reports them, so such a preset can look unchange
 records are in `_work/preset-saved.json`.
 
 Most factory presets also list artists they're roughly close to, which are
-Maneline's own judgement. Search by name, sound, artist or group, or type a number to find exactly that slot. Empty slots are hidden until you
+this editor's own judgement. Search by name, sound, artist or group, or type a number to find exactly that slot. Empty slots are hidden until you
 ask for them. The arrows in the top bar and the `[` and `]` keys step through the
 listed presets in slot order. Selecting a
 preset waits for the amp to confirm the change. The display also follows preset
@@ -121,7 +118,7 @@ sends the whole preset to the amp, backed up and read back like an import, and o
 Each amp and pedal has its own look. Amps are drawn as combos, stacks or rack units with their
 own covering and grille cloth, and each pedal has its own colour and finish. These are generic
 drawings made for this page, not pictures of the real gear. The styles are in
-`web-app/web_ui/_static/micro-plus-looks.css`.
+`web/_static/micro-plus-looks.css`.
 
 To rename a preset, select the pencil beside its name in the top bar, then save as
 usual. On a phone, **Save** and its menu stay at
@@ -191,7 +188,7 @@ too. Importing into the active slot loses any unsaved edits to it.
 
 An import only changes that one slot. The groups in an all-presets file aren't restored yet.
 Files are checked for the amp's five positions and for a matching amp type before anything is
-sent. Models aren't compared with Maneline's list, because the list is incomplete; the amp
+sent. Models aren't compared with the editor's list, because the list is incomplete; the amp
 decides, and the read-back catches anything it changed. Files don't record the firmware
 they came from. Importing was checked on the amp with slot 100, including a preset whose order
 none of the amp's own presets use: it was stored and read back as written, and it sounded clearly
@@ -199,7 +196,7 @@ different from the same settings in the usual order, so the amp follows a preset
 The amp moves to the slot it just received, so an import leaves you on that preset.
 
 A preset is long enough to need many Bluetooth packets. Sent back to back, the amp didn't answer
-them and then stayed silent until Maneline reconnected, so they now go out 30 ms apart.
+them and then stayed silent until the editor reconnected, so they now go out 30 ms apart.
 
 **Discard changes** reloads the saved preset. Switching away from an edited preset
 also asks before discarding live edits or an unsaved name. Browser requests include
@@ -221,7 +218,7 @@ instead, and the page reports which preset the amp is on.
 ### Working on the page without an amp
 
 ```sh
-_work/mmp-venv/bin/python scripts/mmp_mock.py
+.venv/bin/python server/mmp_mock.py
 ```
 
 This serves the real page at `http://localhost:8092` through the real request
@@ -236,7 +233,7 @@ on the amp; `/__mock/mode/ok` returns to normal. Use it for anything that would
 otherwise overwrite presets.
 
 Use `--device ID` to select a specific Micro Plus and `--port NUMBER` to change
-the HTTP port. If using another Python environment, set `MANELINE_PYTHON` to its
+the HTTP port. If using another Python environment, set `MICRO_PLUS_PYTHON` to its
 interpreter. The server binds to `0.0.0.0`; localhost and this Mac's hostname and
 `.local` hostname are accepted. For another hostname or a numeric LAN address,
 add `--allow-host HOSTNAME_OR_IP` (repeatable). Use this on a trusted network;
@@ -265,10 +262,10 @@ below, so only one program holds the connection.
 ## One-shot command-line controls
 
 ```sh
-_work/mmp-venv/bin/python scripts/mmp_ble.py scan
-_work/mmp-venv/bin/python scripts/mmp_ble.py status
-_work/mmp-venv/bin/python scripts/mmp_ble.py presets
-_work/mmp-venv/bin/python scripts/mmp_ble.py preset 72
+.venv/bin/python server/mmp_ble.py scan
+.venv/bin/python server/mmp_ble.py status
+.venv/bin/python server/mmp_ble.py presets
+.venv/bin/python server/mmp_ble.py preset 72
 ```
 
 These commands connect, perform one operation and disconnect. Put `--device ID`
@@ -286,7 +283,7 @@ Notifications are reassembled before decoding protobuf messages.
 On the tested firmware (1.1.11), one-second keep-alives allowed the connection
 to remain open while notifications stopped. Sending the captured heartbeat
 `3500050a03c20100` every 250 ms kept notifications working after idle periods.
-The original Linux experiment specifies a 500 ms interval. Maneline uses 250 ms
+The original Linux experiment specifies a 500 ms interval. The editor uses 250 ms
 to leave scheduling margin and continues sending while a switch awaits its
 acknowledgement. Commands share a write lock, while whole switch operations are
 serialized separately. This interval is verified behavior, not a documented
@@ -325,7 +322,7 @@ Disconnect handling is covered by simulated lifecycle tests; physical power-cycl
 recovery was not tested.
 
 ```sh
-_work/mmp-venv/bin/python -m unittest discover -s scripts/tests -v
+.venv/bin/python -m unittest discover -s server/tests -v
 ```
 
 The 54 hardware-independent tests cover captured packets, fragmented names,

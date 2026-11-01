@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serve Maneline's Micro Plus browser controls and a persistent BLE session."""
+"""Serve the Micro Plus browser controls and a persistent BLE session."""
 import argparse
 import asyncio
 import contextlib
@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from mmp_session import EditorConflict, MicroPlusSession
 
-WEB_ROOT = Path(__file__).resolve().parents[1] / 'web-app' / 'web_ui'
+WEB_ROOT = Path(__file__).resolve().parents[1] / 'web'
 MAX_BODY = 1024
 MAX_EDITOR_BODY = 64 * 1024  # Imports carry a whole preset, and the amp's own are under 3 KB.
 
@@ -23,7 +23,7 @@ class HTTPError(Exception):
 async def dispatch(method, path, headers, body, session, allowed_hosts=None):
     host = urlsplit('//' + headers.get('host', '')).hostname
     if allowed_hosts is not None and host not in allowed_hosts:
-        raise HTTPError(403, 'Use the local Maneline address to open these controls.')
+        raise HTTPError(403, 'Use the local editor address to open these controls.')
     if path.startswith('/api/'):
         if path not in ('/api/micro-plus', '/api/micro-plus/editor', '/api/micro-plus/groups', '/api/micro-plus/compare'):
             raise HTTPError(404, 'Page not found.')
@@ -147,7 +147,7 @@ async def run(args):
         server = await asyncio.start_server(lambda r, w: handle(r, w, session, allowed_hosts),
                                             '0.0.0.0', args.port, limit=8192)
         task = asyncio.create_task(session.run())
-        print(f'Maneline Micro Plus controls: http://localhost:{args.port}', flush=True)
+        print(f'Micro Plus editor: http://localhost:{args.port}', flush=True)
         try:
             async with server:
                 await server.serve_forever()

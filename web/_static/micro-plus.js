@@ -193,7 +193,7 @@ async function post(url, body) {
 function failureText(error) {
   if (!(error instanceof TypeError || error.name === 'TimeoutError')) return error.message;
   checkingAfterNoReply = true;
-  return 'No reply from the Maneline app, so this change may or may not have reached the amp. Checking…';
+  return 'No reply from the editor app, so this change may or may not have reached the amp. Checking…';
 }
 
 // Live edits: the newest value per control wins, and controls stay usable while one is being sent.
@@ -303,7 +303,7 @@ function stillSameEditor(expected) {
   return false;
 }
 
-const SAVE_CAUTION = 'Maneline keeps a backup first, and you can undo the save afterwards. '
+const SAVE_CAUTION = 'The editor keeps a backup first, and you can undo the save afterwards. '
   + 'Saving is still experimental and has only been tested on a spare slot.';
 
 // Preset switching ---------------------------------------------------------
@@ -550,7 +550,7 @@ async function changeGroups(body) {
     return true;
   } catch (error) {
     setText($('picker-status'), error instanceof TypeError || error.name === 'TimeoutError'
-      ? "No reply from the Maneline app, so your groups didn't change." : error.message);
+      ? "No reply from the editor app, so your groups didn't change." : error.message);
     return false;
   }
 }
@@ -1431,7 +1431,7 @@ function renderStatus() {
   $('rename').disabled = nameInput.disabled = !usable || !known?.document;
   if (nameInput.disabled) closeRenaming();
   $('open-presets').disabled = !known;
-  if (known?.preset) document.title = `${unsaved ? '• ' : ''}${known.preset} · ${shownName()} · Maneline`;
+  if (known?.preset) document.title = `${unsaved ? '• ' : ''}${known.preset} · ${shownName()} · Micro Plus editor`;
 }
 
 function renderConnection() {
@@ -1449,7 +1449,7 @@ function renderConnection() {
   } else if (!reachable) {
     connection.dataset.state = 'lost';
     label = 'Not connected';
-    banner = "Can't reach the Maneline app on this computer. Make sure it's still running; this page will reconnect by itself.";
+    banner = "Can't reach the editor app on this computer. Make sure it's still running; this page will reconnect by itself.";
   } else if (known) {
     connection.dataset.state = 'lost';
     label = 'Reconnecting…';
@@ -1489,7 +1489,7 @@ function renderLastSave() {
   $('undo-save').disabled = exclusive || editsWaiting();
   if (save) {
     const time = new Date(save.time * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setText($('last-save-text'), `Saved “${save.name}” to preset ${save.preset} at ${time}. Maneline kept a backup of what it replaced.`);
+    setText($('last-save-text'), `Saved “${save.name}” to preset ${save.preset} at ${time}. The editor kept a backup of what it replaced.`);
     $('last-save-text').title = `Backup file: ${save.backup}`;
   }
 }
