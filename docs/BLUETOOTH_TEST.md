@@ -12,7 +12,7 @@ Tested with firmware 1.1.11 on 1 November 2026.
 | Chrome 156 on a Mac, tab hidden, 10 idle minutes | Passed once the keep-alive ran in a worker |
 | Chrome 156 on a Pixel 11 Pro (Android 17), page on screen, 3 idle minutes | Passed |
 | Capacitor app on the same phone, on screen | Passed up to the slot 100 write; the idle check wasn't finished |
-| iPhone | Not tested |
+| iOS | Not tested. Planned on a 2018 iPad Pro through the Capacitor app on 2 November 2026 |
 
 To run it, stop anything else connected to the amp, then:
 
