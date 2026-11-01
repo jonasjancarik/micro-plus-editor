@@ -1,4 +1,5 @@
 // The LZ4 block format, without a size header. The amp stores presets as compressed JSON.
+import { InputError } from './errors';
 const MIN_MATCH = 4;
 const LAST_LITERALS = 5;
 const MATCH_SEARCH_END = 12;
@@ -39,7 +40,7 @@ export function decompress(input: Uint8Array, maxSize: number): Uint8Array {
 }
 
 function fail(): never {
-  throw new Error('Invalid LZ4 data');
+  throw new InputError('Invalid LZ4 data');
 }
 
 export function compress(input: Uint8Array): Uint8Array {

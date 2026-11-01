@@ -59,7 +59,7 @@ async function test(transport: BleTransport): Promise<void> {
   show('Started', 'info', { userAgent: navigator.userAgent, idleMinutes, reconnectWithoutPicker: !native && 'getDevices' in navigator.bluetooth });
   document.addEventListener('visibilitychange', () => save({ kind: 'info', text: `Page ${document.visibilityState}` }));
   await step('Connected', () => transport.connect());
-  transport.onDisconnect(() => show('The Bluetooth connection dropped', 'bad'));
+  transport.onDisconnect(() => show('The Bluetooth connection closed', 'info'));
   const amp = new Amp(transport);
   await step('Read the amp\'s state and preset names', () => amp.initialize());
   show(`On preset ${amp.slot}, ${amp.names[amp.slot! - 1]}; ${amp.names.length} names`, 'info', { names: amp.names.length });
@@ -72,12 +72,13 @@ async function test(transport: BleTransport): Promise<void> {
 
     await step(`Switched to preset ${WRITE_SLOT}`, () => amp.switchTo(WRITE_SLOT));
     const before = await step(`Read preset ${WRITE_SLOT}`, () => amp.readPreset(WRITE_SLOT));
-    save({ kind: 'backup', slot: WRITE_SLOT, text: before.text });
-    const roundTrip = JSON.stringify(before.preset);
-    show(`Preset ${WRITE_SLOT} is "${before.preset.info.displayName}", ${before.text.length} characters; `
-      + (roundTrip === before.text ? 'JavaScript keeps its text exactly' : `JavaScript re-saves it as ${roundTrip.length} characters`), 'info');
-    const written = await step(`Wrote preset ${WRITE_SLOT} and read it back unchanged`, () => amp.restorePreset(before.preset, WRITE_SLOT));
-    show(`The write took ${written.packets} packets`, 'info', { packets: written.packets, sent: roundTrip, readBack: written.text });
+    const text = amp.stored.get(WRITE_SLOT)!.text;
+    const roundTrip = JSON.stringify(before);
+    save({ kind: 'backup', slot: WRITE_SLOT, text });
+    show(`Preset ${WRITE_SLOT} is "${before.info.displayName}", ${text.length} characters; `
+      + (roundTrip === text ? 'JavaScript keeps its text exactly' : `JavaScript re-saves it as ${roundTrip.length} characters`), 'info');
+    await step(`Wrote preset ${WRITE_SLOT} and read it back unchanged`, () => amp.restorePreset(before, WRITE_SLOT));
+    show(`The write took ${amp.lastWritePackets} packets`, 'info', { packets: amp.lastWritePackets, sent: roundTrip, readBack: amp.stored.get(WRITE_SLOT)!.text });
     await step(`Back on preset ${start}`, () => amp.switchTo(start));
 
     await idle(amp, idleMinutes);
@@ -91,7 +92,7 @@ async function test(transport: BleTransport): Promise<void> {
     $('status').textContent = 'Test passed. You can close this page.';
   } finally {
     if (transport.isConnected() && amp.slot !== start) await amp.switchTo(start).catch(() => {});
-    amp.stopKeepAlive();
+    amp.dispose();
     await transport.disconnect();
   }
 }

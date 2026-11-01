@@ -36,5 +36,252 @@
    null,
    "12c801000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7"
   ]
+ },
+ "parameters": [
+  {
+   "kind": "float",
+   "value": 0.625,
+   "hex": "0a03616d7012046761696e1d0000203f"
+  },
+  {
+   "kind": "float",
+   "value": 0.1,
+   "hex": "0a03616d7012046761696e1dcdcccc3d"
+  },
+  {
+   "kind": "float",
+   "value": 0.0,
+   "hex": "0a03616d7012046761696e1d00000000"
+  },
+  {
+   "kind": "integer",
+   "value": 3,
+   "hex": "0a03616d7012046761696e2806"
+  },
+  {
+   "kind": "integer",
+   "value": -2,
+   "hex": "0a03616d7012046761696e2803"
+  },
+  {
+   "kind": "integer",
+   "value": 0,
+   "hex": "0a03616d7012046761696e2800"
+  },
+  {
+   "kind": "bool",
+   "value": true,
+   "hex": "0a03616d7012046761696e3001"
+  },
+  {
+   "kind": "bool",
+   "value": false,
+   "hex": "0a03616d7012046761696e3000"
+  },
+  {
+   "kind": "text",
+   "value": "off",
+   "hex": "0a03616d7012046761696e22036f6666"
+  },
+  {
+   "kind": "text",
+   "value": "zvuk \u010d",
+   "hex": "0a03616d7012046761696e22077a76756b20c48d"
+  }
+ ],
+ "parameterReplies": [
+  {
+   "hex": "1d0000203f",
+   "value": 0.625
+  },
+  {
+   "hex": "22036f6666",
+   "value": "off"
+  },
+  {
+   "hex": "2803",
+   "value": -2
+  },
+  {
+   "hex": "2804",
+   "value": 2
+  },
+  {
+   "hex": "3001",
+   "value": true
+  },
+  {
+   "hex": "",
+   "value": null
+  }
+ ],
+ "save": {
+  "Editor test": "0a0b456469746f7220746573741063",
+  "Zvuk \u010d": "0a075a76756b20c48d1000"
+ },
+ "commands": {
+  "current": [
+   "3500060a0422020801"
+  ],
+  "readPreset": [
+   "3500080a06620408631001"
+  ],
+  "readParameter": [
+   "35000f0a0d5a0b0a03616d7012046761696e"
+  ],
+  "setParameter": [
+   "3500150a13a201100a03616d7012046761696e1d0000003f"
+  ],
+  "replaceNode": [
+   "35001a0a188a01150a03616d70120e4143445f44656c75786536354754"
+  ],
+  "saveCurrent": [
+   "3500130a112a0f0a0b456469746f7220746573741063"
+  ]
+ },
+ "order": {
+  "standard": [
+   "stomp",
+   "mod",
+   "amp",
+   "delay",
+   "reverb"
+  ],
+  "found": [
+   "stomp",
+   "mod",
+   "amp",
+   "delay",
+   "reverb"
+  ],
+  "moved": [
+   "reverb",
+   "delay",
+   "mod",
+   "amp",
+   "stomp"
+  ],
+  "connections": [
+   {
+    "input": {
+     "nodeId": "preset",
+     "index": 0
+    },
+    "output": {
+     "nodeId": "reverb",
+     "index": 0
+    }
+   },
+   {
+    "input": {
+     "nodeId": "preset",
+     "index": 1
+    },
+    "output": {
+     "nodeId": "reverb",
+     "index": 1
+    }
+   },
+   {
+    "input": {
+     "nodeId": "reverb",
+     "index": 0
+    },
+    "output": {
+     "nodeId": "delay",
+     "index": 0
+    }
+   },
+   {
+    "input": {
+     "nodeId": "reverb",
+     "index": 1
+    },
+    "output": {
+     "nodeId": "delay",
+     "index": 1
+    }
+   },
+   {
+    "input": {
+     "nodeId": "delay",
+     "index": 0
+    },
+    "output": {
+     "nodeId": "mod",
+     "index": 0
+    }
+   },
+   {
+    "input": {
+     "nodeId": "delay",
+     "index": 1
+    },
+    "output": {
+     "nodeId": "mod",
+     "index": 1
+    }
+   },
+   {
+    "input": {
+     "nodeId": "mod",
+     "index": 0
+    },
+    "output": {
+     "nodeId": "amp",
+     "index": 0
+    }
+   },
+   {
+    "input": {
+     "nodeId": "mod",
+     "index": 1
+    },
+    "output": {
+     "nodeId": "amp",
+     "index": 1
+    }
+   },
+   {
+    "input": {
+     "nodeId": "amp",
+     "index": 0
+    },
+    "output": {
+     "nodeId": "stomp",
+     "index": 0
+    }
+   },
+   {
+    "input": {
+     "nodeId": "amp",
+     "index": 1
+    },
+    "output": {
+     "nodeId": "stomp",
+     "index": 1
+    }
+   },
+   {
+    "input": {
+     "nodeId": "stomp",
+     "index": 0
+    },
+    "output": {
+     "nodeId": "preset",
+     "index": 0
+    }
+   },
+   {
+    "input": {
+     "nodeId": "stomp",
+     "index": 1
+    },
+    "output": {
+     "nodeId": "preset",
+     "index": 1
+    }
+   }
+  ]
  }
 }

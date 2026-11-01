@@ -3,24 +3,34 @@ import { REQUEST, RESPONSE, SERVICE, type BleTransport } from './types';
 export class WebBluetoothTransport implements BleTransport {
   private device?: BluetoothDevice;
   private request?: BluetoothRemoteGATTCharacteristic;
+  private response?: BluetoothRemoteGATTCharacteristic;
   private notifyListener: (data: Uint8Array) => void = () => {};
-  private disconnectListeners: (() => void)[] = [];
+  private disconnectListeners = new Set<() => void>();
+  private forward = () => {
+    const value = this.response!.value!;
+    this.notifyListener(new Uint8Array(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength)));
+  };
 
-  /** Opens the browser's device list, so it has to be called from a click. */
   async connect(): Promise<void> {
-    this.device = await navigator.bluetooth.requestDevice({
-      filters: [{ services: [SERVICE] }],
-    });
-    this.device.addEventListener('gattserverdisconnected', () => this.disconnectListeners.forEach((listener) => listener()));
+    if (!this.device) {
+      this.device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE] }] });
+      this.device.addEventListener('gattserverdisconnected', () => this.disconnectListeners.forEach((listener) => listener()));
+    }
     const server = await this.device.gatt!.connect();
     const service = await server.getPrimaryService(SERVICE);
     this.request = await service.getCharacteristic(REQUEST);
-    const response = await service.getCharacteristic(RESPONSE);
-    response.addEventListener('characteristicvaluechanged', () => {
-      const value = response.value!;
-      this.notifyListener(new Uint8Array(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength)));
-    });
-    await response.startNotifications();
+    this.response?.removeEventListener('characteristicvaluechanged', this.forward);
+    this.response = await service.getCharacteristic(RESPONSE);
+    this.response.addEventListener('characteristicvaluechanged', this.forward);
+    await this.response.startNotifications();
+  }
+
+  hasDevice(): boolean {
+    return Boolean(this.device);
+  }
+
+  deviceId(): string | null {
+    return this.device?.id ?? null;
   }
 
   async write(data: Uint8Array): Promise<void> {
@@ -35,8 +45,9 @@ export class WebBluetoothTransport implements BleTransport {
     this.notifyListener = listener;
   }
 
-  onDisconnect(listener: () => void): void {
-    this.disconnectListeners.push(listener);
+  onDisconnect(listener: () => void): () => void {
+    this.disconnectListeners.add(listener);
+    return () => this.disconnectListeners.delete(listener);
   }
 
   isConnected(): boolean {
