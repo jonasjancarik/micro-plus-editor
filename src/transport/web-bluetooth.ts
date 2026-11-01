@@ -1,4 +1,4 @@
-import { NAME, REQUEST, RESPONSE, SERVICE, type BleTransport } from './types';
+import { REQUEST, RESPONSE, SERVICE, type BleTransport } from './types';
 
 export class WebBluetoothTransport implements BleTransport {
   private device?: BluetoothDevice;
@@ -9,8 +9,7 @@ export class WebBluetoothTransport implements BleTransport {
   /** Opens the browser's device list, so it has to be called from a click. */
   async connect(): Promise<void> {
     this.device = await navigator.bluetooth.requestDevice({
-      filters: [{ services: [SERVICE] }, { name: NAME }],
-      optionalServices: [SERVICE],
+      filters: [{ services: [SERVICE] }],
     });
     this.device.addEventListener('gattserverdisconnected', () => this.disconnectListeners.forEach((listener) => listener()));
     const server = await this.device.gatt!.connect();

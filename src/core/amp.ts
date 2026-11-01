@@ -18,6 +18,14 @@ const AMP_ERRORS = ['unsupported command', 'operation failed', 'invalid paramete
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Calls back every so many milliseconds until the returned function is called. */
+export type RepeatingTimer = (callback: () => void, ms: number) => () => void;
+
+const plainTimer: RepeatingTimer = (callback, ms) => {
+  const timer = setInterval(callback, ms);
+  return () => clearInterval(timer);
+};
+
 export interface KeepAliveStats {
   sent: number;
   longestGapMs: number;
@@ -42,7 +50,7 @@ export class Amp {
   private commandError: Error | null = null;
   private waiters = new Set<() => void>();
   private writes: Promise<unknown> = Promise.resolve();
-  private keepAliveTimer?: ReturnType<typeof setTimeout>;
+  private stopTimer: () => void = () => {};
   private lastKeepAlive = 0;
 
   constructor(private transport: BleTransport) {
@@ -141,9 +149,12 @@ export class Amp {
     await this.waitFor(() => this.slot !== null && this.names.length > 0);
   }
 
-  startKeepAlive(): void {
+  startKeepAlive(timer: RepeatingTimer = plainTimer): void {
+    let sending = false;
     this.lastKeepAlive = performance.now();
-    const tick = async () => {
+    this.stopTimer = timer(async () => {
+      if (sending) return;
+      sending = true;
       const now = performance.now();
       const gap = now - this.lastKeepAlive;
       this.lastKeepAlive = now;
@@ -154,17 +165,18 @@ export class Amp {
       if (gap > 1000) stats.gapsOver1000Ms++;
       try {
         await this.sendPackets([KEEPALIVE]);
-        this.keepAliveTimer = setTimeout(tick, KEEPALIVE_MS);
       } catch (error) {
         this.failure = error as Error;
+        this.stopKeepAlive();
         this.wake();
+      } finally {
+        sending = false;
       }
-    };
-    this.keepAliveTimer = setTimeout(tick, KEEPALIVE_MS);
+    }, KEEPALIVE_MS);
   }
 
   stopKeepAlive(): void {
-    clearTimeout(this.keepAliveTimer);
+    this.stopTimer();
   }
 
   async switchTo(slot: number): Promise<void> {

@@ -1,6 +1,7 @@
 // Answers one question: can this browser or phone keep up with the amp without the Python server?
 import { Amp } from '../src/core/amp';
 import type { BleTransport } from '../src/transport/types';
+import { steadyTimer } from '../src/transport/steady-timer';
 import { WebBluetoothTransport } from '../src/transport/web-bluetooth';
 
 const WRITE_SLOT = 100;
@@ -59,7 +60,7 @@ async function test(transport: BleTransport): Promise<void> {
   if (amp.names.length !== 100) throw new Error(`Expected 100 preset names, got ${amp.names.length}`);
   if (amp.dirty) throw new Error('The current preset has unsaved changes, so the test stopped before switching away. Save or discard them, then reload.');
   const start = amp.slot!;
-  amp.startKeepAlive();
+  amp.startKeepAlive(steadyTimer);
   try {
     await step('Read the current preset', () => amp.refreshCurrent());
 
