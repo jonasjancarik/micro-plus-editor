@@ -1,0 +1,15 @@
+Mustang Micro Plus editor
+
+This program is derived from Maneline by Tim Littlefair
+(https://github.com/tim-littlefair/maneline), which is licensed under the
+GNU General Public License. It was split from Maneline on 1 November 2026 and
+modified from then on; the kept history, including the changes made before the
+split, is in this repository's git log.
+
+Licensed under the GNU General Public License, version 2. See LICENSE.
+
+There is no warranty, to the extent permitted by law. See sections 11 and 12 of
+the licence.
+
+Fender, Mustang and Fender Tone are trademarks of Fender Musical Instruments
+Corporation. This project isn't affiliated with or endorsed by Fender.
