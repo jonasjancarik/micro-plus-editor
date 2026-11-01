@@ -9,10 +9,12 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.page.json",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "app": "vite build && cap sync"
   },
   "devDependencies": {
     "@capacitor/cli": "8.6.0",
+    "@playwright/test": "^1.64.1",
     "@types/node": "24.0.0",
     "@types/web-bluetooth": "0.0.22",
     "typescript": "7.0.2",

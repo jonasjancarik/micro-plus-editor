@@ -27,12 +27,12 @@ export interface Backend {
 class LocalBackend implements Backend {
   constructor(protected session: EditorSession) {}
 
+  // Real copies, as replies from a server would be: the page and the session must not share a preset they each change.
   async read() {
-    return this.session.snapshot();
+    return structuredClone(this.session.snapshot());
   }
 
   post(path: string, body: unknown) {
-    // A real copy, as a reply from a server would be, so the page can't change the session's state by accident.
     return dispatch(this.session, path, structuredClone(body)).then((reply) => structuredClone(reply));
   }
 
