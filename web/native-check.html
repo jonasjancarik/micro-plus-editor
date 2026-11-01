@@ -1,0 +1,30 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>On-device files check</title>
+<body style="font: 16px/1.4 system-ui; padding: 60px 16px; white-space: pre-wrap">Checking…
+<script type="module">
+// For checking the phone app's file storage on a simulator or device, where there's no console to hand.
+import { CapacitorFileStore } from '/src/transport/capacitor-files.ts';
+const store = new CapacitorFileStore();
+const out = {};
+try {
+  out.missing = await store.read('check/none.json');
+  out.listMissing = await store.list('check-none');
+  await store.create('check/b/a.json', 'one');
+  out.read = await store.read('check/b/a.json');
+  out.twice = await store.create('check/b/a.json', 'two').then(() => 'allowed', (e) => e.message);
+  await store.write('check/b/a.json', 'three');
+  out.replaced = await store.read('check/b/a.json');
+  await store.write('check/b/a.json', 'four');
+  out.replacedAgain = await store.read('check/b/a.json');
+  out.list = await store.list('check/b');
+  await store.setAside('check/b/a.json');
+  out.aside = [await store.read('check/b/a.json'), await store.read('check/b/a.json.unreadable')];
+  out.bluetoothCode = 'loaded';
+  await import('/src/transport/capacitor-ble.ts');
+} catch (error) {
+  out.failed = String(error);
+}
+document.body.textContent = JSON.stringify(out, null, 1);
+</script>

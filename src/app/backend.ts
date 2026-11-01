@@ -103,12 +103,9 @@ function checkAfterBackground(session: MicroPlusSession): void {
 }
 
 async function bluetoothBackend(): Promise<Backend> {
-  const store = await OpfsStore.open().catch((error) => {
-    console.error('On-device storage is not available:', error);
-    return new UnavailableStore();
-  });
   if (Capacitor.isNativePlatform()) {
-    const { CapacitorBleTransport } = await import('../transport/capacitor-ble');
+    const [{ CapacitorBleTransport }, { CapacitorFileStore }] = await Promise.all([import('../transport/capacitor-ble'), import('../transport/capacitor-files')]);
+    const store = new CapacitorFileStore();
     const transport = new CapacitorBleTransport();
     const session = await MicroPlusSession.open(transport, { store }, steadyTimer);
     checkAfterBackground(session);
@@ -116,6 +113,10 @@ async function bluetoothBackend(): Promise<Backend> {
     if (transport.hasDevice()) backend.connect(); // The app can open it again with no click, unlike a browser.
     return backend;
   }
+  const store = await OpfsStore.open().catch((error) => {
+    console.error('On-device storage is not available:', error);
+    return new UnavailableStore();
+  });
   const session = await MicroPlusSession.open(new WebBluetoothTransport(), { store }, steadyTimer);
   checkAfterBackground(session);
   if (navigator.bluetooth) return new BluetoothBackend(session);
