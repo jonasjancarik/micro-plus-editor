@@ -98,8 +98,10 @@ async function test(transport: BleTransport): Promise<void> {
 
 $('start').addEventListener('click', () => {
   ($('start') as HTMLButtonElement).disabled = true;
-  test(native ? new CapacitorBleTransport() : new WebBluetoothTransport()).catch((error: Error) => {
+  const transport = native ? new CapacitorBleTransport() : new WebBluetoothTransport();
+  test(transport).catch((error: Error) => {
     show(`${error.name}: ${error.message}`, 'bad', { result: 'failed' });
     $('status').textContent = 'Test stopped.';
-  });
+    return transport.disconnect();
+  }).catch(() => {});
 });

@@ -80,7 +80,12 @@ describe('frames', () => {
   it('refuses a bad header and a wrong length', () => {
     expect(() => new Frames().feed(Uint8Array.of(0x20, 0, 0))).toThrow('header');
     expect(() => new Frames().feed(Uint8Array.of(0x35, 0, 5, 1))).toThrow('length');
-    expect(() => new Frames().feed(Uint8Array.of(0x34, 0, 1, 1))).toThrow('Continuation');
+  });
+
+  it('ignores the end of a message sent before it subscribed', () => {
+    const frames = new Frames();
+    expect(frames.feed(Uint8Array.of(0x34, 0, 2, 0x6f, 5))).toBeNull();
+    expect(frames.feed(Uint8Array.of(0x35, 0, 4, 0x12, 2, 7, 8))).toEqual(Uint8Array.of(0x12, 2, 7, 8));
   });
 
   it('waits when the amp marks a middle chunk as last', () => {

@@ -49,7 +49,8 @@ export class Frames {
       throw new Error('BLE frame length does not match payload');
     }
     if (marker === START) this.buffer = new Uint8Array();
-    else if (marker === MIDDLE && this.buffer.length === 0) throw new Error('Continuation without a starting frame');
+    // Subscribing can catch the end of something the amp was already sending, which nobody here asked for.
+    else if (marker === MIDDLE && this.buffer.length === 0) return null;
     this.buffer = concat(this.buffer, data.subarray(3));
     if (this.buffer.length > MAX_RESPONSE) {
       this.buffer = new Uint8Array();
