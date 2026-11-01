@@ -38,9 +38,11 @@ has been checked on the amp, and how the Bluetooth connection works.
 
 ## Moving to TypeScript
 
-The editor still runs on the Python server. `src/` holds the TypeScript version of the amp protocol,
-tested with `pnpm test`. [docs/BLUETOOTH_TEST.md](docs/BLUETOOTH_TEST.md) covers what's been checked
-in browsers and on phones.
+The editor still runs on the Python server. `src/` holds the TypeScript version of everything the
+server does: the amp protocol, the session with its backups and undo, preset groups, the compare list
+and a simulated amp. The page doesn't use it yet. It's tested with `pnpm test`, partly against files
+that `server/export_wire_fixtures.py` writes from the Python code.
+[docs/BLUETOOTH_TEST.md](docs/BLUETOOTH_TEST.md) covers what's been checked in browsers and on phones.
 
 ## Credits and licence
 
