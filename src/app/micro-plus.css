@@ -36,7 +36,7 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html { background: var(--bg); }
-body { margin: 0; min-height: 100dvh; display: flex; flex-direction: column; color: var(--text);
+body { margin: 0; padding-inline: env(safe-area-inset-left) env(safe-area-inset-right); min-height: 100dvh; display: flex; flex-direction: column; color: var(--text);
   background: radial-gradient(90% 60% at 50% 0, var(--glow), transparent 70%) no-repeat;
   font: 16px/1.5 var(--font-text); }
 /* A clear system font does everything except large text, where the more characterful one has room to show. */
@@ -61,7 +61,7 @@ label { display: block; }
 
 /* Top bar: the current preset is the way into the picker. */
 #topbar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 8px 20px; flex-wrap: wrap;
-  padding: 10px clamp(16px, 3vw, 40px); background: var(--bar); backdrop-filter: blur(10px); }
+  padding: calc(10px + env(safe-area-inset-top)) clamp(16px, 3vw, 40px) 10px; background: var(--bar); backdrop-filter: blur(10px); }
 .now { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1 1 320px; }
 #open-presets { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 4px 12px; border-color: transparent;
   background: none; text-align: left; }
@@ -258,7 +258,7 @@ body:has(#waiting:not([hidden])) :is(.actions, .shortcuts, #prev, #next, #rename
   border: 2px dashed var(--cable-edge); border-radius: 12px; background: none; color: var(--muted); text-align: center; font-size: 14px; }
 .empty-position:hover:not(:disabled) { background: var(--hover-soft); color: var(--text); }
 
-#closeup { width: min(460px, calc(100vw - 24px)); max-width: none; max-height: calc(100dvh - 24px); padding: 0; overflow-y: auto; animation: closeup-in .16s ease-out; box-shadow: 0 24px 60px var(--shadow); }
+#closeup { width: min(460px, calc(100vw - 24px)); max-width: none; max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding: 0; overflow-y: auto; animation: closeup-in .16s ease-out; box-shadow: 0 24px 60px var(--shadow); }
 @keyframes closeup-in { from { opacity: 0; transform: scale(.94); } }
 #closeup-inner { padding: 16px 18px 20px; }
 .closeup-head { display: flex; align-items: flex-start; gap: 8px; }
@@ -384,7 +384,7 @@ dialog input, dialog select { width: 100%; }
 }
 @media (max-width: 860px) {
   /* A backdrop filter would make the fixed save bar inside it position against the top bar instead of the screen. */
-  #topbar { padding: 6px 4px; background: var(--bg); backdrop-filter: none; }
+  #topbar { padding: calc(6px + env(safe-area-inset-top)) 4px 6px; background: var(--bg); backdrop-filter: none; }
   .panel-head { gap: 10px; justify-content: space-between; flex-wrap: wrap; }
   #preset-files { order: 1; flex-basis: 100%; }
   #preset-files button { flex: 1; }
