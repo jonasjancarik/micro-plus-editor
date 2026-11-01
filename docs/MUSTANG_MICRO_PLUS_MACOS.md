@@ -225,7 +225,10 @@ _work/mmp-venv/bin/python scripts/mmp_mock.py
 ```
 
 This serves the real page at `http://localhost:8092` through the real request
-handling, against a simulated amp with no Bluetooth. Open `/__mock/mode/disconnected`,
+handling, against a simulated amp with no Bluetooth. It needs no packages, so any Python 3.11+
+will do, and Claude Code can start it as `micro-plus-simulator` from `.claude/launch.json`. The
+real amp's server isn't listed there because macOS only gives it Bluetooth when it runs from a
+terminal. Open `/__mock/mode/disconnected`,
 `/__mock/mode/fail`, `/__mock/mode/stall`, `/__mock/mode/noread`,
 `/__mock/mode/noread-stuck`, `/__mock/edited-flag` or `/__mock/knob/5` to simulate a lost
 connection, unconfirmed writes, the stall described below, or a preset change made

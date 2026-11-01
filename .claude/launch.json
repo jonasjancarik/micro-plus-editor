@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "micro-plus-simulator",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["scripts/mmp_mock.py", "--port", "8092"],
+      "port": 8092
+    }
+  ]
+}
