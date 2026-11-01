@@ -32,6 +32,8 @@ function saveResults(): Plugin {
 export default defineConfig({
   root: resolve(import.meta.dirname, 'bluetooth-test'),
   server: { host: '0.0.0.0', port: 5175, strictPort: true, fs: { allow: [import.meta.dirname] } },
+  build: { outDir: resolve(import.meta.dirname, 'dist'), emptyOutDir: true },
+  base: './',
   plugins: [saveResults()],
   test: { root: import.meta.dirname, include: ['tests/**/*.test.ts'] },
 } as never);

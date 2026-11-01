@@ -10,10 +10,16 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.6.0",
     "@types/node": "24.0.0",
     "@types/web-bluetooth": "0.0.22",
     "typescript": "7.0.2",
     "vite": "8.3.5",
     "vitest": "5.0.5"
+  },
+  "dependencies": {
+    "@capacitor-community/bluetooth-le": "8.3.0",
+    "@capacitor/android": "8.6.0",
+    "@capacitor/core": "8.6.0"
   }
 }

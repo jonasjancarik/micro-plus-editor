@@ -1,5 +1,7 @@
 // Answers one question: can this browser or phone keep up with the amp without the Python server?
+import { Capacitor } from '@capacitor/core';
 import { Amp } from '../src/core/amp';
+import { CapacitorBleTransport } from '../src/transport/capacitor-ble';
 import type { BleTransport } from '../src/transport/types';
 import { steadyTimer } from '../src/transport/steady-timer';
 import { WebBluetoothTransport } from '../src/transport/web-bluetooth';
@@ -7,7 +9,11 @@ import { WebBluetoothTransport } from '../src/transport/web-bluetooth';
 const WRITE_SLOT = 100;
 const params = new URLSearchParams(location.search);
 const idleMinutes = Number(params.get('idle') ?? 10);
-const run = `${new Date().toISOString().replace(/[:.]/g, '-')}-${/Android/.test(navigator.userAgent) ? 'android' : 'desktop'}`;
+const native = Capacitor.isNativePlatform();
+const platform = native ? `${Capacitor.getPlatform()}-app` : /Android/.test(navigator.userAgent) ? 'android' : 'desktop';
+const run = `${new Date().toISOString().replace(/[:.]/g, '-')}-${platform}`;
+// The app reaches the dev server on this computer through adb reverse.
+const results = native ? 'http://localhost:5175/results' : '/results';
 
 const $ = (id: string) => document.getElementById(id)!;
 $('minutes').textContent = String(idleMinutes + 1);
@@ -15,7 +21,7 @@ $('minutes').textContent = String(idleMinutes + 1);
 let saving: Promise<unknown> = Promise.resolve();
 function save(entry: object): void {
   const body = `${JSON.stringify({ time: new Date().toISOString(), ...entry })}\n`;
-  saving = saving.then(() => fetch(`/results?run=${run}`, { method: 'POST', body })).catch(() => {});
+  saving = saving.then(() => fetch(`${results}?run=${run}`, { method: 'POST', body })).catch(() => {});
 }
 
 function show(text: string, kind: 'ok' | 'bad' | 'info', detail: object = {}): void {
@@ -50,7 +56,7 @@ async function idle(amp: Amp, minutes: number): Promise<void> {
 }
 
 async function test(transport: BleTransport): Promise<void> {
-  show('Started', 'info', { userAgent: navigator.userAgent, idleMinutes, reconnectWithoutPicker: 'getDevices' in navigator.bluetooth });
+  show('Started', 'info', { userAgent: navigator.userAgent, idleMinutes, reconnectWithoutPicker: !native && 'getDevices' in navigator.bluetooth });
   document.addEventListener('visibilitychange', () => save({ kind: 'info', text: `Page ${document.visibilityState}` }));
   await step('Connected', () => transport.connect());
   transport.onDisconnect(() => show('The Bluetooth connection dropped', 'bad'));
@@ -92,7 +98,7 @@ async function test(transport: BleTransport): Promise<void> {
 
 $('start').addEventListener('click', () => {
   ($('start') as HTMLButtonElement).disabled = true;
-  test(new WebBluetoothTransport()).catch((error: Error) => {
+  test(native ? new CapacitorBleTransport() : new WebBluetoothTransport()).catch((error: Error) => {
     show(`${error.name}: ${error.message}`, 'bad', { result: 'failed' });
     $('status').textContent = 'Test stopped.';
   });
