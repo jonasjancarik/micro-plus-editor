@@ -1,0 +1,19 @@
+{
+  "name": "micro-plus-editor",
+  "private": true,
+  "version": "0.0.0",
+  "license": "GPL-2.0-only",
+  "type": "module",
+  "scripts": {
+    "bluetooth-test": "vite",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "24.0.0",
+    "@types/web-bluetooth": "0.0.22",
+    "typescript": "7.0.2",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}
