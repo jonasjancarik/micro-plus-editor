@@ -37,6 +37,7 @@ Then open http://localhost:8080. Start it from Terminal or another app with Blue
 
 `pnpm app` builds the page and copies it into the `android/` and `ios/` projects. Open those in
 Android Studio or Xcode to install them.
+`node scripts/make-app-icons.mjs` redraws their icons and splash screens from `web/public/icon.svg`.
 [docs/REAL_AMP_CHECK.md](docs/REAL_AMP_CHECK.md) has the steps for an iPad and an Android phone.
 
 ## Tests
