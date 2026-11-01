@@ -36,6 +36,12 @@ To try the page without an amp, run the simulator and open http://localhost:8092
 [docs/MUSTANG_MICRO_PLUS_MACOS.md](docs/MUSTANG_MICRO_PLUS_MACOS.md) covers every feature, what
 has been checked on the amp, and how the Bluetooth connection works.
 
+## Moving to TypeScript
+
+The editor still runs on the Python server. `src/` holds the TypeScript version of the amp protocol,
+tested with `pnpm test`. [docs/BLUETOOTH_TEST.md](docs/BLUETOOTH_TEST.md) covers what's been checked
+in browsers and on phones.
+
 ## Credits and licence
 
 This project grew out of [Maneline](https://github.com/tim-littlefair/maneline) by Tim Littlefair,
