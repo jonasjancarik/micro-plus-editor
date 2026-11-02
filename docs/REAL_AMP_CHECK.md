@@ -6,6 +6,12 @@ The page runs on the TypeScript code. On 2 November 2026 it controlled the real 
 from Chrome on the Mac, on preset 100, and the ticked items below passed. Each change was checked by
 reading the preset back from the amp, not by listening. The unticked ones need someone at the amp.
 
+Fender's user guide explains the amp's buttons. A copy for reference is in `docs/reference/`, which
+isn't committed; the original is at
+https://www.fmicassets.com/Damroot/Original/10062/OM_2311600000_Mustang-Micro-Plus_EN.pdf. Two
+things in it matter here: holding SAVE and TAP while switching on resets presets 1 to 80, including
+the empty slots from 71, and the amp only saves MODIFY and tap tempo changes itself.
+
 ## In Chrome on the Mac
 
 1. Stop the Python server on port 8080, because the amp accepts one connection at a time. Close
@@ -17,8 +23,9 @@ reading the preset back from the amp, not by listening. The unticked ones need s
 
 - [x] **Switching:** go to another preset and back. The amp's sound and screen change with the page.
 - [x] **Editing from the page:** turn a knob on the page and hear it change.
-- [ ] **Editing on the amp:** turn a knob on the amp and see it move on the page. Switch a pedal off
-      and on.
+- [ ] **Editing on the amp:** press **MODIFY +** a few times on the amp and check the matching setting
+      changes on the page. The amp has no knobs: MODIFY changes the one effect setting each preset
+      assigns to it, and the display shows which.
 - [x] **Changing a model:** swap an amp or a pedal for another one.
 - [x] **Reordering:** move a pedal and hear the order change.
 - [x] **Saving:** save preset 100, switch away and back, and check your change is still there. Set one
