@@ -2,6 +2,33 @@ import { BleClient } from '@capacitor-community/bluetooth-le';
 import { REQUEST, RESPONSE, SERVICE, type BleTransport } from './types';
 
 const REMEMBERED = 'mmp-amp';
+const FIND_MS = 6000;
+const SETTLE_MS = 1000; // After the first amp turns up, in case another nearby answers too.
+const NOT_FOUND = "Couldn't find your Micro Plus. Check that it's switched on and that Fender Tone is closed on your other devices, then try again.";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Looks for amps and returns the one heard most clearly. The plugin's own device list labels the amp
+ * "Unknown" on iPadOS, which only knows a device's name once it has connected to it, so it isn't used.
+ */
+async function findAmp(): Promise<string> {
+  const heard = new Map<string, number>();
+  let first = 0;
+  await BleClient.requestLEScan({ services: [SERVICE] }, ({ device, rssi }) => {
+    heard.set(device.deviceId, Math.max(rssi ?? -127, heard.get(device.deviceId) ?? -127));
+    first ||= Date.now();
+  });
+  const started = Date.now();
+  try {
+    while (Date.now() - started < FIND_MS && !(first && Date.now() - first >= SETTLE_MS)) await sleep(100);
+  } finally {
+    await BleClient.stopLEScan();
+  }
+  const [loudest] = [...heard].sort((a, b) => b[1] - a[1]);
+  if (!loudest) throw new Error(NOT_FOUND);
+  return loudest[0];
+}
 
 function remembered(): string | undefined {
   try {
@@ -25,12 +52,24 @@ export class CapacitorBleTransport implements BleTransport {
   private disconnectListeners = new Set<() => void>();
 
   async connect(): Promise<void> {
+    try {
+      await this.connectOnce();
+    } catch (error) {
+      // The plugin's own messages name its functions, which mean nothing to someone playing guitar.
+      const message = error instanceof Error ? error.message : '';
+      throw /not found|requestDevice|requestLEScan|getDevices/i.test(message) ? new Error(NOT_FOUND) : error;
+    }
+  }
+
+  private async connectOnce(): Promise<void> {
     await BleClient.initialize({ androidNeverForLocation: true });
-    if (!this.chosen) {
-      this.chosen = (await BleClient.requestDevice({ services: [SERVICE] })).deviceId;
+    // iPadOS only connects to a device the app has come across since it started, so a remembered amp is looked up first.
+    const known = this.chosen ? await BleClient.getDevices([this.chosen]).catch(() => []) : [];
+    if (!known.length) {
+      this.chosen = await findAmp();
       remember(this.chosen);
     }
-    const chosen = this.chosen;
+    const chosen = this.chosen!;
     await BleClient.connect(chosen, () => {
       this.connected = false;
       this.disconnectListeners.forEach((listener) => listener());
@@ -39,7 +78,7 @@ export class CapacitorBleTransport implements BleTransport {
     const services = await BleClient.getServices(chosen);
     const request = services.find((service) => service.uuid === SERVICE)
       ?.characteristics.find((characteristic) => characteristic.uuid === REQUEST);
-    if (!request) throw new Error('Micro Plus control characteristic was not found');
+    if (!request) throw new Error("This doesn't seem to be a Micro Plus, or it didn't answer as one. Switch it off and on, then try again.");
     this.withoutResponse = Boolean(request.properties.writeWithoutResponse);
     await BleClient.startNotifications(chosen, SERVICE, RESPONSE, (value) => {
       this.notifyListener(new Uint8Array(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength)));
@@ -48,7 +87,7 @@ export class CapacitorBleTransport implements BleTransport {
 
   async chooseAgain(): Promise<void> {
     await BleClient.initialize({ androidNeverForLocation: true });
-    const chosen = (await BleClient.requestDevice({ services: [SERVICE] })).deviceId;
+    const chosen = await findAmp();
     const previous = this.chosen;
     this.chosen = chosen;
     remember(chosen);

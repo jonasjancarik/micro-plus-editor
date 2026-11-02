@@ -1432,7 +1432,7 @@ export function renderWaiting() {
   $('connect').hidden = !needsClick;
   setText($('waiting-title'), needsClick ? 'Connect to your Micro Plus' : backend.unsupported ? "Bluetooth isn't available here" : 'Looking for your Micro Plus');
   setText($('waiting-text'), backend.unsupported ?? (needsClick
-    ? 'Turn on the amp and close Fender Tone on your other devices, then choose your amp from the list.'
+    ? 'Turn on the amp and close Fender Tone on your other devices, then connect. If a list of devices opens, choose your amp.'
     : 'Turn on the amp and close Fender Tone on your other devices. This page connects by itself once the amp is found.'));
 }
 
@@ -1467,7 +1467,7 @@ function renderConnection() {
   }
   // Chrome can lose track of an amp that was switched off and on, and only finds it again once it's chosen again.
   const stuck = !state.connected && reachable && state.failed_attempts >= CHOOSE_AGAIN_AFTER && Boolean(backend.chooseAgain);
-  if (stuck) banner = `${banner} If it's on and still not back, switch it off and on, then choose it from the list again.`.trim();
+  if (stuck) banner = `${banner} If it's on and still not back, switch it off and on, then look for it again.`.trim();
   $('choose-again').hidden = !stuck;
   setText($('connection-text'), label);
   $('connection-banner').hidden = !banner;

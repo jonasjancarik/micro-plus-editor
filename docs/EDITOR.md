@@ -222,9 +222,10 @@ instead, and the page reports which preset the amp is on.
 
 The amp's Bluetooth sometimes stops answering until the amp is switched off and on, and
 Chrome can then keep saying the amp is "no longer in range" even once it's back. After three
-failed attempts in a row, the notice offers **Choose your amp again**, which opens the device
-list and starts over with the amp picked there, without reloading the page. The phone apps
-offer it too. In the simulator, set `simulator.failedAttempts = 3` while disconnected to see it.
+failed attempts in a row, the notice offers **Look for your amp again**. In Chrome it opens the device list and starts
+over with the amp picked there, without reloading the page; the phone apps search for the amp
+again by themselves. The phone apps never show a device list: iPadOS labels a device it hasn't
+connected to before "Unknown" there, so they connect to the amp they hear most clearly instead. In the simulator, set `simulator.failedAttempts = 3` while disconnected to see it.
 
 Each lost connection is written to the browser's console, with how long it lasted and why it
 ended, and so is each failed attempt to reconnect. For Chrome's own view of the
