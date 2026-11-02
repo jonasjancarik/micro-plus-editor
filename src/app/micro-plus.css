@@ -1,12 +1,15 @@
 :root {
   --bg: #141311; --surface: #1e1c19; --surface-2: #2a2723; --line: #3f3b35; --text: #f4f0e8; --muted: #c4bdb1;
   --accent: #f08a4b; --accent-soft: #3a2518; --on-accent: #1b1208; --ok: #5cc98a; --warn: #e6b84f; --warn-soft: #352c17;
-  --error: #ff8f85; --error-soft: #3a1e1b; --focus: #6db6f2;
+  --error: #ff8f85; --error-soft: #3a1e1b; --focus: #f5b45c;
   --mat: #1b1916; --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .055 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
   --bar: rgb(20 19 17 / 86%); --glow: rgb(240 138 75 / 7%); --shadow: rgb(0 0 0 / 55%); --backdrop: rgb(8 7 6 / 62%);
   --hover-soft: rgb(255 255 255 / 5%); --cable: #0d0c0a; --cable-edge: #5c584f;
-  --font-text: system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", Roboto, sans-serif;
-  --font-display: "Avenir Next", var(--font-text);
+  --btn-top: #2d2a25; --btn-bottom: #221f1b; --btn-shine: rgb(255 255 255 / 7%); --btn-drop: rgb(0 0 0 / 45%); --well: rgb(0 0 0 / 28%);
+  --display: #0c0b09; --display-text: #f4f0e8;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%238a8378' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --font-text: "Archivo Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-text);
   --pedal-name-font: var(--font-text);
   --dial: 30px; --dial-label: 11px; --foot: 54px; --pedal-name: 14px; --board-gap: 22px;
   color-scheme: dark;
@@ -16,20 +19,24 @@
   :root:not([data-theme="dark"]) {
     --bg: #f5f2ec; --surface: #fffdf9; --surface-2: #ece8df; --line: #cfc8bb; --text: #1d1a16; --muted: #575046;
     --accent: #a84714; --accent-soft: #f9e3d3; --on-accent: #fff; --ok: #1f8a4c; --warn: #8a6100; --warn-soft: #f6ebc8;
-    --error: #b3261e; --error-soft: #fbe6e3; --focus: #1769c2;
+    --error: #b3261e; --error-soft: #fbe6e3; --focus: #b35a00;
     --mat: #dcd6ca; --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
     --bar: rgb(245 242 236 / 86%); --glow: rgb(180 80 26 / 6%); --shadow: rgb(60 45 30 / 28%); --backdrop: rgb(40 34 26 / 42%);
     --hover-soft: rgb(0 0 0 / 5%); --cable: #2a2723; --cable-edge: #8b8478;
+    --btn-top: #fffdf9; --btn-bottom: #efeae1; --btn-shine: rgb(255 255 255 / 90%); --btn-drop: rgb(60 45 30 / 18%); --well: rgb(60 45 30 / 8%);
+    --display: #24211d;
     color-scheme: light;
   }
 }
 :root[data-theme="light"] {
   --bg: #f5f2ec; --surface: #fffdf9; --surface-2: #ece8df; --line: #cfc8bb; --text: #1d1a16; --muted: #575046;
   --accent: #a84714; --accent-soft: #f9e3d3; --on-accent: #fff; --ok: #1f8a4c; --warn: #8a6100; --warn-soft: #f6ebc8;
-  --error: #b3261e; --error-soft: #fbe6e3; --focus: #1769c2;
+  --error: #b3261e; --error-soft: #fbe6e3; --focus: #b35a00;
   --mat: #dcd6ca; --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
   --bar: rgb(245 242 236 / 86%); --glow: rgb(180 80 26 / 6%); --shadow: rgb(60 45 30 / 28%); --backdrop: rgb(40 34 26 / 42%);
   --hover-soft: rgb(0 0 0 / 5%); --cable: #2a2723; --cable-edge: #8b8478;
+  --btn-top: #fffdf9; --btn-bottom: #efeae1; --btn-shine: rgb(255 255 255 / 90%); --btn-drop: rgb(60 45 30 / 18%); --well: rgb(60 45 30 / 8%);
+  --display: #24211d;
   color-scheme: light;
 }
 
@@ -45,13 +52,23 @@ h1, h2, h3, p { margin: 0; text-wrap: pretty; }
 h2 { font-size: 16px; font-weight: 600; }
 button, input, select { font: inherit; color: inherit; }
 button, select, input:not([type=checkbox]):not([type=range]) { min-height: 36px; border: 1px solid var(--line);
-  border-radius: 8px; background: var(--surface); padding: 5px 12px; }
-button { cursor: pointer; font-weight: 500; transition: background-color .15s, border-color .15s, color .15s, transform .1s; }
+  border-radius: 7px; background: var(--surface); padding: 5px 12px; }
+/* Buttons are raised like the amp's own, and sink a little when pressed. */
+button { cursor: pointer; font-weight: 500; background: linear-gradient(var(--btn-top), var(--btn-bottom));
+  box-shadow: inset 0 1px 0 var(--btn-shine), 0 1px 1px var(--btn-drop); transition: background-color .15s, border-color .15s, color .15s, transform .1s; }
 button:hover:not(:disabled) { background: var(--surface-2); }
-button:active:not(:disabled) { transform: translateY(1px); }
+button:active:not(:disabled) { transform: translateY(1px); box-shadow: inset 0 1px 2px var(--btn-drop); }
 button:disabled { color: var(--muted); cursor: default; opacity: .55; }
-button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+:is(.knob .readout, .knob-pages button, #open-presets, button.icon, .actions button:not(.primary), .theme-switch button, .view-switch button,
+  .bank button, .row-tools button, .preset, .open-pedal, .empty-position, #closeup-tabs button) { box-shadow: none; }
+button.primary { background: linear-gradient(color-mix(in srgb, var(--accent), #fff 8%), var(--accent)); border-color: color-mix(in srgb, var(--accent), #000 18%);
+  color: var(--on-accent); font-weight: 600; }
 button.primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
+select { appearance: none; padding-right: 30px; background: var(--chevron) no-repeat right 10px center / 11px, linear-gradient(var(--btn-top), var(--btn-bottom)); }
+input:not([type=checkbox]):not([type=range]) { background: var(--well); box-shadow: inset 0 1px 2px var(--btn-drop); }
+/* Small printed labels, like the lettering on a pedal or amp panel. */
+:is(#eq-control > span, #current-number, .bank, #count, #closeup-kind, .model-picker > span), #board::before, #board::after {
+  font-stretch: 78%; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; min-height: 28px; }
 input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; margin: 0; }
@@ -65,13 +82,17 @@ label { display: block; }
 #topbar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 8px 20px; flex-wrap: wrap;
   padding: calc(10px + env(safe-area-inset-top)) clamp(16px, 3vw, 40px) 10px; background: var(--bar); backdrop-filter: blur(10px); }
 .now { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1 1 320px; }
-#open-presets { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 4px 12px; border-color: transparent;
-  background: none; text-align: left; }
-#open-presets:disabled { opacity: 1; color: inherit; }
+/* The current preset sits in a recessed window, like the amp's own display, in light mode too. */
+#open-presets { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 5px 14px 6px; border-color: rgb(0 0 0 / 60%);
+  border-radius: 9px; background: var(--display); color: var(--display-text); text-align: left;
+  box-shadow: inset 0 2px 7px rgb(0 0 0 / 70%), 0 1px 0 var(--btn-shine); }
+#open-presets:hover:not(:disabled) { background: var(--display); border-color: var(--accent); }
+#open-presets:disabled { opacity: 1; color: var(--display-text); }
 .now-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
-#current-number { font-size: 13px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
-#current-name { font-size: 23px; font-weight: 600; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#current-number { font-size: 11px; color: #f08a4b; font-variant-numeric: tabular-nums; }
+#current-name { font-size: 23px; font-stretch: 108%; font-weight: 650; letter-spacing: -.005em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chevron { width: 14px; height: 14px; flex: none; fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+#open-presets .chevron { stroke: #8a8378; }
 #open-presets:disabled .chevron { display: none; }
 #rename svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .name-edit { display: none; align-items: center; gap: 8px; min-width: 0; }
@@ -110,9 +131,9 @@ label { display: block; }
 button.icon { width: 38px; padding: 0; font-size: 22px; line-height: 1; flex: none; background: none; border-color: transparent; color: var(--muted); }
 button.icon:hover:not(:disabled) { color: var(--text); }
 #connection { display: flex; align-items: center; gap: 7px; margin: 0; font-size: 14px; color: var(--muted); white-space: nowrap; }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); flex: none; }
-#connection[data-state="connected"] .dot { background: var(--ok); }
-#connection[data-state="lost"] .dot { background: var(--error); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); flex: none; box-shadow: 0 0 6px var(--warn); }
+#connection[data-state="connected"] .dot { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+#connection[data-state="lost"] .dot { background: var(--error); box-shadow: 0 0 6px var(--error); }
 #eq-control { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); white-space: nowrap; }
 #eq-control[hidden] { display: none; }
 #eq-control select { color: var(--text); }
@@ -163,13 +184,13 @@ body:has(#closeup[open]) #message { display: none; } /* The close-up shows the s
 #picker-status:empty, .field-error:empty { display: none; }
 .field-error { margin: 10px 0 0; font-size: 14px; color: var(--error); }
 #preset-groups { display: flex; flex-wrap: wrap; flex: none; gap: 6px; }
-#preset-groups button { min-height: 34px; padding: 3px 13px; border-radius: 999px; font-size: 14px; font-weight: 400; color: var(--text); }
+#preset-groups button { min-height: 34px; padding: 3px 13px; font-size: 14px; font-weight: 400; color: var(--text); }
 #preset-groups button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
 /* Rows rather than columns, so a group always reads straight down from its heading. */
 #presets { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 6px 20px; align-items: start; }
-.bank { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; grid-column: 1 / -1; margin-top: 18px; padding: 14px 10px 4px; border-top: 1px solid var(--line); font-size: 15px; font-weight: 600; color: var(--text); }
-.bank button { min-height: 26px; padding: 1px 6px; border: 0; background: none; font-size: 13px; font-weight: 400; color: var(--muted); }
-.bank-note { width: 100%; font-size: 14px; font-weight: 400; color: var(--muted); }
+.bank { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; grid-column: 1 / -1; margin-top: 18px; padding: 14px 10px 4px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.bank button { min-height: 26px; padding: 1px 6px; border: 0; background: none; font-size: 13px; font-stretch: 100%; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.bank-note { width: 100%; font-size: 14px; font-stretch: 100%; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--muted); }
 .row { display: flex; align-items: center; gap: 2px; }
 .row-tools { flex: none; display: flex; gap: 2px; }
 .row-tools button { flex: none; min-height: 28px; padding: 2px 8px; border-color: transparent; background: none; font-size: 13px; font-weight: 400; color: var(--text); opacity: 0; }
@@ -185,7 +206,8 @@ body:has(#closeup[open]) #message { display: none; } /* The close-up shows the s
 }
 #presets > li:first-child.bank { margin-top: 0; padding-top: 2px; border-top: 0; }
 .preset { display: flex; align-items: baseline; gap: 10px; width: 100%; min-height: 38px; padding: 8px 10px; border: 0; border-radius: 8px; background: none; text-align: left; font-weight: 400; }
-.preset .num { width: 26px; flex: none; color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; text-align: right; }
+.preset .num { width: 28px; flex: none; color: var(--muted); font-size: 15px; font-stretch: 78%; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.preset[aria-current="true"] .num { color: var(--accent); }
 .preset .text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .preset .name { font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
 .preset .origin { display: inline-block; margin-left: 4px; padding: 0 6px; border: 1px solid var(--line); border-radius: 5px; font-size: 12px; font-weight: 500; line-height: 1.5; color: var(--muted); vertical-align: 1px; white-space: nowrap; }
@@ -197,7 +219,7 @@ body:has(#closeup[open]) #message { display: none; } /* The close-up shows the s
 .artist:not(:last-child)::after { content: " ·"; color: var(--muted); }
 .preset .badge { flex: none; font-size: 13px; font-weight: 600; color: var(--accent); }
 .preset.empty-slot .name { color: var(--muted); font-style: italic; }
-.preset[aria-current="true"] { background: var(--accent-soft); }
+.preset[aria-current="true"] { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
 .preset:focus-visible { outline-offset: -3px; }
 #presets.unavailable .preset { color: var(--muted); cursor: default; }
 #empty { padding: 8px 10px; color: var(--muted); font-size: 14px; }
@@ -282,10 +304,16 @@ body:has(#waiting:not([hidden])) :is(.actions, .shortcuts, #prev, #next, #rename
 #closeup .model-row button.icon { border-color: var(--line); color: var(--text); }
 #closeup h2 { margin: 0; font-size: 21px; letter-spacing: -.01em; }
 #closeup-kind { color: var(--muted); font-size: 14px; }
-#closeup-tabs { display: flex; gap: 4px; margin-top: 10px; }
-#closeup-tabs button { position: relative; flex: 1 1 0; min-width: 0; padding: 4px 2px; font-size: 14px; }
-#closeup-tabs button.muted { color: var(--muted); }
-#closeup-tabs button[aria-current="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--text); font-weight: 600; }
+/* The board in signal order, each with its pedal light: lit when the pedal is on. */
+#closeup-tabs { display: flex; gap: 2px; margin-top: 12px; padding: 3px; border-radius: 10px; background: var(--well); box-shadow: inset 0 1px 3px var(--btn-drop); }
+#closeup-tabs button { position: relative; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 7px 2px 6px; border: 1px solid transparent; background: none; color: var(--muted);
+  font-size: 12px; font-stretch: 80%; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
+#closeup-tabs button::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #ff4a2b; box-shadow: 0 0 7px rgb(255 74 43 / 75%); }
+#closeup-tabs button.muted::before { background: var(--line); box-shadow: none; }
+#closeup-tabs button:hover:not(:disabled) { background: var(--hover-soft); color: var(--text); }
+#closeup-tabs button[aria-current="true"] { background: linear-gradient(var(--btn-top), var(--btn-bottom)); border-color: var(--line); color: var(--text);
+  box-shadow: inset 0 1px 0 var(--btn-shine), 0 1px 2px var(--btn-drop); }
 #closeup-tabs button.has-changes::after { content: ""; position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
 #closeup-status { min-height: 20px; margin: 4px 0; font-size: 14px; color: var(--muted); }
 #closeup-status[data-kind="error"] { color: var(--error); }
@@ -313,7 +341,12 @@ fieldset:disabled .stepper .dial { cursor: default; opacity: .6; }
 .field.toggle-field label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 button.reset { min-height: 24px; padding: 0 7px; font-size: 13px; }
 #advanced { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
-#advanced summary { cursor: pointer; font-weight: 600; margin-bottom: 10px; }
+#advanced summary { display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 10px; list-style: none;
+  font-size: 13px; font-stretch: 78%; font-weight: 650; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+#advanced summary::-webkit-details-marker { display: none; }
+#advanced summary::before { content: ""; width: 11px; height: 11px; background: var(--chevron) center / contain no-repeat; transform: rotate(-90deg); transition: transform .15s; }
+#advanced[open] summary::before { transform: none; }
+#advanced summary:hover { color: var(--text); }
 
 #changes { margin-top: 16px; font-size: 14px; }
 #changes summary { cursor: pointer; color: var(--warn); font-weight: 600; }
@@ -327,10 +360,11 @@ button.reset { min-height: 24px; padding: 0 7px; font-size: 13px; }
 .shortcuts { margin-top: 18px; font-size: 14px; max-width: 110ch; }
 /* A tablet without a mouse or trackpad most likely has no keyboard either. */
 @media (hover: none) { #keyboard-help { display: none; } }
-kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; background: var(--surface); font: inherit; }
+kbd { display: inline-block; min-width: 1.6em; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: linear-gradient(var(--btn-top), var(--btn-bottom));
+  font: 600 12px/1.5 var(--font-text); font-stretch: 85%; text-align: center; color: var(--text); }
 
 dialog { max-width: min(460px, calc(100vw - 32px)); border: 1px solid var(--line); border-radius: 14px; padding: 22px;
-  background: var(--surface); color: var(--text); }
+  background: var(--grain), var(--surface); background-size: 160px, auto; color: var(--text); box-shadow: inset 0 1px 0 var(--btn-shine), 0 24px 60px var(--shadow); }
 dialog::backdrop { background: var(--backdrop); }
 dialog h2 { font-size: 18px; margin-bottom: 8px; }
 dialog label { margin: 12px 0 4px; font-weight: 600; font-size: 14px; }
@@ -418,9 +452,10 @@ dialog input, dialog select { width: 100%; }
   .theme-switch button { width: 30px; min-height: 40px; }
   .now { gap: 2px; }
   .now button.icon { width: 30px; }
-  #open-presets { flex: 1; justify-content: center; gap: 2px; padding: 2px; }
+  #open-presets { flex: 1; justify-content: center; gap: 2px; padding: 3px 6px; }
   .now-text { flex: 0 1 auto; align-items: center; }
-  #current-name { font-size: 18px; max-width: 100%; }
+  #current-name { font-size: 18px; font-stretch: 80%; max-width: 100%; }
+  #open-presets .chevron { display: none; }
   #connection[data-state="connected"] { display: none; }
   #connection { order: 1; flex-basis: 100%; padding: 0 10px; }
   #eq-control { order: 1; flex-basis: 100%; padding: 0 10px; }
