@@ -2,7 +2,7 @@
 .jack{position:absolute;top:96px;width:46px}
 .jack.left{left:-30px}
 .jack.right{right:-30px;transform:scaleX(-1)}
-.face{position:relative;padding:18px 16px 28px;border-radius:18px;background-color:var(--tint);background-image:url(surface.jpg);background-size:cover;background-blend-mode:multiply;box-shadow:inset 0 1px 0 rgb(255 255 255/.35),inset 0 -2px 0 rgb(0 0 0/.3),inset 2px 0 0 rgb(255 255 255/.08),inset -2px 0 0 rgb(0 0 0/.12),0 10px 22px rgb(0 0 0/.55);color:#17110a}
+.face{position:relative;padding:18px 16px 28px;border-radius:18px;background-image:url(surface.jpg),linear-gradient(var(--tint),var(--tint));background-size:cover;background-blend-mode:multiply;box-shadow:inset 0 1px 0 rgb(255 255 255/.35),inset 0 -2px 0 rgb(0 0 0/.3),inset 2px 0 0 rgb(255 255 255/.08),inset -2px 0 0 rgb(0 0 0/.12),0 10px 22px rgb(0 0 0/.55);color:#17110a}
 .off .face{background-image:linear-gradient(#8f8f8f,#8f8f8f),url(surface.jpg);color:#FAECE7}
 .light-ink .face{color:#F1EFE8}
 .screw{position:absolute;width:15px;filter:drop-shadow(0 1px 1px rgb(0 0 0/.5))}

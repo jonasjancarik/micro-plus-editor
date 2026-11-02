@@ -16,7 +16,7 @@
 .slot[data-node="amp"] .board-pedal::before { content: ""; position: absolute; z-index: 1; top: -9px; left: 30%; right: 30%; height: 11px; border-radius: 6px 6px 2px 2px;
   background: linear-gradient(#4b3a2a, #241a12); box-shadow: 0 2px 3px rgb(0 0 0/.5); }
 .slot[data-node="amp"] .board-pedal .face { display: flex; flex-direction: column; aspect-ratio: 5 / 4; padding: 12px 14px 16px; border-radius: 10px;
-  background: var(--cover) 0 0 / var(--cover-size); background-color: var(--cover-colour);
+  background: var(--cover) 0 0 / var(--cover-size), linear-gradient(var(--cover-colour), var(--cover-colour));
   --face-edges: inset 0 0 0 1px rgb(0 0 0/.6), inset 0 2px 1px rgb(255 255 255/.22), inset 0 -3px 2px rgb(0 0 0/.5); }
 .slot[data-node="amp"] .open-pedal { position: relative; isolation: isolate; flex: 1; justify-content: flex-start; padding: 0; color: var(--strip-ink); }
 .slot[data-node="amp"] .open-pedal::before { content: ""; position: absolute; z-index: -1; inset: 0; border-radius: 3px;
@@ -77,8 +77,11 @@
 
 /* Pedals: each model has its own paint and finish. Dark knobs would sink into some of them, so each sits on a pale ring. */
 :where(.slot:not([data-node="amp"])) .board-pedal { --finish: url(/pedal-kit/enamel-neutral.jpg); --finish-size: 180px; --paint: var(--tint); --ink: #17110a; color: var(--ink); }
-.slot:not([data-node="amp"]) .board-pedal .face { border-radius: 10px; color: var(--ink); background-color: var(--paint); background-image: var(--finish); background-size: var(--finish-size);
+.slot:not([data-node="amp"]) .board-pedal .face { isolation: isolate; border-radius: 10px; color: var(--ink); background: var(--finish) 0 0 / var(--finish-size);
   --face-edges: inset 0 0 0 1px rgb(0 0 0/.45), inset 0 2px 1px rgb(255 255 255/.28), inset 0 -3px 2px rgb(0 0 0/.45); }
+/* The paint is laid over the finish rather than mixed in with background-blend-mode, which iPadOS 17 often draws without the colour. */
+.slot:not([data-node="amp"]) .board-pedal .face::before { content: ""; position: absolute; z-index: -1; inset: 0; border-radius: inherit; background: var(--paint);
+  mix-blend-mode: multiply; box-shadow: var(--face-edges); pointer-events: none; }
 .slot:not([data-node="amp"]) .board-pedal.off .face { filter: saturate(.4) brightness(.75); }
 .slot:not([data-node="amp"]) .mini-dials { gap: 8px; padding: 4px 4px 0; }
 .slot:not([data-node="amp"]) .mini-knob { flex: 1 1 0; min-width: 0; }
