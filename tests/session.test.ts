@@ -677,6 +677,25 @@ describe('connecting', () => {
     await until(() => session.phase === 'waiting');
   });
 
+  it('gives up on a reconnect that never finishes and tries again', async () => {
+    const transport = ampOnBluetooth();
+    const connect = transport.connect.bind(transport);
+    let hangs = 0;
+    transport.connect = async () => {
+      if (transport.connects === 1 && hangs++ === 0) return new Promise<void>(() => {}); // Like Chrome after losing the amp.
+      await connect();
+    };
+    const session = open(transport);
+    session.connectTimeoutMs = 1500;
+    void session.start();
+    await until(() => session.phase === 'connected');
+    transport.drop();
+    await until(() => session.connections === 2 && session.snapshot().connected);
+    expect(hangs).toBeGreaterThan(0);
+    session.stop();
+    await until(() => session.phase === 'waiting');
+  });
+
   it('reconnects after a command could not be confirmed', async () => {
     const transport = ampOnBluetooth();
     const session = open(transport);

@@ -11,6 +11,8 @@ import { NAME, type BleTransport } from '../transport/types';
 export const SAVED_READ_FAILURES = 3; // The amp has been seen to stop answering these while its connection still looks healthy.
 export const READ_RECONNECT_GAP_MS = 300_000; // If reconnecting doesn't help, trying again every few reads wouldn't either.
 const RETRY_MS = 2000;
+const CONNECT_TIMEOUT_MS = 30_000; // Chrome has been seen to wait forever when reconnecting to an amp it just lost.
+const NO_ANSWER = "Your Micro Plus didn't answer. The editor keeps trying; if this goes on, switch the amp off and on again.";
 const PRESET_POSITIONS = ['stomp', 'mod', 'amp', 'delay', 'reverb']; // Every preset read from the amp has exactly these.
 const STALE = 'The preset changed while you were editing. Review its current settings and try again.';
 const CHOOSE_PRESET = 'Choose a preset number from 1 to 100.';
@@ -145,9 +147,11 @@ export class MicroPlusSession implements EditorSession {
   pendingOrder: { slot: number; generation: string; order: string[] } | null = null;
   savedBeforeLastSave: string | null = null;
   retryMs = RETRY_MS;
+  connectTimeoutMs = CONNECT_TIMEOUT_MS;
 
   private queue: Promise<unknown> = Promise.resolve();
   private resetRequested = false;
+  private resetReason = '';
   private wakeReset: () => void = () => {};
   private running = false;
   private stopped = false;
@@ -256,7 +260,7 @@ export class MicroPlusSession implements EditorSession {
     };
     this.error = messages[action] ?? `The Micro Plus did not confirm the ${action}. Reconnecting to read its current settings.`;
     this.amp = null;
-    this.requestReset();
+    this.requestReset(`the ${action} was not confirmed`);
     return new AmpError(this.error);
   }
 
@@ -497,7 +501,8 @@ export class MicroPlusSession implements EditorSession {
     });
   }
 
-  private requestReset(): void {
+  private requestReset(reason: string): void {
+    if (!this.resetRequested) this.resetReason = reason;
     this.resetRequested = true;
     this.wakeReset();
   }
@@ -519,8 +524,9 @@ export class MicroPlusSession implements EditorSession {
       this.phase = 'connecting';
       const choosing = !this.transport.hasDevice();
       try {
-        await this.connectOnce();
+        await this.connectOnce(choosing);
       } catch (error) {
+        console.warn('Micro Plus connection attempt failed:', error);
         if (choosing && !this.transport.hasDevice()) {
           // Nothing was chosen, so there's nothing to retry until the next click.
           this.error = isCancelled(error) ? null : messageOf(error);
@@ -542,17 +548,34 @@ export class MicroPlusSession implements EditorSession {
   /** Ends the connection and stops trying to reconnect. */
   stop(): void {
     this.stopped = true;
-    this.requestReset();
+    this.requestReset('the page stopped it');
   }
 
-  private async connectOnce(): Promise<void> {
-    await this.transport.connect();
-    const amp = new Amp(this.transport);
-    const stopListening = this.transport.onDisconnect(() => this.requestReset());
+  /** Gives up on a step of connecting that hangs, so the next attempt can start. */
+  private inTime<T>(work: Promise<T>): Promise<T> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const late = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new AmpError(NO_ANSWER)), this.connectTimeoutMs);
+    });
+    return Promise.race([work, late]).finally(() => clearTimeout(timer));
+  }
+
+  private async connectOnce(choosing: boolean): Promise<void> {
     try {
-      await amp.initialize();
-      amp.startKeepAlive(this.timer, () => this.requestReset());
-      await amp.refreshCurrent();
+      // The device list waits for the person, so it isn't timed.
+      await (choosing ? this.transport.connect() : this.inTime(this.transport.connect()));
+    } catch (error) {
+      await this.transport.disconnect().catch(() => {}); // Ends an attempt that's still running, before the next one starts.
+      throw error;
+    }
+    const amp = new Amp(this.transport);
+    const stopListening = this.transport.onDisconnect(() => this.requestReset('the Bluetooth connection dropped'));
+    try {
+      await this.inTime((async () => {
+        await amp.initialize();
+        amp.startKeepAlive(this.timer, () => this.requestReset('the amp stopped answering'));
+        await amp.refreshCurrent();
+      })());
       this.amp = amp;
       this.generation = crypto.randomUUID();
       this.connections++;
@@ -562,6 +585,8 @@ export class MicroPlusSession implements EditorSession {
       this.stalled = false;
       this.savedReadFailures = 0;
       await this.untilReset();
+      const seconds = Math.round(Date.now() / 1000 - this.connectedSince);
+      console.warn(`Micro Plus connection ended after ${seconds} s because ${this.resetReason}.`);
     } finally {
       amp.dispose();
       stopListening();

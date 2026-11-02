@@ -196,9 +196,14 @@ restore button; import one instead.
 
 If the amplifier disconnects, the page keeps showing the last settings it read,
 with controls disabled and a notice, until the connection recovers. The editor
-retries automatically. It does not
+retries automatically, and gives up on an attempt that hasn't finished after 30 seconds
+and starts another. It does not
 retry an unconfirmed switch: it reconnects and reads the actual current selection
 instead, and the page reports which preset the amp is on.
+
+Each lost connection is written to the browser's console, with how long it lasted and why it
+ended, and so is each failed attempt to reconnect. For Chrome's own view of the
+connection, keep `chrome://bluetooth-internals` open in another tab.
 
 ### Working on the page without an amp
 
@@ -260,7 +265,9 @@ restored the slot's settings.
 Disconnect handling is covered by simulated lifecycle tests. On 2 November 2026 the TypeScript
 editor was also checked through switching the amp off and on: it said it had lost the amp and
 reconnected by itself. The first preset switch afterwards got no answer and needed one more
-reconnect, about 10 seconds in all; later switches were quick.
+reconnect, about 10 seconds in all; later switches were quick. Later that day the connection
+dropped while switching presets and the editor never reconnected. It had no time limit on
+reconnecting then, and Chrome is likely to have waited forever.
 
 ```sh
 pnpm typecheck
