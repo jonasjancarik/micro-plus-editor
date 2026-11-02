@@ -318,6 +318,8 @@ button.reset { min-height: 24px; padding: 0 7px; font-size: 13px; }
 #export-progress { width: 100%; }
 #import-file-name { overflow-wrap: anywhere; color: var(--muted); font-size: 14px; }
 .shortcuts { margin-top: 18px; font-size: 14px; max-width: 110ch; }
+/* A tablet without a mouse or trackpad most likely has no keyboard either. */
+@media (hover: none) { #keyboard-help { display: none; } }
 kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; background: var(--surface); font: inherit; }
 
 dialog { max-width: min(460px, calc(100vw - 32px)); border: 1px solid var(--line); border-radius: 14px; padding: 22px;
