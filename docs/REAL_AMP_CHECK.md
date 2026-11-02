@@ -52,12 +52,23 @@ Finish by putting the amp back on the preset you normally use.
 
 ## On the iPad
 
-Nothing has run on a real iOS device yet. The app builds and opens on a simulator, where its file
-storage works, but simulators have no Bluetooth.
+On 2 November 2026 the app ran on an iPad with iPadOS 17.7 and controlled the real amp. The user
+went through switching presets, turning a knob, MODIFY on the amp, the EQ menu, dragging a pedal,
+saving to preset 100 and undoing it, leaving the app and coming back, and closing it fully and
+opening it again, and all of them worked. These were checked by using the app, not by reading the
+preset back.
+
+Getting there needed fixes for things only the iPad showed: the plugin's device list named the amp
+"Unknown", so the app now looks for the amp by itself; tapping a field zoomed the page in; the pedals
+showed no colour because of a Safari 17 drawing bug; plugin errors named its functions; and pedals
+couldn't be dragged with a finger, so now they lift after a short hold.
+
+Simulators have no Bluetooth, so this needs the real device. To install it again:
 
 1. Run `pnpm app`, then `open ios/App/App.xcodeproj`.
 2. In Xcode, open the App target, go to Signing & Capabilities and choose your team. A free Apple ID
-   works, but the app stops opening after 7 days until you install it again.
+   works, but the app stops opening after 7 days until you install it again. A paid developer
+   account, which was used for the check above, doesn't have that limit.
 3. Connect the iPad, choose it as the destination and press Run. Allow Bluetooth when asked.
 4. Run the list above. Also check that the app finds the amp again when you leave it and come back.
 
