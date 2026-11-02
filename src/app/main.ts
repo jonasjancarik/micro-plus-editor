@@ -3,7 +3,7 @@ import { choiceLabels, controlSpec, formatKnob, knobLabel, nodeLabels, parameter
 import { factoryPresetGroups } from './presets';
 import { slotOptions, exportAllPresets, exportCurrentPreset, importFromFile, renderImportChoice, renderPresetFiles, setUpBackups, stopExport, useChosenImport } from './files';
 import { compareKeys, comparePresets, comparedDocuments, playQueuedCompared, renderCompare, setComparePresets, setUpCompare, toggleCompared } from './compare';
-import { buildFootswitch, buildPedal, knobAngle, partImage, setPedalOn } from './pedal-kit';
+import { buildEndlessDial, buildFootswitch, buildPedal, knobAngle, partImage, setPedalOn } from './pedal-kit';
 
 export const $ = (id: string): any => document.getElementById(id);
 export const API = '/api/micro-plus';
@@ -1050,21 +1050,10 @@ export function buildField(node, parameter, value) {
         if (control.value === '' || !Number.isFinite(number)) { syncControl(control); return; }
         queueEdit(node.nodeId, parameter, number);
       });
-      // The amp doesn't say how far these go, so they step instead of getting a knob with made-up ends.
+      // The amp doesn't say how far these go, so they get a knob with no ends that steps the number up or down.
       stepper = document.createElement('div');
       stepper.className = 'stepper';
-      const stepButton = (direction, text, name) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.textContent = text;
-        button.setAttribute('aria-label', `${name} ${label.textContent}`);
-        button.addEventListener('click', () => {
-          if (direction < 0) control.stepDown(); else control.stepUp();
-          control.dispatchEvent(new Event('change'));
-        });
-        return button;
-      };
-      stepper.append(stepButton(-1, '−', 'Lower'), control, stepButton(1, '+', 'Raise'));
+      stepper.append(buildEndlessDial(control, label.textContent), control);
     } else {
       control.type = 'text';
       control.addEventListener('change', () => queueEdit(node.nodeId, parameter, control.value));

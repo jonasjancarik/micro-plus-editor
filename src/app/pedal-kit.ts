@@ -6,6 +6,9 @@ export const KNOB_PAGE_SIZE = 6;
 export const DRAG_DISTANCE = 150; // Pixels of dragging for a full turn.
 export const FINE_DRAG = 0.2; // Holding Shift makes a drag this much finer.
 export const WHEEL_DISTANCE = 20; // Pixels of scrolling for one hundredth of a turn.
+export const ENDLESS_STEP_DISTANCE = 24; // Pixels of dragging an endless knob for one step.
+export const ENDLESS_WHEEL_DISTANCE = 50; // Pixels of scrolling over an endless knob for one step.
+export const ENDLESS_STEP_ANGLE = 30; // Degrees the pointer turns per step, so twelve steps make a full turn.
 
 export function knobAngle(value, min, max) { return -135 + 270 * (value - min) / (max - min); }
 
@@ -125,6 +128,56 @@ export function buildKnob({ label, value, min = 0, max = 10, step = 0.1, format 
   dial.addEventListener('pointercancel', showBriefly);
   paint();
   return knob;
+}
+
+// A knob with no ends, for a number field: each click of turning steps the number once, either way, as far as you like.
+export function buildEndlessDial(input, label) {
+  const dial = document.createElement('div');
+  dial.className = 'dial endless';
+  dial.innerHTML = partImage('knob', 'body') + partImage('pointer', 'pointer');
+  dial.setAttribute('aria-hidden', 'true'); // The number field beside it already takes arrow keys and typing.
+  dial.title = `Turn to change ${label}`;
+  const pointer = dial.querySelector('.pointer') as HTMLElement;
+  let turned = 0; // In steps, so the pointer clicks round by the same amount the number moves.
+  let lastX = 0;
+  let lastY = 0;
+  let pixels = 0;
+  let wheelPixels = 0;
+  const step = count => {
+    if (!count || input.disabled) return;
+    const before = input.value;
+    if (count > 0) input.stepUp(count); else input.stepDown(-count);
+    if (input.value === before) return;
+    turned += count;
+    pointer.style.transform = `rotate(${turned * ENDLESS_STEP_ANGLE}deg)`;
+    input.dispatchEvent(new Event('change'));
+  };
+  dial.addEventListener('pointerdown', (event: any) => {
+    if (input.disabled) return;
+    dial.setPointerCapture(event.pointerId);
+    lastX = event.clientX;
+    lastY = event.clientY;
+    pixels = 0;
+    event.preventDefault();
+  });
+  dial.addEventListener('pointermove', (event: any) => {
+    if (!dial.hasPointerCapture(event.pointerId)) return;
+    pixels += (lastY - event.clientY) + (event.clientX - lastX);
+    lastX = event.clientX;
+    lastY = event.clientY;
+    const count = Math.trunc(pixels / ENDLESS_STEP_DISTANCE);
+    pixels -= count * ENDLESS_STEP_DISTANCE;
+    step(count);
+  });
+  dial.addEventListener('wheel', (event: any) => {
+    if (input.disabled) return;
+    event.preventDefault();
+    wheelPixels += event.deltaY || event.deltaX;
+    const count = Math.trunc(wheelPixels / ENDLESS_WHEEL_DISTANCE);
+    wheelPixels -= count * ENDLESS_WHEEL_DISTANCE;
+    step(-count);
+  }, { passive: false });
+  return dial;
 }
 
 // A real checkbox, so it can carry the on/off state and be used from the keyboard.

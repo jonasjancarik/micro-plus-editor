@@ -159,7 +159,8 @@ each model shows follows Fender Tone's layouts where they were checked and saved
 presets elsewhere.
 Numbered choices such as **Delay modulation type** and the compressor's **Compression setting**
 stay numbered because the amp does not report their names. Nor does it report how far they go,
-so instead of a knob they get − and + buttons on either side of the number, which can still be typed. String menus include
+so their knob has no ends: each small turn up or right adds one and each turn down or left takes one
+away, as far as you like. The number beside it can still be typed. String menus include
 values observed on the device and may not contain every option supported by the
 firmware. Amplifier choices currently cover the app's 25 guitar models. An
 unsupported value is reported as an error, not success.

@@ -83,14 +83,21 @@ test('moves a pedal, shows it as a change, and can discard it', async ({ page })
   await expect(page.locator('#dirty')).toHaveText('');
 });
 
-test('steps a numbered setting with its buttons', async ({ page }) => {
+test('turns a numbered setting with its endless knob', async ({ page }) => {
   await open(page);
   await page.getByText('Compression setting: 1').click();
   const value = page.locator('.stepper input');
-  await page.getByRole('button', { name: 'Raise Compression setting' }).click();
-  await expect(value).toHaveValue('2');
+  const box = (await page.locator('.stepper .dial').boundingBox())!;
+  const turn = async (pixels: number) => {
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    for (let moved = 1; moved <= 10; moved++) await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 - pixels * moved / 10);
+    await page.mouse.up();
+  };
+  await turn(50);
+  await expect(value).toHaveValue('3');
   await expect(page.locator('#dirty')).toHaveText('1 unsaved change');
-  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Lower Compression setting' }).click();
+  await turn(-200);
   await expect(value).toHaveValue('0');
 });
 
