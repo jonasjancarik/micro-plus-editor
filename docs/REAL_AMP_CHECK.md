@@ -4,7 +4,7 @@ Read when testing the TypeScript editor on an amp, trying the app on an iPad, or
 
 The page runs on the TypeScript code. On 2 November 2026 it controlled the real amp (firmware 1.1.11)
 from Chrome on the Mac, on preset 100, and the ticked items below passed. Each change was checked by
-reading the preset back from the amp, not by listening. The unticked ones need someone at the amp.
+reading the preset back from the amp, not by listening. The check at the amp found that MODIFY changes didn't show on the page, which is now fixed.
 
 Fender's user guide explains the amp's buttons. A copy for reference is in `docs/reference/`, which
 isn't committed; the original is at
@@ -23,7 +23,7 @@ the empty slots from 71, and the amp only saves MODIFY and tap tempo changes its
 
 - [x] **Switching:** go to another preset and back. The amp's sound and screen change with the page.
 - [x] **Editing from the page:** turn a knob on the page and hear it change.
-- [ ] **Editing on the amp:** press **MODIFY +** a few times on the amp and check the matching setting
+- [x] **Editing on the amp:** press **MODIFY +** a few times on the amp and check the matching setting
       changes on the page. The amp has no knobs: MODIFY changes the one effect setting each preset
       assigns to it, and the display shows which.
 - [x] **Changing a model:** swap an amp or a pedal for another one.
@@ -35,7 +35,9 @@ the empty slots from 71, and the amp only saves MODIFY and tap tempo changes its
 - [x] **Backups:** open the list of backups and download one.
 - [x] **Import:** import the file you exported in step 3 into preset 100.
 - [x] **Compare:** add two presets to the compare list and switch between them.
-- [ ] **Losing the amp:** turn it off, check the page says so, turn it on and check it carries on.
+- [x] **Losing the amp:** turn it off, check the page says so, turn it on and check it carries on.
+      It reconnected by itself. The first preset switch after that got no answer, and the editor
+      reconnected again and finished it in about 10 seconds. Later switches were quick.
 - [ ] **Staying connected:** leave the tab hidden for ten minutes and check it still answers.
 
 Finish by putting the amp back on the preset you normally use.
