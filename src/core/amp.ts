@@ -3,7 +3,7 @@ import { CURRENT, isPresetNumber, parameterPayload, parameterValue, READ_PARAMET
 import { AmpError, InputError } from './errors';
 import { fragments, Frames, request, selectPreset } from './frames';
 import { decodePreset, decodePresetText, encodePreset, isClose, presetsMatch, validatePreset, type ParameterValue, type Preset } from './preset';
-import { asBytes, asNumber, concat, fields, fromHex, wireBytes, wireString, wireUint } from './wire';
+import { asBytes, asNumber, concat, fields, fromHex, hex, wireBytes, wireString, wireUint } from './wire';
 import type { BleTransport } from '../transport/types';
 
 // Sent back to back, the packets of a long command can get lost, and the amp then stops answering until it reconnects.
@@ -19,6 +19,7 @@ const INTEGER_CHOICES = new Set(['comppreset', 'mode', 'type', 'dlymodtype', 'pa
   'modshape', 'inputfiltermode', 'lfoclip', 'prefilttype', 'shape']);
 
 const HANDLED_KINDS = new Set([4, 5, 9, 10, 12, 13, 15, 17]);
+const UNKNOWN_LOGGED = 500; // Enough to see what the EQ and TAP buttons send, without filling the console.
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export const parameterKey = (node: string, parameter: string) => `${node}\n${parameter}`;
@@ -65,6 +66,7 @@ export class Amp {
   private stopTimer: () => void = () => {};
   private lastKeepAlive = 0;
   private stopListening: () => void;
+  private unknownSeen = new Set<string>();
 
   constructor(private transport: BleTransport) {
     transport.onNotify((data) => this.notify(data));
@@ -85,19 +87,30 @@ export class Amp {
     this.received++;
     try {
       const message = this.frames.feed(data);
-      if (message && message[0] === 0x12) this.handle(message);
+      if (message && (message[0] !== 0x12 || !this.handle(message))) this.logUnknown(message);
     } catch (error) {
       this.failure = error as Error;
     }
     this.wake();
   }
 
-  private handle(message: Uint8Array): void {
+  /** Each different message once, so whatever the amp's other buttons send can be worked out. */
+  private logUnknown(message: Uint8Array): void {
+    const text = hex(message);
+    if (this.unknownSeen.has(text) || this.unknownSeen.size >= UNKNOWN_LOGGED) return;
+    this.unknownSeen.add(text);
+    console.info(`Micro Plus sent something the editor doesn't use: ${text}`);
+  }
+
+  /** Returns whether the message held anything the editor uses. */
+  private handle(message: Uint8Array): boolean {
+    let used = false;
     for (const [number, body] of fields(message)) {
       if (number !== 2 || !(body instanceof Uint8Array)) continue;
       for (const [kind, value] of fields(body)) {
         // Other kinds aren't necessarily made of fields, so they mustn't be read as if they were.
         if (!(value instanceof Uint8Array) || !HANDLED_KINDS.has(kind)) continue;
+        used = true;
         const content = new Map(fields(value));
         if (kind === 5) {
           this.slot = asNumber(content.get(1)) + 1;
@@ -145,6 +158,7 @@ export class Amp {
         }
       }
     }
+    return used;
   }
 
   /** Waits for its turn, because a Bluetooth link handles one write at a time. */

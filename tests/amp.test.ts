@@ -109,6 +109,18 @@ describe('messages from the amp', () => {
     expect(amp.failure).toBeNull();
   });
 
+  it('logs each message it does not use once, and not the ones it does', () => {
+    const log = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const amp = new Amp(transport());
+    hear(amp, 30, wireUint(1, 3));
+    hear(amp, 30, wireUint(1, 3));
+    hear(amp, 30, wireUint(1, 4));
+    hear(amp, 5, concat(wireUint(1, 71), wireUint(2, 1)));
+    expect(log).toHaveBeenCalledTimes(2);
+    expect(log.mock.calls[0]![0]).toMatch(/^Micro Plus sent something the editor doesn't use: [0-9a-f]+$/);
+    log.mockRestore();
+  });
+
   it('remembers a preset it can not read as a failure', () => {
     const amp = new Amp(transport());
     hear(amp, 4, wireBytes(1, new TextEncoder().encode('broken')));
