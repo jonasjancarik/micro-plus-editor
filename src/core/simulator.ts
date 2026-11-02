@@ -24,6 +24,8 @@ export class SimulatedSession implements EditorSession {
   mode: SimulatorMode = 'ok';
   dirty = false;
   eq = 0;
+  /** Set it from the browser's console, while disconnected, to see the page offer to choose the amp again. */
+  failedAttempts = 0;
   error: string | null = null;
   generation = crypto.randomUUID();
   documentRevision = 1;
@@ -73,6 +75,7 @@ export class SimulatedSession implements EditorSession {
       document: connected ? this.document : null, revision: connected ? this.revision : null,
       dirty: connected ? this.dirty : false,
       eq: connected ? this.eq : null,
+      failed_attempts: connected ? 0 : this.failedAttempts,
       models: MODELS, parameter_choices: PARAMETER_CHOICES, unscaled: UNSCALED,
       last_save: this.lastSave, last_undo: this.lastUndo, preset_groups: this.groups.state,
       saved_presets: this.saved.state, compare_presets: this.compare.slots,
@@ -117,6 +120,12 @@ export class SimulatedSession implements EditorSession {
     }
     this.dirty = false;
     this.document = this.read(this.slot);
+  }
+
+  /** As if the amp was chosen again from the device list and found. */
+  async chooseAgain(): Promise<void> {
+    this.failedAttempts = 0;
+    this.setMode('ok');
   }
 
   /** Someone turns the knob on the amp. */

@@ -17,6 +17,8 @@ export interface Backend {
   connect?(): void;
   /** Why this device can't connect at all, if so. */
   unsupported?: string;
+  /** Opens the device list to pick the amp again. Absent where that isn't possible. Call it from a click. */
+  chooseAgain?(): Promise<void>;
   listBackups?(): Promise<BackupEntry[]>;
   readBackup?(name: string): Promise<string>;
 }
@@ -52,6 +54,20 @@ class BluetoothBackend extends LocalBackend {
 
   connect() {
     void this.real.start();
+  }
+
+  chooseAgain() {
+    return this.real.chooseAgain();
+  }
+}
+
+class SimulatorBackend extends LocalBackend {
+  constructor(private simulator: SimulatedSession) {
+    super(simulator);
+  }
+
+  chooseAgain() {
+    return this.simulator.chooseAgain();
   }
 }
 
@@ -97,7 +113,7 @@ export async function chooseBackend(): Promise<void> {
   if (parameters.has('simulator')) {
     const session = new SimulatedSession(Number(parameters.get('delay') ?? 800));
     Object.assign(window, { simulator: session }); // For trying out failures from the browser's console.
-    backend = new LocalBackend(session);
+    backend = new SimulatorBackend(session);
   } else {
     backend = await bluetoothBackend();
   }

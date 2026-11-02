@@ -138,6 +138,8 @@ export function baselineKey(snapshot) { return `${snapshot.revision?.split(':')[
 // A page opened after edits never saw the preset clean, so it asks the amp for the saved one.
 // Without it the page still works and only can't list the changes, so a few tries are enough.
 export const SAVED_COPY_TRIES = 3;
+// Failed reconnects in a row before the page offers to choose the amp again. They come about two seconds apart.
+const CHOOSE_AGAIN_AFTER = 3;
 export const SAVED_COPY_RETRY_MS = 1500;
 export const savedCopyTries = new Map();
 export let savedCopyRunning = false;
@@ -1463,10 +1465,13 @@ function renderConnection() {
     label = state.phase === 'waiting' ? 'Not connected' : 'Connecting…';
     if (state.error) banner = state.error;
   }
+  // Chrome can lose track of an amp that was switched off and on, and only finds it again once it's chosen again.
+  const stuck = !state.connected && reachable && state.failed_attempts >= CHOOSE_AGAIN_AFTER && Boolean(backend.chooseAgain);
+  if (stuck) banner = `${banner} If it's on and still not back, switch it off and on, then choose it from the list again.`.trim();
+  $('choose-again').hidden = !stuck;
   setText($('connection-text'), label);
-  const element = $('connection-banner');
-  element.hidden = !banner;
-  setText(element, banner);
+  $('connection-banner').hidden = !banner;
+  setText($('connection-banner-text'), banner);
   if (known?.preset) {
     setText($('current-number'), state.connected ? `Preset ${known.preset}` : `Preset ${known.preset} (last known)`);
     setText($('current-name'), shownName());
@@ -1575,6 +1580,15 @@ document.addEventListener('keydown', (event: any) => {
   $('save-more').focus();
 });
 $('undo-save').addEventListener('click', undoSave);
+$('choose-again').addEventListener('click', async () => {
+  try {
+    await backend.chooseAgain();
+  } catch (error) {
+    // Closing the list without picking anything isn't a problem; the page keeps trying the old way.
+    if (error?.name !== 'NotFoundError' && !/cancel/i.test(error?.message ?? '')) showMessage(error.message, 'error');
+  }
+  readState();
+});
 $('copy-target').addEventListener('change', renderCopyChoice);
 // As the amp's display names them.
 const EQ_NAMES = ['Flat', 'Bright cut 1', 'Bright cut 2', 'Low cut 1', 'Low cut 2', 'Bright boost 1', 'Bright boost 2', 'Bass boost 1', 'Bass boost 2'];

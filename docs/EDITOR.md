@@ -220,6 +220,12 @@ and starts another. It does not
 retry an unconfirmed switch: it reconnects and reads the actual current selection
 instead, and the page reports which preset the amp is on.
 
+The amp's Bluetooth sometimes stops answering until the amp is switched off and on, and
+Chrome can then keep saying the amp is "no longer in range" even once it's back. After three
+failed attempts in a row, the notice offers **Choose your amp again**, which opens the device
+list and starts over with the amp picked there, without reloading the page. The phone apps
+offer it too. In the simulator, set `simulator.failedAttempts = 3` while disconnected to see it.
+
 Each lost connection is written to the browser's console, with how long it lasted and why it
 ended, and so is each failed attempt to reconnect. For Chrome's own view of the
 connection, keep `chrome://bluetooth-internals` open in another tab.

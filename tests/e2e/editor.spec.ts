@@ -158,6 +158,17 @@ test('tells you when the amp goes away, and carries on when it is back', async (
   await expect(page.locator('#connection-text')).toHaveText('Connected');
 });
 
+test('offers to choose the amp again when reconnecting keeps failing', async ({ page }) => {
+  await open(page);
+  await inSim(page, 'simulator.setMode("disconnected")');
+  await expect(page.locator('#connection-text')).toHaveText('Reconnecting…');
+  await expect(page.locator('#choose-again')).toBeHidden();
+  await inSim(page, 'simulator.failedAttempts = 3');
+  await page.locator('#choose-again').click();
+  await expect(page.locator('#connection-text')).toHaveText('Connected');
+  await expect(page.locator('#choose-again')).toBeHidden();
+});
+
 test('reports a change the amp did not confirm', async ({ page }) => {
   await open(page);
   await inSim(page, 'simulator.setMode("fail")');

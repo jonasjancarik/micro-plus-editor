@@ -18,4 +18,9 @@ export interface BleTransport {
   onDisconnect(listener: () => void): () => void;
   isConnected(): boolean;
   disconnect(): Promise<void>;
+  /**
+   * Opens the device list again and uses the amp picked there, ending any attempt with the old one.
+   * For when the amp can't be found the old way. A browser only allows it from a click.
+   */
+  chooseAgain?(): Promise<void>;
 }

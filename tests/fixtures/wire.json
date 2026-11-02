@@ -149,6 +149,7 @@
   "document",
   "eq",
   "error",
+  "failed_attempts",
   "last_save",
   "last_undo",
   "models",

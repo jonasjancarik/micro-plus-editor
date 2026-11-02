@@ -52,6 +52,8 @@ export interface Snapshot {
   models: unknown;
   parameter_choices: unknown;
   unscaled: unknown;
+  /** Reconnects in a row that failed. After a few, the page offers to choose the amp again. */
+  failed_attempts: number;
   last_save: LastSave | null;
   last_undo: LastUndo | null;
   preset_groups: GroupState;
@@ -156,6 +158,9 @@ export class MicroPlusSession implements EditorSession {
   private queue: Promise<unknown> = Promise.resolve();
   private resetRequested = false;
   private resetReason = '';
+  private wakeRetry: () => void = () => {};
+  /** Attempts in a row that failed since the amp was last connected. */
+  failedAttempts = 0;
   private wakeReset: () => void = () => {};
   private running = false;
   private stopped = false;
@@ -215,6 +220,7 @@ export class MicroPlusSession implements EditorSession {
       revision: amp ? this.revision(amp) : null,
       dirty: amp ? amp.dirty || Boolean(order) : false,
       eq: amp?.eq ?? null,
+      failed_attempts: this.failedAttempts,
       models: MODELS, parameter_choices: PARAMETER_CHOICES, unscaled: UNSCALED,
       last_save: this.lastSave, last_undo: this.lastUndo, preset_groups: this.groups.state,
       saved_presets: this.saved.state, compare_presets: this.compare.slots,
@@ -551,14 +557,33 @@ export class MicroPlusSession implements EditorSession {
           return;
         }
         this.error = messageOf(error);
+        this.failedAttempts++;
       }
       this.amp = null;
       this.connectedSince = null;
       this.phase = 'disconnected';
-      if (!this.stopped) await new Promise((resolve) => setTimeout(resolve, this.retryMs));
+      if (!this.stopped) {
+        await new Promise((resolve) => {
+          this.wakeRetry = () => resolve(undefined);
+          setTimeout(resolve, this.retryMs);
+        });
+      }
     }
     this.phase = 'waiting';
     this.running = false;
+  }
+
+  /**
+   * Opens the device list and starts again with the amp picked there. Chrome can lose track of an amp that
+   * was switched off and on, and then keeps failing to reach it until it's chosen again. Call it from a click.
+   */
+  async chooseAgain(): Promise<void> {
+    if (!this.transport.chooseAgain) return;
+    await this.transport.chooseAgain();
+    this.failedAttempts = 0;
+    this.error = null;
+    this.wakeRetry();
+    if (!this.running) void this.start();
   }
 
   /** Ends the connection and stops trying to reconnect. */
@@ -600,6 +625,7 @@ export class MicroPlusSession implements EditorSession {
       this.error = null;
       this.stalled = false;
       this.savedReadFailures = 0;
+      this.failedAttempts = 0;
       await this.untilReset();
       const seconds = Math.round(Date.now() / 1000 - this.connectedSince);
       console.warn(`Micro Plus connection ended after ${seconds} s because ${this.resetReason}.`);

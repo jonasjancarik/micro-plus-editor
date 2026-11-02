@@ -10,10 +10,19 @@ export class WebBluetoothTransport implements BleTransport {
     const value = this.response!.value!;
     this.notifyListener(new Uint8Array(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength)));
   };
+  private disconnected = () => this.disconnectListeners.forEach((listener) => listener());
 
   private use(device: BluetoothDevice) {
+    this.device?.removeEventListener('gattserverdisconnected', this.disconnected);
     this.device = device;
-    device.addEventListener('gattserverdisconnected', () => this.disconnectListeners.forEach((listener) => listener()));
+    device.addEventListener('gattserverdisconnected', this.disconnected);
+  }
+
+  async chooseAgain(): Promise<void> {
+    const chosen = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE] }] });
+    const previous = this.device;
+    this.use(chosen);
+    if (previous !== chosen) previous?.gatt?.disconnect(); // Ends an attempt that's still waiting on it.
   }
 
   /** Picks up an amp this site was allowed to use before, so a reload needs no click. */

@@ -46,6 +46,15 @@ export class CapacitorBleTransport implements BleTransport {
     });
   }
 
+  async chooseAgain(): Promise<void> {
+    await BleClient.initialize({ androidNeverForLocation: true });
+    const chosen = (await BleClient.requestDevice({ services: [SERVICE] })).deviceId;
+    const previous = this.chosen;
+    this.chosen = chosen;
+    remember(chosen);
+    if (previous && previous !== chosen) await BleClient.disconnect(previous).catch(() => {});
+  }
+
   async write(data: Uint8Array): Promise<void> {
     if (!this.chosen) throw new Error('Micro Plus is not connected');
     const value = new DataView(new Uint8Array(data).buffer);

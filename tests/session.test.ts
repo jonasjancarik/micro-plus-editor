@@ -677,6 +677,26 @@ describe('connecting', () => {
     await until(() => session.phase === 'waiting');
   });
 
+  it('counts failed reconnects, and starts over at once with an amp chosen again', async () => {
+    const transport = ampOnBluetooth();
+    const connect = transport.connect.bind(transport);
+    let lost = true;
+    transport.connect = async () => {
+      if (lost) throw new Error('Bluetooth Device is no longer in range.');
+      await connect();
+    };
+    transport.chooseAgain = async () => { lost = false; };
+    const session = open(transport);
+    session.retryMs = 60_000; // Only choosing again can bring it back in time.
+    void session.start();
+    await until(() => session.snapshot().failed_attempts === 1);
+    await session.chooseAgain();
+    await until(() => session.phase === 'connected');
+    expect(session.snapshot().failed_attempts).toBe(0);
+    session.stop();
+    await until(() => session.phase === 'waiting');
+  });
+
   it('gives up on a reconnect that never finishes and tries again', async () => {
     const transport = ampOnBluetooth();
     const connect = transport.connect.bind(transport);
