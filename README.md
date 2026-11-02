@@ -19,19 +19,8 @@ pnpm dev
 Then open http://localhost:5175 in Chrome and click **Connect to your amp**. To try the page without
 an amp, open http://localhost:5175/?simulator=1 instead.
 
-The TypeScript version hasn't controlled the real amp yet.
-[docs/REAL_AMP_CHECK.md](docs/REAL_AMP_CHECK.md) lists what to check and what comes after it. Until
-that's done, the Python server stays as the proven way to use the amp. It needs macOS, Python 3.11
-or later and a built page:
-
-```sh
-pnpm build
-uv venv .venv
-uv pip install --python .venv/bin/python -r server/requirements.txt
-./run.sh
-```
-
-Then open http://localhost:8080. Start it from Terminal or another app with Bluetooth permission.
+Chrome asks you to choose the amp again after each reload. Web Bluetooth only works on
+`localhost` or over HTTPS, so open the page through `localhost` on the computer the amp is near.
 
 ## Phone apps
 
@@ -46,19 +35,19 @@ Android Studio or Xcode to install them.
 pnpm typecheck
 pnpm test
 pnpm test:e2e
-.venv/bin/python -m unittest discover -s server/tests -p 'test_mmp*.py'
 ```
 
-`pnpm test` covers the amp protocol, sessions, backups, undo and groups, partly against files that
-`server/export_wire_fixtures.py` writes from the Python code. `pnpm test:e2e` drives the page in
+`pnpm test` covers the amp protocol, sessions, backups, undo and groups, partly against bytes
+recorded from the earlier Python version, which worked on the real amp. `pnpm test:e2e` drives the page in
 Chrome against the simulated amp. To check the phone apps' file storage on a device, point the app at
 `web/native-check.html` on the dev server.
 
 ## More detail
 
-- [docs/MUSTANG_MICRO_PLUS_MACOS.md](docs/MUSTANG_MICRO_PLUS_MACOS.md) covers every feature and how
-  the Bluetooth connection works. It was written for the Python version.
-- [docs/BLUETOOTH_TEST.md](docs/BLUETOOTH_TEST.md) covers what's been checked in browsers and on
+- [docs/EDITOR.md](docs/EDITOR.md) covers every feature and how the Bluetooth connection works.
+- [docs/REAL_AMP_CHECK.md](docs/REAL_AMP_CHECK.md) lists what's been checked on the real amp, and
+  the steps for an iPad and an Android phone.
+- [docs/BLUETOOTH_TEST.md](docs/BLUETOOTH_TEST.md) covers the first checks in browsers and on
   phones.
 
 ## Credits and licence

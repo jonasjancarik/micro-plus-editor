@@ -1,6 +1,6 @@
-# Checks still to do on the real amp
+# Checks on the real amp
 
-Read when testing the TypeScript editor on an amp, trying the app on an iPad, or removing Python.
+Read when testing the editor on an amp or trying the phone apps.
 
 The page runs on the TypeScript code. On 2 November 2026 it controlled the real amp (firmware 1.1.11)
 from Chrome on the Mac, on preset 100, and the ticked items below passed. Each change was checked by
@@ -14,8 +14,8 @@ the empty slots from 71, and the amp only saves MODIFY and tap tempo changes its
 
 ## In Chrome on the Mac
 
-1. Stop the Python server on port 8080, because the amp accepts one connection at a time. Close
-   Fender Tone too.
+1. Close Fender Tone and anything else connected to the amp, because it accepts one connection at a
+   time.
 2. Run `pnpm dev`, open http://localhost:5175 in Chrome and click **Connect to your amp**. Web
    Bluetooth needs `localhost` here. The `.local` and Tailscale addresses won't connect.
 3. Switch to preset 100, then export it, so you have a copy of what's in it.
@@ -67,12 +67,5 @@ only the earlier Bluetooth test has run, so go through the list above once.
 
 ## Removing Python
 
-Do this once the Chrome list passes. The Python server is the only proven way to use the amp until
-then, and the old copy in the Codex worktree isn't affected by anything in this repo.
-
-1. In `src/app/backend.ts`, remove `ServerBackend`, `servedByPython` and the branch that uses them.
-2. Trash `server/` and `run.sh`, and keep `tests/fixtures/wire.json` as a fixed record of what the
-   Python code produced.
-3. Remove the Python instructions from `README.md` and rewrite the Python parts of
-   `docs/MUSTANG_MICRO_PLUS_MACOS.md`.
-4. Take out "Saving is still experimental" in `src/app/main.ts` if the checks justify it.
+Done on 2 November 2026, after the checks above. The Python server is in Git history before that
+date, and in the old Maneline worktree it came from.

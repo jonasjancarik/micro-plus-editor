@@ -1,45 +1,28 @@
-# Mustang Micro Plus on macOS
+# Micro Plus editor
 
-Read when connecting a Micro Plus over Bluetooth, running its browser controls,
-or developing its BLE protocol.
+Read when using or changing the editor, or working on how it talks to the amp over Bluetooth.
 
-This page describes the Python version. The page now also runs on TypeScript, without the server; see
-[REAL_AMP_CHECK.md](REAL_AMP_CHECK.md) for where that stands.
+The editor can read, switch, edit and save Micro Plus presets over Bluetooth, from Chrome or Edge
+on a computer or an Android phone, or from the Android and iOS apps. It supports amplifier and effect
+model selection, parameter changes, preset names, and saving to the current slot or another slot.
+The USB cable can remain connected for audio and power. You can also export presets to files and
+import one into a slot. Restoring a whole exported library at once is not implemented.
 
-The editor can read, switch, edit and save Micro Plus presets using Bleak's
-CoreBluetooth backend. The browser editor supports amplifier/effect model
-selection, parameter changes, preset names, and saving to the current slot or
-another slot. The USB cable can remain connected for audio and power.
-You can also export presets to files and import one into a slot. Restoring a whole exported
-library at once is not implemented.
+Until 2 November 2026 the editor ran on a Python server on the Mac. The TypeScript version replaced
+it after the checks in [REAL_AMP_CHECK.md](REAL_AMP_CHECK.md). The test history further down was
+mostly gathered with the Python version, which did the same steps over the same protocol.
 
-## Setup
+## Using it
 
-Use Python 3.11 or later with Bleak installed, for example in an isolated environment:
+Turn on the Micro Plus and close Fender Tone on other devices, because the amp accepts one
+connection at a time. Run `pnpm dev`, open `http://localhost:5175` in Chrome and choose
+**Connect to your amp**, then pick the amp from Chrome's list. Web Bluetooth only works on
+`localhost` or over HTTPS, so the `.local` and Tailscale addresses can't connect. Chrome asks for the
+amp again after every reload, unless it lets pages find devices they've used before, which is
+currently behind a setting in `chrome://flags`. The phone apps remember the amp and reconnect by
+themselves.
 
-```sh
-uv venv .venv
-uv pip install --python .venv/bin/python -r server/requirements.txt
-```
-
-Turn on the Micro Plus and close Fender Tone on other devices. macOS may ask
-the application running Python for Bluetooth permission. If access is denied,
-enable it in System Settings > Privacy & Security > Bluetooth before retrying.
-macOS holds the app that launched Python responsible: if that app declares no
-Bluetooth use, the server prints its address and then crashes with a TCC error in
-`~/Library/Logs/DiagnosticReports`. This happened when launching from Claude Code,
-so start the server from Terminal or another app with Bluetooth access.
-
-## Browser controls
-
-```sh
-./run.sh
-```
-
-Open `http://localhost:8080`. The server serves the page from `web`. The page has its own stylesheet, follows the system light or
-dark setting, and needs no internet connection. It owns one persistent BLE
-connection shared by all browser clients; browser refreshes and preset clicks do
-not reconnect the amplifier.
+The page has its own stylesheet and needs no internet connection.
 
 The page is built around the board. It follows your system's light or dark setting
 unless you choose one with the icons in the top bar. Select the preset name in the
@@ -54,8 +37,8 @@ You can make your own groups and use Move on a preset to put it in any group. Mo
 belong to the preset's slot, so a preset keeps its group when renamed, and whatever you
 save over that slot takes its place in the group. Deleting a group only sends its presets
 back to where they started. The groups and descriptions are this editor's own and aren't
-stored on the amp: your groups are in `_work/preset-groups.json` in the checkout the
-server runs from, so every browser using this server sees the same groups.
+stored on the amp. Your groups, compare list and backups are kept on the device you're using, in
+the browser's own storage or in the phone app's folder, so another device doesn't see them.
 
 To compare presets whose slots are far apart, choose Add to compare in the top bar or press
 `C` on each one, or choose Compare on its row in the list of presets, which adds it without
@@ -65,14 +48,14 @@ still step through every preset by number. If you press several while the amp is
 preset, which takes about 1.5 seconds, only the last one counts. Switching away from unsaved
 changes asks first, as it does anywhere else. Show differences lists each preset's models,
 any settings that differ when the model is the same, and the order of its pedals. It reads the
-saved presets without changing what the amp is playing. The list is in
-`_work/preset-compare.json`, and it belongs to the slots, so it follows whatever you save there.
+saved presets without changing what the amp is playing. The list belongs to
+the slots, so it follows whatever you save there.
 
 In the list, a preset whose name isn't one of the factory presets is labelled Yours. A
 factory preset is labelled Edited once it's saved over from this page, or once you select
 it and the amp says it isn't the factory version. Saves made elsewhere can only be spotted
-that way, and only when the amp reports them, so such a preset can look unchanged. Those
-records are in `_work/preset-saved.json`.
+that way, and only when the amp reports them, so such a preset can look unchanged. Those records
+stay on the device too.
 
 Most factory presets also list artists they're roughly close to, which are
 this editor's own judgement. Search by name, sound, artist or group, or type a number to find exactly that slot. Empty slots are hidden until you
@@ -85,7 +68,8 @@ settings.
 ### Editing and saving
 
 Saving was tested only against disposable slot 100 on firmware 1.1.11. Other
-destinations use the same write path but were not overwritten during testing.
+destinations use the same write path but were not overwritten during testing. The amp's own
+MODIFY buttons change one effect setting per preset, and the page shows those changes too.
 
 Choose a preset and it appears as a pedalboard: stompbox, modulation, amp, delay
 and reverb, joined by a cable, with each knob labelled. It runs across the screen in
@@ -135,8 +119,8 @@ the amp for the saved preset, which only reads it, says "Checking for changes" u
 arrives, and lists the same changes.
 
 The amp has been seen to stop sending saved presets while its connection still looked
-healthy, and reconnecting cleared it. After three failed reads in a row the server
-reconnects by itself, at most once every five minutes, and logs each failure. The page
+healthy, and reconnecting cleared it. After three failed reads in a row the editor
+reconnects by itself, at most once every five minutes. The page
 says what's happening, and the live preset stayed as it was when this happened on the real
 amp. If reads still fail, the page says "May have unsaved changes" and explains that it
 can't compare, without reconnecting again until five minutes have passed.
@@ -151,7 +135,7 @@ side, not from documentation. A saved value outside that range widens the knob
 rather than being changed. If the amp stores a different number from the one sent,
 for example by limiting it, the control moves to the stored value and the page says
 where it stopped. The stored value must also appear in the preset read back from
-the amp; otherwise the change counts as unconfirmed and the server reconnects. Which knobs
+the amp; otherwise the change counts as unconfirmed and the editor reconnects. Which knobs
 each model shows follows Fender Tone's layouts where they were checked and saved
 presets elsewhere.
 Numbered choices such as **Delay modulation type**
@@ -162,15 +146,16 @@ unsupported value is reported as an error, not success.
 
 **Save** replaces the active preset, and **Save as copy**, in the menu on the arrow beside **Save**, writes to another slot,
 defaulting to the first empty one. Both confirmations name the preset being
-replaced. Before writing, the server reads that slot's saved definition and writes
-a JSON backup under `_work/preset-backups/`. If the backup cannot be created, no
-save is sent. Saving to another slot creates a copy with a new preset ID and
+replaced. Before writing, the editor reads that slot's saved definition and keeps it
+as a backup on the device. The browser may clear its storage to free space, so download backups
+you care about from **Backups** in the Presets panel. If the backup cannot be created, no save is
+sent. Saving to another slot creates a copy with a new preset ID and
 leaves the source's saved contents unchanged. The device's saved response must be
 followed by a matching read-back of the destination name and signal chain before
 success is reported. Acknowledgement alone is insufficient.
 
 **Undo this save** restores the backup from the most recent save, after backing up
-what it replaces. It is available until the server restarts.
+what it replaces. It is available until the page is reloaded.
 
 ### Exporting and importing
 
@@ -182,8 +167,8 @@ one at a time and shows its progress, and other controls wait until it finishes.
 still can't be read after a few tries, or you cancel, no file is downloaded. Files are
 downloaded by the browser you're using, so this also works from a phone or another computer.
 
-**Import a preset**, also in the Presets panel, takes a file from either kind of export, or a backup from
-`_work/preset-backups/`. If the file holds several presets, choose one, then choose its name
+**Import a preset**, also in the Presets panel, takes a file from either kind of export, or a downloaded
+backup. Backups the Python version kept in `_work/preset-backups/` work too. If the file holds several presets, choose one, then choose its name
 and the slot to put it in. An import works like **Save as copy**: the slot's saved contents
 are backed up first, nothing is sent if that fails, the imported preset gets a new preset ID,
 and success is only reported once reading the slot back matches. **Undo this save** covers it
@@ -204,82 +189,34 @@ them and then stayed silent until the editor reconnected, so they now go out 30 
 **Discard changes** reloads the saved preset. Switching away from an edited preset
 also asks before discarding live edits or an unsaved name. Browser requests include
 the selected slot and an opaque editor revision, so stale controls cannot quietly
-edit a different preset. The revision includes a fresh connection identity,
-including after restarting the server.
+edit a different preset. The revision includes a fresh connection identity.
 
-Backups contain the device ID, destination slot and full preset JSON. Keep them
-when moving or cleaning a worktree. They are not committed to Git. Older backups
-have no restore button; the controller's `restore_preset` method uses the verified
-full-preset write operation.
+Backups contain the device ID, destination slot and full preset JSON. Older backups have no
+restore button; import one instead.
 
 If the amplifier disconnects, the page keeps showing the last settings it read,
-with controls disabled and a notice, until the connection recovers. The server
-retries automatically, using the device ID from the first connection. It does not
+with controls disabled and a notice, until the connection recovers. The editor
+retries automatically. It does not
 retry an unconfirmed switch: it reconnects and reads the actual current selection
 instead, and the page reports which preset the amp is on.
 
 ### Working on the page without an amp
 
-```sh
-.venv/bin/python server/mmp_mock.py
-```
+Open `http://localhost:5175/?simulator=1` to run the page against a simulated amp, with no
+Bluetooth. `&delay=30` makes it answer faster than the real amp's second or so. In the browser's
+console, `simulator.setMode('disconnected')`, `'fail'`, `'stall'`, `'noread'` or
+`'noread-stuck'` simulates a lost connection, unconfirmed writes, the stall described above, or
+saved presets that can't be read; `simulator.setMode('ok')` returns to normal.
+`simulator.knob(5)` acts as if someone changed preset on the amp, and
+`simulator.limit(node, parameter, value)` makes the next change store a different value. Use it for
+anything that would otherwise overwrite presets.
 
-This serves the real page at `http://localhost:8092` through the real request
-handling, against a simulated amp with no Bluetooth. It needs no packages, so any Python 3.11+
-will do, and Claude Code can start it as `micro-plus-simulator` from `.claude/launch.json`. The
-real amp's server isn't listed there because macOS only gives it Bluetooth when it runs from a
-terminal. Open `/__mock/mode/disconnected`,
-`/__mock/mode/fail`, `/__mock/mode/stall`, `/__mock/mode/noread`,
-`/__mock/mode/noread-stuck`, `/__mock/edited-flag` or `/__mock/knob/5` to simulate a lost
-connection, unconfirmed writes, the stall described below, or a preset change made
-on the amp; `/__mock/mode/ok` returns to normal. Use it for anything that would
-otherwise overwrite presets.
-
-Use `--device ID` to select a specific Micro Plus and `--port NUMBER` to change
-the HTTP port. If using another Python environment, set `MICRO_PLUS_PYTHON` to its
-interpreter. The server binds to `0.0.0.0`; localhost and this Mac's hostname and
-`.local` hostname are accepted. For another hostname or a numeric LAN address,
-add `--allow-host HOSTNAME_OR_IP` (repeatable). Use this on a trusted network;
-there is no user login. Browser writes require a matching Origin and Host.
-
-The API is `GET /api/micro-plus` for connection state, selected preset, names and
-connection count, and `POST /api/micro-plus` with JSON `{"preset": 72}` to switch.
-Preset numbers are 1–100, matching the display. Invalid numbers return HTTP 400;
-an unavailable connection or unconfirmed switch returns HTTP 503. A failed
-confirmation does not establish that the amplifier stayed on its previous preset.
-The editor endpoint is `POST /api/micro-plus/editor` with an `action` of
-`parameter`, `model`, `save`, `undo-save`, `read-slot`, or `import`. Each action
-except `read-slot` includes `preset` and `revision` from the latest GET response.
-Parameter changes also supply `node`, `parameter` and `value`; model changes supply
-`node` and `model`; saves supply `target` and `name`; imports supply `target`, `name`
-and `document`, the preset itself; and `read-slot` supplies only `slot`. If the amp stored a different number from the one sent, the
-parameter response adds `limited` with `node`, `parameter`, `requested` and `stored`.
-A stale revision returns HTTP 409, invalid data returns 400, an
-unconfirmed device operation returns 503, and a backup-file failure returns 500.
-Do not retry an unconfirmed save automatically: read the actual state first.
-
-Traffic logs are appended to `_work/mmp-web.jsonl` and can include preset data.
-Stop the server before using any other BLE controller, including the commands
-below, so only one program holds the connection.
-
-## One-shot command-line controls
-
-```sh
-.venv/bin/python server/mmp_ble.py scan
-.venv/bin/python server/mmp_ble.py status
-.venv/bin/python server/mmp_ble.py presets
-.venv/bin/python server/mmp_ble.py preset 72
-```
-
-These commands connect, perform one operation and disconnect. Put `--device ID`
-before the command to select the ID returned by `scan`. On macOS this is a local
-CoreBluetooth UUID, not a Bluetooth MAC address. Multiple matching devices require
-an explicit selection. `--log _work/mmp-ble.jsonl` records timestamped BLE traffic.
+`pnpm test:e2e` runs the page in Chrome against the simulator.
 
 ## Persistent connection and verification
 
-The service/characteristic UUIDs, startup sequence and switch command come from
-`mmp_helper.py.disabled` and `mmp_startup.gatttool.json`. The wire protocol uses
+The service/characteristic UUIDs, startup sequence and switch command come from Tim Littlefair's
+Maneline experiments, which captured them from the amp. The wire protocol uses
 zero-based preset indices; the controller converts them to display numbers.
 Notifications are reassembled before decoding protobuf messages.
 
@@ -288,8 +225,7 @@ to remain open while notifications stopped. Sending the captured heartbeat
 `3500050a03c20100` every 250 ms kept notifications working after idle periods.
 The original Linux experiment specifies a 500 ms interval. The editor uses 250 ms
 to leave scheduling margin and continues sending while a switch awaits its
-acknowledgement. Commands share a write lock, while whole switch operations are
-serialized separately. This interval is verified behavior, not a documented
+acknowledgement. Commands are written one at a time, and the page's commands run one at a time. This interval is verified behavior, not a documented
 Fender timing guarantee.
 
 It may not cover every case. In one live test on 30 October 2026, about ten minutes
@@ -315,23 +251,28 @@ Rate knobs took 0.1 and 10 Hz on the Mod Delay, Flanger and modulated hall; the 
 Delay's Time took 1.5 s; the modulated hall's Level took −30 and 0 dB; Volume took
 −40 dB; the Five-band EQ's Low and Gain took ±12 dB; and the Greenbox's Output took
 −24 and 0 dB. A Time of 0.02 s was stored as 0.03 s, so that knob now stops at
-0.03 s. That used to cause a reconnect; the server now accepts the limited value, and
+0.03 s. That used to cause a reconnect; the editor now accepts the limited value, and
 a retest on the amp reported 0.03 s back and kept the same connection. That retest
-sent the value straight to the server rather than from the page, so the page's message
-about a limited value has only been seen against the simulator. Time on the other delays and the top of Volume (0 dB) were
+sent the value without the page, so the page's message about a limited value has only been seen
+against the simulator. Time on the other delays and the top of Volume (0 dB) were
 not tried; the latter was left out because of the jump in loudness. Discarding
 restored the slot's settings.
-Disconnect handling is covered by simulated lifecycle tests; physical power-cycle
-recovery was not tested.
+Disconnect handling is covered by simulated lifecycle tests. On 2 November 2026 the TypeScript
+editor was also checked through switching the amp off and on: it said it had lost the amp and
+reconnected by itself. The first preset switch afterwards got no answer and needed one more
+reconnect, about 10 seconds in all; later switches were quick.
 
 ```sh
-.venv/bin/python -m unittest discover -s server/tests -v
+pnpm typecheck
+pnpm test
+pnpm test:e2e
 ```
 
-The 54 hardware-independent tests cover captured packets, fragmented names,
-typed parameters, acknowledgement and read-back requirements, backups before
-writes, undo, stale editor state, copy identities, keep-alives during pending switches,
-HTTP validation, same-origin writes and static-file access restrictions.
+The hardware-independent tests cover captured packets, fragmented names, typed parameters,
+acknowledgement and read-back requirements, backups before writes, undo, stale editor state, copy
+identities, keep-alives and the page itself against the simulator. `tests/fixtures/wire.json` holds
+bytes the Python version produced, so the TypeScript code is checked against what already worked
+on the amp.
 
 ### Editing protocol
 
@@ -357,5 +298,5 @@ Requests use outer field 1 and responses outer field 2. Preset JSON is an LZ4
 block inside protobuf bytes fields; no fixed offsets are assumed. Large messages
 use transport markers `0x33`, `0x34`, `0x35`. The Micro Plus can emit `0x35` before
 the message is complete, so reassembly also checks the protobuf envelope length.
-Full-preset writes hold the write lock across their fragments to prevent a
-heartbeat from appearing inside a fragmented command.
+A full-preset write sends all its fragments before any other write, so a heartbeat can't
+appear inside a fragmented command.
