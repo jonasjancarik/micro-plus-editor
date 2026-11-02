@@ -303,6 +303,10 @@ body:has(#waiting:not([hidden])) :is(.actions, .shortcuts, #prev, #next, #rename
 .field-head output { font-variant-numeric: tabular-nums; font-weight: 600; }
 .field.is-changed .field-head label { font-weight: 600; color: var(--warn); }
 .field input:not([type=checkbox]):not([type=range]), .field select { width: 100%; }
+.stepper { display: flex; gap: 6px; }
+.stepper input { flex: 1; min-width: 0; text-align: center; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
+.stepper input::-webkit-inner-spin-button, .stepper input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.stepper button { flex: none; min-width: 40px; min-height: 36px; padding: 0; font-size: 20px; line-height: 1; }
 .field.toggle-field label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 button.reset { min-height: 24px; padding: 0 7px; font-size: 13px; }
 #advanced { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }

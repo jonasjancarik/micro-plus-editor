@@ -1009,6 +1009,7 @@ export function buildField(node, parameter, value) {
   label.textContent = spec.label || parameterLabel(parameter);
   head.append(label);
   let control;
+  let stepper;
   if (spec.kind === 'toggle') {
     field.classList.add('toggle-field');
     control = document.createElement('input');
@@ -1049,6 +1050,21 @@ export function buildField(node, parameter, value) {
         if (control.value === '' || !Number.isFinite(number)) { syncControl(control); return; }
         queueEdit(node.nodeId, parameter, number);
       });
+      // The amp doesn't say how far these go, so they step instead of getting a knob with made-up ends.
+      stepper = document.createElement('div');
+      stepper.className = 'stepper';
+      const stepButton = (direction, text, name) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = text;
+        button.setAttribute('aria-label', `${name} ${label.textContent}`);
+        button.addEventListener('click', () => {
+          if (direction < 0) control.stepDown(); else control.stepUp();
+          control.dispatchEvent(new Event('change'));
+        });
+        return button;
+      };
+      stepper.append(stepButton(-1, '−', 'Lower'), control, stepButton(1, '+', 'Raise'));
     } else {
       control.type = 'text';
       control.addEventListener('change', () => queueEdit(node.nodeId, parameter, control.value));
@@ -1058,7 +1074,7 @@ export function buildField(node, parameter, value) {
   control.dataset.key = key;
   head.append(resetButton(node, parameter));
   if (spec.kind === 'toggle') field.append(head);
-  else field.append(head, control);
+  else field.append(head, stepper || control);
   return field;
 }
 
