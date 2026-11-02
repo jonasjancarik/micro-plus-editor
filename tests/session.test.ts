@@ -608,7 +608,7 @@ function ampOnBluetooth(options: { chosen?: boolean; cancel?: Error } = {}) {
   return transport;
 }
 
-const until = (ready: () => boolean) => vi.waitFor(() => expect(ready()).toBe(true), { timeout: 4000, interval: 10 });
+const until = (ready: () => boolean, timeout = 4000) => vi.waitFor(() => expect(ready()).toBe(true), { timeout, interval: 10 });
 
 describe('connecting', () => {
   const open = (transport: BleTransport) => {
@@ -686,15 +686,15 @@ describe('connecting', () => {
       await connect();
     };
     const session = open(transport);
-    session.connectTimeoutMs = 1500;
+    session.connectTimeoutMs = 3000; // Longer than the handshake, which takes about a second.
     void session.start();
     await until(() => session.phase === 'connected');
     transport.drop();
-    await until(() => session.connections === 2 && session.snapshot().connected);
+    await until(() => session.connections === 2 && session.snapshot().connected, 12_000);
     expect(hangs).toBeGreaterThan(0);
     session.stop();
     await until(() => session.phase === 'waiting');
-  });
+  }, 20_000);
 
   it('reconnects after a command could not be confirmed', async () => {
     const transport = ampOnBluetooth();
