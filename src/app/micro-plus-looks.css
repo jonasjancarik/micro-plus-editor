@@ -129,5 +129,17 @@
   .slot:not([data-node="amp"]) .kind { margin-bottom: 0; }
 }
 
+/* The close-up shows the same paint and finish as the board. An amp shows its control panel, where its knobs are. */
+:where(.closeup-amp) { --strip: linear-gradient(#d8d2c2, #a9a292); --strip-ink: #1d1712; }
+.closeup-amp .face { background: var(--strip); color: var(--strip-ink); }
+.closeup-amp:is([data-model="ACD_LinearGainGT"], [data-model="ACD_StudioTubePreampGT"], [data-model="ACD_AcousticSimGT"]) .face {
+  background: url(/pedal-kit/brushed-metal.jpg) 0 0 / 220px; background-color: var(--panel); }
+:where(.closeup-stage .pedal:not(.closeup-amp)) { --finish: url(/pedal-kit/enamel-neutral.jpg); --finish-size: 180px; --paint: var(--tint); --ink: #17110a; }
+.closeup-stage .pedal:not(.closeup-amp) .face { isolation: isolate; color: var(--ink); background: var(--finish) 0 0 / var(--finish-size); }
+.closeup-stage .pedal:not(.closeup-amp) .face::before { content: ""; position: absolute; z-index: -1; inset: 0; border-radius: inherit; background: var(--paint);
+  mix-blend-mode: multiply; pointer-events: none; }
+.closeup-stage .pedal.off .face { filter: saturate(.4) brightness(.75); }
+
 /* Light writing on a mid-tone paint needs a shadow to stay readable. */
+.closeup-stage .pedal:is([data-model="ACD_Octobot"], [data-model="ACD_CompressorSimple"], [data-model="ACD_ChorusSine"], [data-model="ACD_ModDelay"], [data-model="ACD_BoilerPlateReverse"], [data-model="ACD_Vibratone"]) :is(.name, .knob-label, .readout) { text-shadow: 0 1px 2px rgb(0 0 0/.65); }
 .slot:not([data-node="amp"]) .board-pedal:is([data-model="ACD_Octobot"], [data-model="ACD_CompressorSimple"], [data-model="ACD_ChorusSine"], [data-model="ACD_ModDelay"], [data-model="ACD_BoilerPlateReverse"], [data-model="ACD_Vibratone"]) :is(.name, .kind, .mini-label, .mini-setting) { text-shadow: 0 1px 2px rgb(0 0 0/.65); }

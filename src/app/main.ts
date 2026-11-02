@@ -1160,6 +1160,9 @@ export function buildCloseup() {
     const pedal = buildPedal({ name: modelName(node), colour: nodeColours[node.nodeId], lightInk: node.nodeId === 'amp',
       knobs: knobs.map(parameter => buildKnobSpec(node, parameter)), footswitch: hasBypass(node),
       on: !node.dspUnitParameters.bypass, bypassKey: `${node.nodeId}/bypass` });
+    // The model's own paint and finish come from the same styles as the board.
+    pedal.dataset.model = node.FenderId;
+    pedal.classList.toggle('closeup-amp', node.nodeId === 'amp');
     bindKnobs(pedal, node);
     const foot = pedal.querySelector('.foot input');
     if (foot) bindBypass(foot, node);
