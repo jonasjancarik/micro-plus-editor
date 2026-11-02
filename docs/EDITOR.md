@@ -78,8 +78,15 @@ preset, and the editor doesn't offer them yet. Each press arrives unasked as rep
 `9a01 04 0801 10nn`, where `nn` is the setting's position starting from 0 for EQ1 Flat (the
 field is left out at 0). Request kind 25 with no content, which the editor sends while
 connecting, asks for it. Request kind 22, also sent while connecting, gets reply kind 18:
-`0d` with −6.0 as a float, then `1001`, possibly a gain; what it controls isn't known. The command
-that sets the EQ isn't known either. Messages the editor
+`0d` with −6.0 as a float, then `1001`, possibly a gain; what it controls isn't known. Request kind 26 sets the EQ, with the same
+content as the reply: `0801 10nn` (`0801` alone for Flat). The amp answers with kind 19 holding
+the new setting. On 2 November 2026 this set EQ2 and then Flat on the real amp, and the amp kept
+answering afterwards. Field 1 has always been 1, and what it means isn't known.
+
+The first time kind 26 was sent, the amp stopped answering over Bluetooth until it was switched
+off and on, though its buttons kept working. The same had happened half an hour earlier with
+no test command, after the editor's tab had been in the background, and sending kind 26 again
+after a restart caused no trouble, so the two are probably unrelated. Messages the editor
 doesn't use are written to the browser's console, each different one once.
 
 Choose a preset and it appears as a pedalboard: stompbox, modulation, amp, delay
