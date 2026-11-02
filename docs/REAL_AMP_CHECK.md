@@ -2,8 +2,9 @@
 
 Read when testing the TypeScript editor on an amp, trying the app on an iPad, or removing Python.
 
-The page now runs on the TypeScript code, but that code hasn't controlled the real amp apart from
-the earlier Bluetooth test. Everything below has only been run against the simulated amp.
+The page runs on the TypeScript code. On 2 November 2026 it controlled the real amp (firmware 1.1.11)
+from Chrome on the Mac, on preset 100, and the ticked items below passed. Each change was checked by
+reading the preset back from the amp, not by listening. The unticked ones need someone at the amp.
 
 ## In Chrome on the Mac
 
@@ -14,18 +15,19 @@ the earlier Bluetooth test. Everything below has only been run against the simul
 3. Switch to preset 100, then export it, so you have a copy of what's in it.
 4. Work through the list below on preset 100 only.
 
-- [ ] **Switching:** go to another preset and back. The amp's sound and screen change with the page.
-- [ ] **Editing:** turn a knob on the page and hear it change. Turn one on the amp and see it move on
-      the page. Switch a pedal off and on.
-- [ ] **Changing a model:** swap an amp or a pedal for another one.
-- [ ] **Reordering:** move a pedal and hear the order change.
-- [ ] **Saving:** save preset 100, switch away and back, and check your change is still there. Set one
-      knob to its maximum before saving and check it stays there, because JavaScript writes `1.0`
-      as `1` and only the amp can show whether that matters.
-- [ ] **Undo:** undo that save, and check the earlier sound comes back after switching away and back.
-- [ ] **Backups:** open the list of backups and download one.
-- [ ] **Import:** import the file you exported in step 3 into preset 100.
-- [ ] **Compare:** add two presets to the compare list and switch between them.
+- [x] **Switching:** go to another preset and back. The amp's sound and screen change with the page.
+- [x] **Editing from the page:** turn a knob on the page and hear it change.
+- [ ] **Editing on the amp:** turn a knob on the amp and see it move on the page. Switch a pedal off
+      and on.
+- [x] **Changing a model:** swap an amp or a pedal for another one.
+- [x] **Reordering:** move a pedal and hear the order change.
+- [x] **Saving:** save preset 100, switch away and back, and check your change is still there. Set one
+      knob to its maximum before saving and check it stays there. JavaScript writes `1.0` as `1`;
+      the amp stored and returned it as `1` with no problem.
+- [x] **Undo:** undo that save, and check the earlier sound comes back after switching away and back.
+- [x] **Backups:** open the list of backups and download one.
+- [x] **Import:** import the file you exported in step 3 into preset 100.
+- [x] **Compare:** add two presets to the compare list and switch between them.
 - [ ] **Losing the amp:** turn it off, check the page says so, turn it on and check it carries on.
 - [ ] **Staying connected:** leave the tab hidden for ten minutes and check it still answers.
 

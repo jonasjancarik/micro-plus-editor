@@ -212,6 +212,11 @@ body:has(#waiting:not([hidden])) :is(.actions, .shortcuts, #prev, #next, #rename
 #board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 1.5fr) repeat(2, minmax(0, 1fr)); gap: var(--board-gap);
   align-items: center; position: relative; padding: 46px clamp(18px, 2.4vw, 36px); background: var(--grain), var(--mat); background-size: 160px, auto;
   border-radius: 16px; box-shadow: inset 0 1px 0 rgb(255 255 255 / 6%), inset 0 0 0 1px rgb(255 255 255 / 3%), 0 18px 40px var(--shadow); }
+/* The wide column follows the amp, wherever it's been moved to. */
+#board:has(> .slot[data-node="amp"]:nth-child(1)) { grid-template-columns: minmax(0, 1.5fr) repeat(4, minmax(0, 1fr)); }
+#board:has(> .slot[data-node="amp"]:nth-child(2)) { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) repeat(3, minmax(0, 1fr)); }
+#board:has(> .slot[data-node="amp"]:nth-child(4)) { grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.5fr) minmax(0, 1fr); }
+#board:has(> .slot[data-node="amp"]:nth-child(5)) { grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.5fr); }
 #board::before, #board::after { position: absolute; font-size: 13px; font-weight: 500; color: var(--muted); }
 #board::before { content: "From your guitar"; top: 16px; left: clamp(18px, 2.4vw, 36px); }
 #board::after { content: "To your headphones"; bottom: 16px; right: clamp(18px, 2.4vw, 36px); }

@@ -72,6 +72,17 @@ test('moves a pedal, shows it as a change, and can discard it', async ({ page })
   await expect(page.locator('#dirty')).toHaveText('');
 });
 
+test('keeps the amp wide after moving it to the end', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await open(page);
+  const toEnd = page.getByRole('button', { name: 'Move amplifier closer to your headphones' });
+  await toEnd.click();
+  await toEnd.click();
+  await expect(page.locator('#board > .slot').last()).toHaveAttribute('data-node', 'amp');
+  const widths = await page.locator('#board > .slot').evaluateAll((slots) => slots.map((slot) => slot.getBoundingClientRect().width));
+  expect(widths.at(-1)).toBeGreaterThan(Math.max(...widths.slice(0, -1)));
+});
+
 test('saves a copy to another slot', async ({ page }) => {
   await open(page);
   await page.locator('#save-more').click();
