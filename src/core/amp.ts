@@ -120,6 +120,8 @@ export class Amp {
             const old = this.getParameter(node, parameter);
             result = typeof old === 'boolean' ? false : typeof old === 'string' ? '' : 0;
           }
+          // A change made on the amp itself, with its MODIFY buttons, arrives without being asked for.
+          if (result !== null && this.applyReported(node, parameter, result)) this.documentRevision++;
           const key = parameterKey(node, parameter);
           this.parameters.set(key, result);
           this.parameterTypes.set(key, [3, 4, 5, 6].find((field) => content.has(field)) ?? null);
@@ -255,6 +257,16 @@ export class Amp {
     await this.command(READ_PRESET, concat(wireUint(1, slot - 1), wireUint(2, 1)));
     await this.waitFor(() => (this.stored.get(slot)?.revision ?? 0) > revision);
     return structuredClone(this.stored.get(slot)!.preset);
+  }
+
+  /** Puts a reported value into the current preset, and says whether that changed anything. */
+  private applyReported(nodeId: string, parameter: string, value: ParameterValue): boolean {
+    const parameters = this.document?.audioGraph.nodes.find((node) => node.nodeId === nodeId)?.dspUnitParameters;
+    const old = parameters?.[parameter];
+    if (!parameters || old === undefined || typeof old !== typeof value) return false;
+    if (typeof old === 'number' ? isClose(old, value as number, 1e-6, 1e-6) : old === value) return false;
+    parameters[parameter] = value;
+    return true;
   }
 
   getParameter(nodeId: string, parameter: string): ParameterValue {

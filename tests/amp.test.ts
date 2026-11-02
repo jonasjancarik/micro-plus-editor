@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Amp, PACKET_GAP_MS, parameterKey, type RepeatingTimer } from '../src/core/amp';
-import { READ_PARAMETER, SET_PARAMETER } from '../src/core/commands';
+import { parameterPayload, READ_PARAMETER, SET_PARAMETER } from '../src/core/commands';
 import { AmpError, InputError } from '../src/core/errors';
 import { fragments, selectPreset } from '../src/core/frames';
 import { encodePreset, type Preset } from '../src/core/preset';
@@ -121,6 +121,16 @@ describe('messages from the amp', () => {
     hear(amp, 13, concat(wireUint(1, 1), wireString(2, 'Renamed  ')));
     expect(amp.names).toEqual(['One', 'Renamed']);
     expect(amp.saved).toEqual({ preset: 2, name: 'Renamed' });
+  });
+
+  it('takes in a change made on the amp itself', () => {
+    const amp = new Amp(transport());
+    amp.document = preset();
+    hear(amp, 9, parameterPayload('amp', 'gain', 0.5, 'float'));
+    expect(amp.documentRevision).toBe(0);
+    hear(amp, 9, parameterPayload('amp', 'gain', 0.8, 'float'));
+    expect(amp.document.audioGraph.nodes[0]!.dspUnitParameters.gain).toBeCloseTo(0.8);
+    expect(amp.documentRevision).toBe(1);
   });
 
   it('turns a rejection into a clear message for the waiting command', async () => {
