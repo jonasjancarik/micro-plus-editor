@@ -60,6 +60,12 @@ export function storeFlag(key, value) {
 export function setText(element, text) {
   if (element.textContent !== text) element.textContent = text; // Keeps live regions quiet.
 }
+// Each line of the text becomes its own block, for text that reads better with a sentence per line.
+function setLines(element, text) {
+  const lines = text.split('\n');
+  if (element.textContent === lines.join('')) return;
+  element.replaceChildren(...lines.map((line) => Object.assign(document.createElement('span'), { textContent: line })));
+}
 export function isEmptySlot(preset) { return !preset.name || /^empty$/i.test(preset.name.trim()); }
 export function displayName(preset) { return isEmptySlot(preset) ? 'Empty' : preset.name; }
 export function presetByNumber(number) { return known?.presets.find(preset => preset.preset === number); }
@@ -1431,9 +1437,9 @@ export function renderWaiting() {
   const needsClick = state.phase === 'waiting' && backend.connect && !backend.unsupported;
   $('connect').hidden = !needsClick;
   setText($('waiting-title'), needsClick ? 'Connect to your Micro Plus' : backend.unsupported ? "Bluetooth isn't available here" : 'Looking for your Micro Plus');
-  setText($('waiting-text'), backend.unsupported ?? (needsClick
-    ? 'Turn on the amp and close Fender Tone on your other devices, then connect. If a list of devices opens, choose your amp.'
-    : 'Turn on the amp and close Fender Tone on your other devices. This page connects by itself once the amp is found.'));
+  setLines($('waiting-text'), backend.unsupported ?? (needsClick
+    ? 'Turn on the amp and close Fender Tone on your other devices, then connect.\nIf a list of devices opens, choose your amp.'
+    : 'Turn on the amp and close Fender Tone on your other devices.\nThis page connects by itself once the amp is found.'));
 }
 
 function renderConnection() {
