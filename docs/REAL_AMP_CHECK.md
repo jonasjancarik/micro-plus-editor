@@ -26,6 +26,9 @@ the empty slots from 71, and the amp only saves MODIFY and tap tempo changes its
 - [x] **Editing on the amp:** press **MODIFY +** a few times on the amp and check the matching setting
       changes on the page. The amp has no knobs: MODIFY changes the one effect setting each preset
       assigns to it, and the display shows which.
+- [x] **EQ:** check the EQ menu in the top bar matches the amp, choose another setting and hear it
+      change, then press **EQ −** on the amp and check the menu follows. The amp's first button press
+      only wakes its display, so press twice. Set it back to EQ1 Flat afterwards.
 - [x] **Changing a model:** swap an amp or a pedal for another one.
 - [x] **Reordering:** move a pedal and hear the order change.
 - [x] **Saving:** save preset 100, switch away and back, and check your change is still there. Set one
@@ -39,6 +42,9 @@ the empty slots from 71, and the amp only saves MODIFY and tap tempo changes its
       It reconnected by itself. The first preset switch after that got no answer, and the editor
       reconnected again and finished it in about 10 seconds. Later switches were quick.
 - [ ] **Staying connected:** leave the tab hidden for ten minutes and check it still answers.
+      On 2 November a tab left in the background for 27 minutes found the amp silent when it came
+      back, and the amp couldn't be found again until it was switched off and on. Whether hiding the
+      tab caused it isn't known.
 
 Finish by putting the amp back on the preset you normally use.
 
