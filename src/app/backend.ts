@@ -1,4 +1,4 @@
-// What the page talks to: this device's Bluetooth, the simulated amp, or the Python server if that's what served it.
+// What the page talks to: this device's Bluetooth or the simulated amp.
 import { Capacitor } from '@capacitor/core';
 import { dispatch } from '../core/dispatch';
 import type { BackupEntry, EditorSession } from '../core/session';
@@ -9,9 +9,6 @@ import { steadyTimer } from '../transport/steady-timer';
 import { WebBluetoothTransport } from '../transport/web-bluetooth';
 
 const BACKGROUND_CHECK_MS = 20_000;
-
-/** The request got no answer, so it may or may not have reached the amp. */
-export class NoReplyError extends Error {}
 
 export interface Backend {
   read(): Promise<any>;
@@ -27,7 +24,7 @@ export interface Backend {
 class LocalBackend implements Backend {
   constructor(protected session: EditorSession) {}
 
-  // Real copies, as replies from a server would be: the page and the session must not share a preset they each change.
+  // Real copies: the page and the session must not share a preset they each change.
   async read() {
     return structuredClone(this.session.snapshot());
   }
@@ -55,41 +52,6 @@ class BluetoothBackend extends LocalBackend {
 
   connect() {
     void this.real.start();
-  }
-}
-
-class ServerBackend implements Backend {
-  async read() {
-    let response: Response;
-    try {
-      response = await fetch('/api/micro-plus', { signal: AbortSignal.timeout(5000) });
-    } catch {
-      throw new NoReplyError();
-    }
-    if (!response.ok) throw new NoReplyError();
-    return response.json();
-  }
-
-  async post(path: string, body: unknown) {
-    let response: Response;
-    try {
-      response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body), signal: AbortSignal.timeout(45000) });
-    } catch {
-      throw new NoReplyError();
-    }
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'The Micro Plus did not confirm the change.');
-    return result;
-  }
-}
-
-async function servedByPython(): Promise<boolean> {
-  try {
-    const response = await fetch('/api/micro-plus', { signal: AbortSignal.timeout(2000) });
-    return response.ok && (response.headers.get('content-type') ?? '').includes('application/json');
-  } catch {
-    return false;
   }
 }
 
@@ -136,8 +98,6 @@ export async function chooseBackend(): Promise<void> {
     const session = new SimulatedSession(Number(parameters.get('delay') ?? 800));
     Object.assign(window, { simulator: session }); // For trying out failures from the browser's console.
     backend = new LocalBackend(session);
-  } else if (!Capacitor.isNativePlatform() && await servedByPython()) {
-    backend = new ServerBackend();
   } else {
     backend = await bluetoothBackend();
   }

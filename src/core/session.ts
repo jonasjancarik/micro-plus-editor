@@ -1,4 +1,4 @@
-// Owns one connection to the amp and runs the page's commands one at a time: the same steps as server/mmp_session.py.
+// Owns one connection to the amp and runs the page's commands one at a time.
 import { Amp, type RepeatingTimer } from './amp';
 import { isPresetNumber, saveCurrentPayload } from './commands';
 import { MODELS, PARAMETER_CHOICES, UNSCALED } from './data';
@@ -29,7 +29,7 @@ export interface LastUndo {
   time: number;
 }
 
-/** What the page shows. The names match what the Python server sends, which the page already reads. */
+/** What the page shows. The snake_case names come from the earlier Python server, which the page was written for. */
 export interface Snapshot {
   connected: boolean;
   phase: string;

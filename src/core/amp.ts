@@ -1,4 +1,4 @@
-// Talks to the amp over any BleTransport: the same steps as Controller in server/mmp_ble.py.
+// Talks to the amp over any BleTransport.
 import { CURRENT, isPresetNumber, parameterPayload, parameterValue, READ_PARAMETER, READ_PRESET, REPLACE_NODE, SAVE_AS, SAVE_CURRENT, saveCurrentPayload, SET_PARAMETER } from './commands';
 import { AmpError, InputError } from './errors';
 import { fragments, Frames, request, selectPreset } from './frames';

@@ -11,7 +11,7 @@ describe('the simulated amp', () => {
   beforeEach(() => { session = new SimulatedSession(0); });
   afterEach(() => { session.mode = 'ok'; });
 
-  it('tells the page the same fields as the Python server', () => {
+  it('tells the page the same fields as the real session', () => {
     expect(Object.keys(session.snapshot()).sort()).toEqual(fixture.snapshotFields);
   });
 

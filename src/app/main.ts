@@ -1,4 +1,4 @@
-import { backend, NoReplyError } from './backend';
+import { backend } from './backend';
 import { choiceLabels, controlSpec, formatKnob, knobLabel, nodeLabels, parameterLabel, splitParameters } from './params';
 import { factoryPresetGroups } from './presets';
 import { slotOptions, exportAllPresets, exportCurrentPreset, importFromFile, renderImportChoice, renderPresetFiles, setUpBackups, stopExport, useChosenImport } from './files';
@@ -19,7 +19,6 @@ export let exclusive = false; // A switch, save or model change owns the amp.
 export let switchingTo = null;
 export let epoch = 0; // Discards polls that started before a write.
 export let reconnectNotice = false;
-export let checkingAfterNoReply = false;
 export let reconnectAfterStall = false;
 
 export const pendingEdits = new Map(); // "node/parameter" → newest value not yet sent.
@@ -129,10 +128,6 @@ export function adopt(next) {
     // The document is briefly missing while the amp changes preset; keep showing the last one.
     known = next.document || !known ? next : { ...next, document: known.document };
     if (next.document && !next.dirty) baselines.set(baselineKey(next), next.document);
-    if (checkingAfterNoReply) {
-      checkingAfterNoReply = false;
-      if (!reconnected) showMessage('The amp is responding. The controls show what it has now.');
-    }
     fetchSavedCopy();
   }
   state = next;
@@ -188,12 +183,6 @@ export async function readState() {
 
 export function post(url, body) { return backend.post(url, body); }
 
-export function failureText(error) {
-  if (!(error instanceof NoReplyError)) return error.message;
-  checkingAfterNoReply = true;
-  return 'No reply from the editor app, so this change may or may not have reached the amp. Checking…';
-}
-
 // Live edits: the newest value per control wins, and controls stay usable while one is being sent.
 export function queueEdit(node, parameter, value) {
   pendingEdits.set(`${node}/${parameter}`, { node, parameter, value });
@@ -223,7 +212,7 @@ export async function pumpEdits() {
     if (reply.limited) showLimited(reply.limited);
   } catch (error) {
     pendingEdits.clear();
-    showMessage(failureText(error), 'error');
+    showMessage(error.message, 'error');
     builtKey = ''; // Rebuild from what the amp actually has.
   } finally {
     sending = false;
@@ -264,7 +253,7 @@ export async function exclusiveOperation(url, body, progress, onSuccess?) {
     reconnectNotice = false;
     showMessage(onSuccess?.() ?? '');
   } catch (error) {
-    showMessage(failureText(error), 'error');
+    showMessage(error.message, 'error');
     builtKey = '';
     if (error.message === state.error) state = { ...state, connected: false };
   } finally {
@@ -547,8 +536,7 @@ export async function changeGroups(body) {
     render();
     return true;
   } catch (error) {
-    setText($('picker-status'), error instanceof NoReplyError
-      ? "No reply from the editor app, so your groups didn't change." : error.message);
+    setText($('picker-status'), error.message);
     return false;
   }
 }

@@ -1,4 +1,4 @@
-// Turns the page's requests into session calls. The page posts the same requests the Python server takes.
+// Turns the page's requests into session calls. The requests keep the shape the earlier Python server took.
 import { InputError } from './errors';
 import type { EditorSession, SavedDocument, Snapshot } from './session';
 

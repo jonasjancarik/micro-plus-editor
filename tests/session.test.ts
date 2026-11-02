@@ -556,7 +556,7 @@ describe('reading any slot', () => {
 });
 
 describe('what the page is told', () => {
-  it('has the same fields as the Python server', () => {
+  it('has the fields the page reads', () => {
     const { session } = makeSession(fakeAmp(100, small(), small()));
     expect(Object.keys(session.snapshot()).sort()).toEqual(fixture.snapshotFields);
   });

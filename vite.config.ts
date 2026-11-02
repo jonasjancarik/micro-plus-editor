@@ -32,7 +32,7 @@ function saveResults(): Plugin {
 export default defineConfig({
   root: import.meta.dirname,
   publicDir: 'web/public',
-  server: { host: '0.0.0.0', port: 5175, strictPort: true, watch: { ignored: ['**/android/**', '**/ios/**', '**/_work/**', '**/server/**'] } },
+  server: { host: '0.0.0.0', port: 5175, strictPort: true, watch: { ignored: ['**/android/**', '**/ios/**', '**/_work/**'] } },
   build: { outDir: resolve(import.meta.dirname, 'dist'), emptyOutDir: true, target: 'es2022' },
   base: './',
   plugins: [saveResults()],

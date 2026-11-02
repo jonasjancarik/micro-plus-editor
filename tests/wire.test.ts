@@ -10,6 +10,7 @@ import { concat, fields, fromHex, hex, readVarint, varint, wireBytes, wireString
 
 const fixture = JSON.parse(readFileSync(resolve(import.meta.dirname, 'fixtures/wire.json'), 'utf8'));
 
+// tests/fixtures/wire.json was written by the earlier Python version, which worked on the real amp.
 describe('matches the Python code', () => {
   it('selects presets with the same bytes', () => {
     for (const [slot, bytes] of Object.entries(fixture.select)) expect(hex(selectPreset(Number(slot)))).toBe(bytes);

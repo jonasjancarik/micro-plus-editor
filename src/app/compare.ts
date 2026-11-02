@@ -1,4 +1,3 @@
-import { NoReplyError } from './backend';
 import { knobLabel } from './params';
 import { $, EDITOR_API, adopt, bumpEpoch, describeValue, displayName, editsWaiting, exclusive, hasBypass, hasChanges, isEmptyNode, isEmptySlot, known, modelName, pedalTabLabels, post, presetByNumber, render, selectPreset, setText, showMessage, signalOrder, state, storeFlag, storedFlag, switchingTo } from './main';
 
@@ -25,8 +24,7 @@ export async function changeCompare(body) {
     adopt(await post(COMPARE_API, body));
     render();
   } catch (error) {
-    const text = error instanceof NoReplyError
-      ? "No reply from the editor app, so your compare list didn't change." : error.message;
+    const text = error.message;
     if ($('preset-panel').open) setText($('picker-status'), text);
     else showMessage(text, 'error');
   }

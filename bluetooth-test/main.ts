@@ -1,4 +1,4 @@
-// Answers one question: can this browser or phone keep up with the amp without the Python server?
+// Answered one question before the port: can this browser or phone keep up with the amp without the Python server?
 import { Capacitor } from '@capacitor/core';
 import { Amp } from '../src/core/amp';
 import { CapacitorBleTransport } from '../src/transport/capacitor-ble';
