@@ -117,9 +117,14 @@ async function bluetoothBackend(): Promise<Backend> {
     console.error('On-device storage is not available:', error);
     return new UnavailableStore();
   });
-  const session = await MicroPlusSession.open(new WebBluetoothTransport(), { store }, steadyTimer);
+  const transport = new WebBluetoothTransport();
+  const session = await MicroPlusSession.open(transport, { store }, steadyTimer);
   checkAfterBackground(session);
-  if (navigator.bluetooth) return new BluetoothBackend(session);
+  if (navigator.bluetooth) {
+    const backend = new BluetoothBackend(session);
+    if (await transport.findRemembered()) backend.connect();
+    return backend;
+  }
   return new BluetoothBackend(session, "This browser can't use Bluetooth. Open the editor in Chrome or Edge on a computer or an Android phone, or use the phone app.");
 }
 

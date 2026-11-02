@@ -11,12 +11,24 @@ export class WebBluetoothTransport implements BleTransport {
     this.notifyListener(new Uint8Array(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength)));
   };
 
+  private use(device: BluetoothDevice) {
+    this.device = device;
+    device.addEventListener('gattserverdisconnected', () => this.disconnectListeners.forEach((listener) => listener()));
+  }
+
+  /** Picks up an amp this site was allowed to use before, so a reload needs no click. */
+  async findRemembered(): Promise<boolean> {
+    const bluetooth = navigator.bluetooth as Bluetooth & { getDevices?: () => Promise<BluetoothDevice[]> };
+    const devices = await bluetooth.getDevices?.().catch(() => []) ?? [];
+    const [device] = devices;
+    if (!device || devices.length > 1) return false;
+    this.use(device);
+    return true;
+  }
+
   async connect(): Promise<void> {
-    if (!this.device) {
-      this.device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE] }] });
-      this.device.addEventListener('gattserverdisconnected', () => this.disconnectListeners.forEach((listener) => listener()));
-    }
-    const server = await this.device.gatt!.connect();
+    if (!this.device) this.use(await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE] }] }));
+    const server = await this.device!.gatt!.connect();
     const service = await server.getPrimaryService(SERVICE);
     this.request = await service.getCharacteristic(REQUEST);
     this.response?.removeEventListener('characteristicvaluechanged', this.forward);
