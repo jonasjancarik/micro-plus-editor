@@ -41,10 +41,12 @@ the empty slots from 71, and the amp only saves MODIFY and tap tempo changes its
 - [x] **Losing the amp:** turn it off, check the page says so, turn it on and check it carries on.
       It reconnected by itself. The first preset switch after that got no answer, and the editor
       reconnected again and finished it in about 10 seconds. Later switches were quick.
-- [ ] **Staying connected:** leave the tab hidden for ten minutes and check it still answers.
-      On 2 November a tab left in the background for 27 minutes found the amp silent when it came
-      back, and the amp couldn't be found again until it was switched off and on. Whether hiding the
-      tab caused it isn't known.
+- [x] **Staying connected:** leave the tab hidden for ten minutes and check it still answers.
+      Passed on 2 November in Chrome on the Mac: one connection for 19 minutes, switching presets
+      afterwards worked, and the longest gap between keep-alives was under 0.5 seconds. Earlier that
+      day a tab left in the background for 27 minutes found the amp silent when it came back, and
+      the amp couldn't be found again until it was switched off and on. The amp also went silent
+      once while in use, so its Bluetooth getting stuck is the more likely cause than the hidden tab.
 
 Finish by putting the amp back on the preset you normally use.
 
