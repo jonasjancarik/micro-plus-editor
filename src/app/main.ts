@@ -861,8 +861,17 @@ export function buildMoveButtons(node) {
   return row;
 }
 
-// Dragging is for a mouse or pen. On a touch screen a drag has to scroll the page, so the arrows do this there.
+// On a touch screen a swipe has to scroll the page, so a pedal only follows a finger that held it still first.
 export let boardDrag = null;
+const TOUCH_HOLD_MS = 350;
+const TOUCH_SLOP = 10; // A finger that wanders this far before the hold is scrolling instead.
+
+function liftDragged(event) {
+  boardDrag.moving = true;
+  boardDrag.slot.classList.add('dragging');
+  $('board').classList.add('reordering');
+  $('board').setPointerCapture(event.pointerId);
+}
 
 export function placeDragged(event) {
   const { slot, grabX, grabY } = boardDrag;
@@ -875,11 +884,13 @@ export function moveDragged(event) {
   if (!boardDrag || event.pointerId !== boardDrag.pointerId) return;
   const { slot } = boardDrag;
   if (!boardDrag.moving) {
-    if (Math.hypot(event.clientX - boardDrag.startX, event.clientY - boardDrag.startY) < 6) return;
-    boardDrag.moving = true;
-    slot.classList.add('dragging');
-    $('board').classList.add('reordering');
-    $('board').setPointerCapture(event.pointerId);
+    const moved = Math.hypot(event.clientX - boardDrag.startX, event.clientY - boardDrag.startY);
+    if (boardDrag.touch) {
+      if (moved >= TOUCH_SLOP) endDrag(event, { cancelled: true });
+      return;
+    }
+    if (moved < 6) return;
+    liftDragged(event);
   }
   // A swap can resize the columns under the pointer, so a pedal can't swap straight back and flicker.
   const over = [...$('board').children].find(other => {
@@ -898,7 +909,8 @@ export function moveDragged(event) {
 
 export function endDrag(event, { cancelled = false } = {}) {
   if (!boardDrag || (event.pointerId !== undefined && event.pointerId !== boardDrag.pointerId)) return;
-  const { slot, moving, before, pointerId } = boardDrag;
+  const { slot, moving, before, pointerId, hold } = boardDrag;
+  clearTimeout(hold);
   boardDrag = null;
   window.removeEventListener('keydown', cancelDrag, true);
   if (!moving) return;
@@ -928,13 +940,23 @@ export function cancelDrag(event) {
 $('board').addEventListener('dragstart', (event: any) => event.preventDefault());
 $('board').addEventListener('pointerdown', (event: any) => {
   const slot = event.target.closest('.slot');
-  if (!slot || event.button !== 0 || event.pointerType === 'touch' || boardDrag || exclusive || !state.connected
+  if (!slot || event.button !== 0 || boardDrag || exclusive || !state.connected
     || event.target.closest('.foot, .slot-move')) return;
   const box = slot.getBoundingClientRect();
-  boardDrag = { slot, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY,
+  const touch = event.pointerType === 'touch';
+  boardDrag = { slot, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, touch,
     grabX: event.clientX - box.left, grabY: event.clientY - box.top, moving: false, lastOver: null, before: boardOrder() };
+  if (touch) {
+    const { pointerId, clientX, clientY } = event;
+    boardDrag.hold = setTimeout(() => {
+      liftDragged({ pointerId });
+      placeDragged({ clientX, clientY });
+    }, TOUCH_HOLD_MS);
+  }
   window.addEventListener('keydown', cancelDrag, true);
 });
+// Once a finger has lifted a pedal, moving it drags the pedal rather than scrolling the page.
+$('board').addEventListener('touchmove', (event: any) => { if (boardDrag?.moving) event.preventDefault(); }, { passive: false });
 $('board').addEventListener('pointermove', moveDragged);
 window.addEventListener('pointermove', (event: any) => { if (boardDrag && !boardDrag.moving) moveDragged(event); });
 window.addEventListener('pointerup', endDrag);

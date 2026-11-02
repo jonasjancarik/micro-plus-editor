@@ -116,9 +116,9 @@ writing, distinguishing continuous float controls from integer choices.
 
 The board is drawn in the order the sound travels, from the preset's connections, so it differs
 between presets: many put reverb before delay, and a few put modulation after the amp or the amp first.
-The positions themselves are the same five in every preset. To change the order, drag a pedal with
-a mouse or pen, or use the arrows under it (always shown on touch screens, and reachable from the
-keyboard). The amp has no known way to play a new order live, so it counts as an unsaved change: Save
+The positions themselves are the same five in every preset. To change the order, drag a pedal,
+or use the arrows under it (always shown on touch screens, and reachable from the keyboard). With a
+finger, hold the pedal still for about a third of a second first; a quicker swipe scrolls the page. The amp has no known way to play a new order live, so it counts as an unsaved change: Save
 sends the whole preset to the amp, backed up and read back like an import, and only then can you hear it.
 
 Each amp and pedal has its own look. Amps are drawn as combos, stacks or rack units with their

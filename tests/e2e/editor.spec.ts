@@ -83,6 +83,42 @@ test('moves a pedal, shows it as a change, and can discard it', async ({ page })
   await expect(page.locator('#dirty')).toHaveText('');
 });
 
+test.describe('on a touch screen', () => {
+  test.use({ hasTouch: true });
+
+  async function swipe(page: Page, from: { x: number; y: number }, to: { x: number; y: number }, holdMs: number) {
+    const cdp = await page.context().newCDPSession(page);
+    const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', point?: { x: number; y: number }) =>
+      cdp.send('Input.dispatchTouchEvent', { type, touchPoints: point ? [{ x: point.x, y: point.y }] : [] });
+    await touch('touchStart', from);
+    await page.waitForTimeout(holdMs);
+    for (let step = 1; step <= 10; step++) {
+      await touch('touchMove', { x: from.x + (to.x - from.x) * step / 10, y: from.y + (to.y - from.y) * step / 10 });
+    }
+    await touch('touchEnd');
+  }
+
+  const centre = async (page: Page, index: number) => {
+    const box = (await page.locator('#board > .slot').nth(index).locator('.face').boundingBox())!;
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  };
+
+  test('a held pedal follows the finger, and a quick swipe leaves the order alone', async ({ page }) => {
+    await page.setViewportSize({ width: 1180, height: 820 });
+    await open(page);
+    const order = () => page.locator('#board > .slot').evaluateAll((slots) => slots.map((slot) => slot.getAttribute('data-node')));
+    const before = await order();
+
+    await swipe(page, await centre(page, 0), await centre(page, 1), 0);
+    expect(await order()).toEqual(before);
+    await expect(page.locator('#dirty')).toHaveText('');
+
+    await swipe(page, await centre(page, 0), await centre(page, 1), 500);
+    await expect.poll(order).toEqual([before[1], before[0], ...before.slice(2)]);
+    await expect(page.locator('#dirty')).not.toHaveText('');
+  });
+});
+
 test('keeps the amp wide after moving it to the end', async ({ page }) => {
   await page.setViewportSize({ width: 1400, height: 900 });
   await open(page);

@@ -228,7 +228,7 @@ body:has(#waiting:not([hidden])) :is(.actions, .shortcuts, #prev, #next, #rename
 #board::before, #board::after { position: absolute; font-size: 13px; font-weight: 500; color: var(--muted); }
 #board::before { content: "From your guitar"; top: 16px; left: clamp(18px, 2.4vw, 36px); }
 #board::after { content: "To your headphones"; bottom: 16px; right: clamp(18px, 2.4vw, 36px); }
-.slot { position: relative; min-width: 0; }
+.slot { position: relative; min-width: 0; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .slot:not(:last-child)::after { content: ""; position: absolute; z-index: 0; top: 50%; right: calc(-1 * var(--board-gap) - 1px); width: calc(var(--board-gap) + 2px); height: 6px;
   margin-top: -3px; background: var(--cable); border-block: 1px solid var(--cable-edge); }
 #board.reordering { cursor: grabbing; user-select: none; }
