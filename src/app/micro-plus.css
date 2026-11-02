@@ -56,6 +56,8 @@ button.primary:hover:not(:disabled) { background: var(--accent); filter: brightn
 input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; min-height: 28px; }
 input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; margin: 0; }
 input, select { max-width: 100%; }
+/* Smaller text makes iPadOS and iOS zoom the page when a field is tapped. */
+@media (pointer: coarse) { input, select, textarea { font-size: max(16px, 1em); } }
 label { display: block; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
@@ -410,6 +412,7 @@ dialog input, dialog select { width: 100%; }
   #current-name { font-size: 18px; max-width: 100%; }
   #connection[data-state="connected"] { display: none; }
   #connection { order: 1; flex-basis: 100%; padding: 0 10px; }
+  #eq-control { order: 1; flex-basis: 100%; padding: 0 10px; }
   #compare-toggle { width: 34px; min-height: 40px; margin-left: 0; padding: 0; justify-content: center; }
   #compare-toggle-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   #compare { flex-wrap: nowrap; overflow-x: auto; padding: 0 8px 2px; scrollbar-width: none; }
