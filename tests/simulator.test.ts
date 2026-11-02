@@ -15,6 +15,11 @@ describe('the simulated amp', () => {
     expect(Object.keys(session.snapshot()).sort()).toEqual(fixture.snapshotFields);
   });
 
+  it('changes the EQ, and refuses one the amp does not have', async () => {
+    expect((await session.setEq(8)).eq).toBe(8);
+    await expect(session.setEq(9)).rejects.toBeInstanceOf(InputError);
+  });
+
   it('edits, saves and undoes', async () => {
     const original = session.names[2];
     let state = session.snapshot();

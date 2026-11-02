@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Amp, PACKET_GAP_MS, parameterKey, type RepeatingTimer } from '../src/core/amp';
-import { parameterPayload, READ_PARAMETER, SET_PARAMETER } from '../src/core/commands';
+import { eqPayload, parameterPayload, READ_PARAMETER, SET_PARAMETER } from '../src/core/commands';
 import { AmpError, InputError } from '../src/core/errors';
-import { fragments, selectPreset } from '../src/core/frames';
+import { fragments, request, selectPreset } from '../src/core/frames';
 import { encodePreset, type Preset } from '../src/core/preset';
 import { concat, fields, fromHex, hex, wireBytes, wireString, wireUint } from '../src/core/wire';
 import type { BleTransport } from '../src/transport/types';
@@ -143,6 +143,27 @@ describe('messages from the amp', () => {
     hear(amp, 9, parameterPayload('amp', 'gain', 0.8, 'float'));
     expect(amp.document.audioGraph.nodes[0]!.dspUnitParameters.gain).toBeCloseTo(0.8);
     expect(amp.documentRevision).toBe(1);
+  });
+
+  it('follows the EQ, including a press of the amp’s EQ buttons', () => {
+    const amp = new Amp(transport());
+    expect(amp.eq).toBeNull();
+    amp.notify(fromHex('35000b120908029a010408011002')); // Captured: the reply to reading the EQ, on EQ3.
+    expect(amp.eq).toBe(2);
+    amp.notify(fromHex('35000712059a01020801')); // Captured: someone pressed EQ down to Flat.
+    expect(amp.eq).toBe(0);
+  });
+
+  it('sets the EQ the way the amp was seen to accept it, and waits for it to agree', async () => {
+    const sent: string[] = [];
+    const amp: Amp = new Amp(transport(async (data) => {
+      sent.push(hex(data));
+      setTimeout(() => hear(amp, 19, concat(wireUint(1, 1), wireUint(2, 1))));
+    }));
+    await amp.setEq(1);
+    expect(amp.eq).toBe(1);
+    expect(sent).toEqual([hex(fragments(request(26, fromHex('08011001')))[0]!)]);
+    expect(hex(eqPayload(0))).toBe('0801');
   });
 
   it('turns a rejection into a clear message for the waiting command', async () => {

@@ -147,6 +147,7 @@
   "device",
   "dirty",
   "document",
+  "eq",
   "error",
   "last_save",
   "last_undo",

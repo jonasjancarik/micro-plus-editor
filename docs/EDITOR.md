@@ -74,7 +74,8 @@ Tapping TAP does the same for the delay's Time: the amp reports the new time as 
 setting, and the preset counts as edited.
 
 The EQ buttons choose one of the amp's nine EQ settings for everything it plays, not for one
-preset, and the editor doesn't offer them yet. Each press arrives unasked as reply kind 19:
+preset. The EQ menu in the top bar, next to the connection status, shows the amp's setting,
+changes it, and follows the amp's buttons. Each press arrives unasked as reply kind 19:
 `9a01 04 0801 10nn`, where `nn` is the setting's position starting from 0 for EQ1 Flat (the
 field is left out at 0). Request kind 25 with no content, which the editor sends while
 connecting, asks for it. Request kind 22, also sent while connecting, gets reply kind 18:

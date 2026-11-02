@@ -28,6 +28,17 @@ test('shows the board and changes preset', async ({ page }) => {
   expect(problems).toEqual([]);
 });
 
+test('changes the amp’s EQ, and follows a change made on the amp', async ({ page }) => {
+  const problems = await open(page);
+  const eq = page.locator('#eq');
+  await expect(eq).toHaveValue('0');
+  await eq.selectOption({ label: 'EQ8 Bass boost 1' });
+  await expect.poll(() => inSim<number>(page, 'simulator.eq')).toBe(7);
+  await inSim(page, 'simulator.eq = 2');
+  await expect(eq).toHaveValue('2');
+  expect(problems).toEqual([]);
+});
+
 test('every image on the board loads', async ({ page }) => {
   const failed: string[] = [];
   page.on('response', (response) => { if (response.status() >= 400) failed.push(response.url()); });

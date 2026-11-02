@@ -1,5 +1,5 @@
 // Talks to the amp over any BleTransport.
-import { CURRENT, isPresetNumber, parameterPayload, parameterValue, READ_PARAMETER, READ_PRESET, REPLACE_NODE, SAVE_AS, SAVE_CURRENT, saveCurrentPayload, SET_PARAMETER } from './commands';
+import { CURRENT, eqPayload, isPresetNumber, parameterPayload, parameterValue, READ_PARAMETER, READ_PRESET, REPLACE_NODE, SAVE_AS, SAVE_CURRENT, saveCurrentPayload, SET_EQ, SET_PARAMETER } from './commands';
 import { AmpError, InputError } from './errors';
 import { fragments, Frames, request, selectPreset } from './frames';
 import { decodePreset, decodePresetText, encodePreset, isClose, presetsMatch, validatePreset, type ParameterValue, type Preset } from './preset';
@@ -18,7 +18,7 @@ const AMP_ERRORS = ['unsupported command', 'operation failed', 'invalid paramete
 const INTEGER_CHOICES = new Set(['comppreset', 'mode', 'type', 'dlymodtype', 'panmodtype',
   'modshape', 'inputfiltermode', 'lfoclip', 'prefilttype', 'shape']);
 
-const HANDLED_KINDS = new Set([4, 5, 9, 10, 12, 13, 15, 17]);
+const HANDLED_KINDS = new Set([4, 5, 9, 10, 12, 13, 15, 17, 19]);
 const UNKNOWN_LOGGED = 500; // Enough to see what the EQ and TAP buttons send, without filling the console.
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -53,6 +53,9 @@ export class Amp {
   saved: { preset: number; name: string } | null = null;
   saveRevision = 0;
   replaced: string | null = null;
+  /** The EQ setting for everything the amp plays, counted from 0. The amp reports it while connecting. */
+  eq: number | null = null;
+  eqRevision = 0;
   replaceRevision = 0;
   failure: Error | null = null;
   received = 0;
@@ -152,6 +155,10 @@ export class Amp {
         } else if (kind === 17) {
           const code = asNumber(content.get(1));
           this.commandError = new InputError(`The Micro Plus rejected the change: ${AMP_ERRORS[code] ?? code}`);
+        } else if (kind === 19) {
+          // Also sent unasked when someone presses the amp's EQ buttons.
+          this.eq = asNumber(content.get(2));
+          this.eqRevision++;
         } else if (kind === 12) {
           this.names = fields(value).filter(([key, name]) => key === 1 && name instanceof Uint8Array)
             .map(([, name]) => new TextDecoder().decode(name as Uint8Array).trimEnd());
@@ -256,6 +263,12 @@ export class Amp {
     this.documentSlot = null;
     await this.sendPackets([command]);
     await this.waitFor(() => this.slot === slot);
+  }
+
+  async setEq(setting: number): Promise<void> {
+    const revision = this.eqRevision;
+    await this.command(SET_EQ, eqPayload(setting));
+    await this.waitFor(() => this.eqRevision > revision && this.eq === setting);
   }
 
   async refreshCurrent(): Promise<Preset> {

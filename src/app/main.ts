@@ -1418,6 +1418,10 @@ export function renderStatus() {
   $('rename').disabled = nameInput.disabled = !usable || !known?.document;
   if (nameInput.disabled) closeRenaming();
   $('open-presets').disabled = !known;
+  const eqKnown = state.connected && Number.isInteger(state.eq);
+  $('eq-control').hidden = !eqKnown;
+  $('eq').disabled = !usable;
+  if (eqKnown && !exclusive) $('eq').value = String(state.eq); // While it's changing, the menu keeps the new choice.
   if (known?.preset) document.title = `${unsaved ? '• ' : ''}${known.preset} · ${shownName()} · Micro Plus editor`;
 }
 
@@ -1572,6 +1576,10 @@ document.addEventListener('keydown', (event: any) => {
 });
 $('undo-save').addEventListener('click', undoSave);
 $('copy-target').addEventListener('change', renderCopyChoice);
+// As the amp's display names them.
+const EQ_NAMES = ['Flat', 'Bright cut 1', 'Bright cut 2', 'Low cut 1', 'Low cut 2', 'Bright boost 1', 'Bright boost 2', 'Bass boost 1', 'Bass boost 2'];
+$('eq').append(...EQ_NAMES.map((name, index) => new Option(`EQ${index + 1} ${name}`, String(index))));
+$('eq').addEventListener('change', () => exclusiveOperation(`${API}/eq`, { eq: Number($('eq').value) }, 'Changing the EQ…'));
 $('export-current').addEventListener('click', exportCurrentPreset);
 // These close the picker first: its dimmed layer would otherwise hide the messages they show on the page.
 $('export-all').addEventListener('click', () => { closePicker(); exportAllPresets(); });

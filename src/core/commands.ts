@@ -10,9 +10,23 @@ export const READ_PRESET = 12;
 export const REPLACE_NODE = 17;
 export const SAVE_AS = 18;
 export const SET_PARAMETER = 20;
+// Not in those definitions: found by trying them on the amp.
+export const READ_EQ = 25;
+export const SET_EQ = 26;
+export const EQ_SETTINGS = 9;
 
 export function isPresetNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 100;
+}
+
+/** An EQ setting counted from 0, for EQ1 Flat, as the amp counts them. */
+export function isEqSetting(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value < EQ_SETTINGS;
+}
+
+/** The amp leaves out a zero, so this does too. Field 1 has always been 1; its meaning isn't known. */
+export function eqPayload(setting: number): Uint8Array {
+  return concat(wireUint(1, 1), setting ? wireUint(2, setting) : new Uint8Array());
 }
 
 /** JavaScript has one number type, so the caller says which the amp expects. */

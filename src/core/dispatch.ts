@@ -1,6 +1,6 @@
 // Turns the page's requests into session calls. The requests keep the shape the earlier Python server took.
 import { InputError } from './errors';
-import type { EditorSession, SavedDocument, Snapshot } from './session';
+import { CHOOSE_EQ, type EditorSession, type SavedDocument, type Snapshot } from './session';
 
 const hasOnly = (request: Record<string, unknown>, ...keys: string[]) => {
   const present = Object.keys(request);
@@ -13,6 +13,10 @@ export async function dispatch(session: EditorSession, path: string, body: unkno
   if (path === '/api/micro-plus') {
     if (!hasOnly(request, 'preset')) throw new InputError('Choose a preset number from 1 to 100.');
     return session.switch(request.preset);
+  }
+  if (path === '/api/micro-plus/eq') {
+    if (!hasOnly(request, 'eq')) throw new InputError(CHOOSE_EQ);
+    return session.setEq(request.eq);
   }
   if (path === '/api/micro-plus/groups') return session.changeGroups(request);
   if (path === '/api/micro-plus/compare') return session.changeCompare(request);

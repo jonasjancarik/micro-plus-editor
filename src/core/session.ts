@@ -1,6 +1,6 @@
 // Owns one connection to the amp and runs the page's commands one at a time.
 import { Amp, type RepeatingTimer } from './amp';
-import { isPresetNumber, saveCurrentPayload } from './commands';
+import { isEqSetting, isPresetNumber, saveCurrentPayload } from './commands';
 import { MODELS, PARAMETER_CHOICES, UNSCALED } from './data';
 import { AmpError, BackupError, EditorConflict, InputError } from './errors';
 import { CompareList, PresetGroups, SavedPresets, type GroupState } from './groups';
@@ -16,6 +16,7 @@ const NO_ANSWER = "Your Micro Plus didn't answer. The editor keeps trying; if th
 const PRESET_POSITIONS = ['stomp', 'mod', 'amp', 'delay', 'reverb']; // Every preset read from the amp has exactly these.
 const STALE = 'The preset changed while you were editing. Review its current settings and try again.';
 const CHOOSE_PRESET = 'Choose a preset number from 1 to 100.';
+export const CHOOSE_EQ = 'Choose one of the amp’s nine EQ settings.';
 
 export interface LastSave {
   preset: number;
@@ -46,6 +47,8 @@ export interface Snapshot {
   document: Preset | null;
   revision: string | null;
   dirty: boolean;
+  /** The amp's EQ setting, counted from 0 for EQ1 Flat, or null until it has said. */
+  eq: number | null;
   models: unknown;
   parameter_choices: unknown;
   unscaled: unknown;
@@ -76,6 +79,7 @@ export interface SavedDocument {
 export interface EditorSession {
   snapshot(): Snapshot;
   switch(slot: unknown): Promise<Snapshot>;
+  setEq(setting: unknown): Promise<Snapshot>;
   edit(slot: unknown, revision: unknown, node: unknown, parameter: unknown, value: unknown): Promise<Snapshot>;
   replace(slot: unknown, revision: unknown, node: unknown, model: unknown): Promise<Snapshot>;
   setOrder(slot: unknown, revision: unknown, order: unknown): Promise<Snapshot>;
@@ -210,6 +214,7 @@ export class MicroPlusSession implements EditorSession {
       document: document && order ? withSignalOrder(document, order) : document,
       revision: amp ? this.revision(amp) : null,
       dirty: amp ? amp.dirty || Boolean(order) : false,
+      eq: amp?.eq ?? null,
       models: MODELS, parameter_choices: PARAMETER_CHOICES, unscaled: UNSCALED,
       last_save: this.lastSave, last_undo: this.lastUndo, preset_groups: this.groups.state,
       saved_presets: this.saved.state, compare_presets: this.compare.slots,
@@ -282,6 +287,17 @@ export class MicroPlusSession implements EditorSession {
         await amp.switchTo(slot);
         await amp.refreshCurrent();
         this.pendingOrder = null; // Choosing the same preset again is how the page discards changes.
+        return this.snapshot();
+      });
+    });
+  }
+
+  setEq(setting: unknown): Promise<Snapshot> {
+    if (!isEqSetting(setting)) return Promise.reject(new InputError(CHOOSE_EQ));
+    return this.inTurn(async () => {
+      const amp = this.requireAmp();
+      return this.confirming('EQ change', async () => {
+        await amp.setEq(setting);
         return this.snapshot();
       });
     });

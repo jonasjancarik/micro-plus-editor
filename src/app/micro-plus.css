@@ -111,6 +111,9 @@ button.icon:hover:not(:disabled) { color: var(--text); }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); flex: none; }
 #connection[data-state="connected"] .dot { background: var(--ok); }
 #connection[data-state="lost"] .dot { background: var(--error); }
+#eq-control { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); white-space: nowrap; }
+#eq-control[hidden] { display: none; }
+#eq-control select { color: var(--text); }
 .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .actions button:not(.primary) { background: none; border-color: transparent; color: var(--muted); }
 .actions button:not(.primary):hover:not(:disabled) { background: var(--surface-2); color: var(--text); }

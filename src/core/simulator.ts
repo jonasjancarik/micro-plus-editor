@@ -1,11 +1,11 @@
 // A simulated amp, for working on the page and for trying out failures without Bluetooth.
 import fixture from '../data/mock_fixture.json';
-import { isPresetNumber } from './commands';
+import { isEqSetting, isPresetNumber } from './commands';
 import { MODELS, PARAMETER_CHOICES, UNSCALED } from './data';
 import { AmpError, BackupError, EditorConflict, InputError } from './errors';
 import { CompareList, PresetGroups, SavedPresets } from './groups';
 import { withSignalOrder, type ParameterValue, type Preset, type PresetNode } from './preset';
-import { backupEntry, prepareImport, READ_RECONNECT_GAP_MS, SAVED_READ_FAILURES, type BackupEntry, type EditorSession, type LastSave, type LastUndo, type SavedDocument, type Snapshot } from './session';
+import { backupEntry, CHOOSE_EQ, prepareImport, READ_RECONNECT_GAP_MS, SAVED_READ_FAILURES, type BackupEntry, type EditorSession, type LastSave, type LastUndo, type SavedDocument, type Snapshot } from './session';
 
 const FIXTURE = fixture as unknown as { names: string[]; active: number; document: Preset };
 const STALL_MS = 8000;
@@ -23,6 +23,7 @@ export class SimulatedSession implements EditorSession {
   document: Preset;
   mode: SimulatorMode = 'ok';
   dirty = false;
+  eq = 0;
   error: string | null = null;
   generation = crypto.randomUUID();
   documentRevision = 1;
@@ -71,6 +72,7 @@ export class SimulatedSession implements EditorSession {
       presets: connected ? this.names.map((name, index) => ({ preset: index + 1, name })) : [],
       document: connected ? this.document : null, revision: connected ? this.revision : null,
       dirty: connected ? this.dirty : false,
+      eq: connected ? this.eq : null,
       models: MODELS, parameter_choices: PARAMETER_CHOICES, unscaled: UNSCALED,
       last_save: this.lastSave, last_undo: this.lastUndo, preset_groups: this.groups.state,
       saved_presets: this.saved.state, compare_presets: this.compare.slots,
@@ -164,6 +166,13 @@ export class SimulatedSession implements EditorSession {
     }
     await this.begin('switch', { preset: slot });
     this.knob(slot);
+    return this.snapshot();
+  }
+
+  async setEq(setting: unknown): Promise<Snapshot> {
+    if (!isEqSetting(setting)) throw new InputError(CHOOSE_EQ);
+    await this.begin('EQ change', { eq: setting });
+    this.eq = setting;
     return this.snapshot();
   }
 
