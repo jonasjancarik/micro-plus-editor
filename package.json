@@ -10,13 +10,18 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.page.json",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "app": "vite build && cap sync"
+    "app": "vite build && cap sync",
+    "desktop": "vite build && electron .",
+    "desktop:dev": "ELECTRON_START_URL=http://localhost:5175 electron .",
+    "desktop:pack": "vite build && electron-builder"
   },
   "devDependencies": {
     "@capacitor/cli": "8.6.0",
     "@playwright/test": "^1.64.1",
     "@types/node": "24.0.0",
     "@types/web-bluetooth": "0.0.22",
+    "electron": "^45.2.2",
+    "electron-builder": "^26.18.0",
     "typescript": "7.0.2",
     "vite": "8.3.5",
     "vitest": "5.0.5"
@@ -30,5 +35,30 @@
     "@capacitor/ios": "8.6.0",
     "@capacitor/share": "8.0.3",
     "@fontsource-variable/archivo": "5.3.0"
+  },
+  "main": "electron/main.mjs",
+  "build": {
+    "appId": "io.github.jonasjancarik.microplus.desktop",
+    "productName": "Micro Plus",
+    "files": [
+      "dist/**",
+      "electron/**",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "mac": {
+      "category": "public.app-category.music",
+      "extendInfo": {
+        "NSBluetoothAlwaysUsageDescription": "Micro Plus uses Bluetooth to talk to your Mustang Micro Plus amp."
+      }
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   }
 }

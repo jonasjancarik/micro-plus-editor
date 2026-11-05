@@ -22,6 +22,12 @@ an amp, open http://localhost:5175/?simulator=1 instead.
 Chrome asks you to choose the amp again after each reload. Web Bluetooth only works on
 `localhost` or over HTTPS, so open the page through `localhost` on the computer the amp is near.
 
+## Desktop app
+
+`pnpm desktop` builds the page and opens it in an Electron window. It connects to the first Mustang
+amp it finds, so there is no device picker. `pnpm desktop:dev` opens the running `pnpm dev` page
+instead, and `pnpm desktop:pack` builds an installer into `release/`.
+
 ## Phone apps
 
 `pnpm app` builds the page and copies it into the `android/` and `ios/` projects. Open those in
