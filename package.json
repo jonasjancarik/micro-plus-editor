@@ -13,7 +13,8 @@
     "app": "vite build && cap sync",
     "desktop": "vite build && electron .",
     "desktop:dev": "ELECTRON_START_URL=http://localhost:5175 electron .",
-    "desktop:pack": "vite build && electron-builder"
+    "desktop:pack": "vite build && electron-builder",
+    "desktop:install": "vite build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --dir && rm -rf \"/Applications/Micro Plus.app\" && cp -R \"release/mac-arm64/Micro Plus.app\" /Applications/"
   },
   "devDependencies": {
     "@capacitor/cli": "8.6.0",
@@ -52,7 +53,9 @@
       "category": "public.app-category.music",
       "extendInfo": {
         "NSBluetoothAlwaysUsageDescription": "Micro Plus uses Bluetooth to talk to your Mustang Micro Plus amp."
-      }
+      },
+      "icon": "build/icon.icns",
+      "target": "dir"
     },
     "win": {
       "target": "nsis"
