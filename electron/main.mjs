@@ -1,4 +1,4 @@
-import { app, BrowserWindow, net, protocol, session } from 'electron';
+import { app, BrowserWindow, dialog, net, protocol, session } from 'electron';
 import { existsSync } from 'node:fs';
 import { join, normalize } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -12,11 +12,32 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: t
 function createWindow() {
   const window = new BrowserWindow({ width: 1280, height: 860, backgroundColor: '#111111', title: 'Micro Plus' });
 
-  // Chrome shows a device picker; Electron leaves that to us. Connect to the first amp found, which is the usual case.
-  window.webContents.on('select-bluetooth-device', (event, devices, callback) => {
+  // Chrome shows a device picker; Electron leaves that to us. Wait a moment for nearby amps to show up, then ask.
+  let devices = [];
+  let answer = null;
+  let timer = null;
+  let asking = false;
+  window.webContents.on('select-bluetooth-device', (event, found, callback) => {
     event.preventDefault();
-    const amp = devices.find((device) => /mustang|micro/i.test(device.deviceName)) ?? devices[0];
-    if (amp) callback(amp.deviceId);
+    devices = found;
+    answer = callback;
+    if (asking || found.length === 0 || timer) return;
+    timer = setTimeout(async () => {
+      timer = null;
+      asking = true;
+      const shown = devices.slice(0, 8);
+      const { response } = await dialog.showMessageBox(window, {
+        type: 'question',
+        message: 'Choose your amp',
+        detail: 'Turn the amp on and close Fender Tone on your other devices first.',
+        buttons: [...shown.map((device) => device.deviceName || device.deviceId), 'Cancel'],
+        cancelId: shown.length,
+      });
+      asking = false;
+      const callbackNow = answer;
+      answer = null;
+      callbackNow?.(response < shown.length ? shown[response].deviceId : '');
+    }, 1500);
   });
 
   const query = process.env.MICRO_PLUS_SIMULATOR ? '?simulator=1' : '';
