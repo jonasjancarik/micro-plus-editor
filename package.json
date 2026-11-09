@@ -14,7 +14,7 @@
     "desktop": "vite build && electron .",
     "desktop:dev": "ELECTRON_START_URL=http://localhost:5175 electron .",
     "desktop:install": "vite build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dir -c.mac.notarize=false && rm -rf \"/Applications/Micro Plus.app\" && cp -R \"release/mac-arm64/Micro Plus.app\" /Applications/",
-    "desktop:release": "vite build && electron-builder --mac --publish never"
+    "desktop:release": "vite build && set -a && { [ ! -f .env.local ] || . ./.env.local; } && set +a && electron-builder --mac --publish never"
   },
   "devDependencies": {
     "@capacitor/cli": "8.6.0",

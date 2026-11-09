@@ -52,7 +52,8 @@ unsigned copy into your Applications folder.
 
 `pnpm desktop:release` builds the signed and notarized Mac app into `release/`. It needs a Developer
 ID Application certificate in your keychain, and an App Store Connect API key in `APPLE_API_KEY`
-(the path to the `.p8` file), `APPLE_API_KEY_ID` and `APPLE_API_ISSUER`.
+(the path to the `.p8` file), `APPLE_API_KEY_ID` and `APPLE_API_ISSUER`. It reads them from
+`.env.local` if that file exists.
 
 ## Phone apps
 

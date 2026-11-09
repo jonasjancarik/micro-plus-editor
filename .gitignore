@@ -11,3 +11,4 @@ android/local.properties
 android/app/src/main/assets/public/
 docs/reference/
 release/
+.env.local
