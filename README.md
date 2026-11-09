@@ -4,6 +4,20 @@ A browser editor for the Fender Mustang Micro Plus. It shows your presets as a p
 can switch, compare, edit, reorder, save, undo, export and import them over Bluetooth. It runs on
 your own computer and needs no internet connection.
 
+![A preset shown as a pedalboard: two pedals, the amp, then two more pedals, with the EQ menu and Save button above](docs/images/board.png)
+
+Open a pedal to set every knob and swap the effect:
+
+![The Flanger pedal opened up, with five knobs and a menu for choosing a different effect](docs/images/pedal.png)
+
+Find presets by name, sound or artist, and sort them into groups:
+
+![The preset list filtered to the Echoes and space group, each preset with a short description and similar artists](docs/images/presets.png)
+
+It also works on a phone or tablet:
+
+<img src="docs/images/phone.png" width="300" alt="The editor on a phone, with the pedals stacked above the amp and the Save button along the bottom">
+
 This project isn't affiliated with or endorsed by Fender.
 
 Saving writes over the preset on the amp. Before you change presets you care about, export them
