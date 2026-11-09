@@ -13,8 +13,8 @@
     "app": "vite build && cap sync",
     "desktop": "vite build && electron .",
     "desktop:dev": "ELECTRON_START_URL=http://localhost:5175 electron .",
-    "desktop:pack": "vite build && electron-builder",
-    "desktop:install": "vite build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --dir && rm -rf \"/Applications/Micro Plus.app\" && cp -R \"release/mac-arm64/Micro Plus.app\" /Applications/"
+    "desktop:install": "vite build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dir -c.mac.notarize=false && rm -rf \"/Applications/Micro Plus.app\" && cp -R \"release/mac-arm64/Micro Plus.app\" /Applications/",
+    "desktop:release": "vite build && electron-builder --mac --publish never"
   },
   "devDependencies": {
     "@capacitor/cli": "8.6.0",
@@ -44,7 +44,8 @@
     "files": [
       "dist/**",
       "electron/**",
-      "package.json"
+      "package.json",
+      "!node_modules/**"
     ],
     "directories": {
       "output": "release"
@@ -55,7 +56,23 @@
         "NSBluetoothAlwaysUsageDescription": "Micro Plus uses Bluetooth to talk to your Mustang Micro Plus amp."
       },
       "icon": "build/icon.icns",
-      "target": "dir"
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "hardenedRuntime": true,
+      "notarize": true,
+      "artifactName": "Micro-Plus-${version}-mac-${arch}.${ext}"
     },
     "win": {
       "target": "nsis"

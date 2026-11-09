@@ -41,9 +41,18 @@ Chrome asks you to choose the amp again after each reload. Web Bluetooth only wo
 
 ## Desktop app
 
-`pnpm desktop` builds the page and opens it in an Electron window. It connects to the first Mustang
-amp it finds, so there is no device picker. `pnpm desktop:dev` opens the running `pnpm dev` page
-instead, and `pnpm desktop:pack` builds an installer into `release/`.
+On a Mac, download the app from the
+[releases page](https://github.com/jonasjancarik/micro-plus-editor/releases), open the `.dmg` and
+drag Micro Plus into Applications. It runs on Apple silicon and Intel Macs. When you connect, it
+waits a moment for nearby amps and then asks which one to use.
+
+To run it from the source instead, `pnpm desktop` builds the page and opens it in an Electron window.
+`pnpm desktop:dev` opens the running `pnpm dev` page instead, and `pnpm desktop:install` builds an
+unsigned copy into your Applications folder.
+
+`pnpm desktop:release` builds the signed and notarized Mac app into `release/`. It needs a Developer
+ID Application certificate in your keychain, and an App Store Connect API key in `APPLE_API_KEY`
+(the path to the `.p8` file), `APPLE_API_KEY_ID` and `APPLE_API_ISSUER`.
 
 ## Phone apps
 
