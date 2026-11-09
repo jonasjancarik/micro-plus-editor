@@ -4,7 +4,10 @@ A browser editor for the Fender Mustang Micro Plus. It shows your presets as a p
 can switch, compare, edit, reorder, save, undo, export and import them over Bluetooth. It runs on
 your own computer and needs no internet connection.
 
-This project isn't affiliated with or endorsed by Fender. "Micro Plus editor" is a working name.
+This project isn't affiliated with or endorsed by Fender.
+
+Saving writes over the preset on the amp. Before you change presets you care about, export them
+from the editor so you have a copy to import back.
 
 ## Run it
 

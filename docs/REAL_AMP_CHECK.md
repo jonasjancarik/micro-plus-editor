@@ -74,7 +74,7 @@ Simulators have no Bluetooth, so this needs the real device. To install it again
 
 ## On Android
 
-`Micro-Plus-Editor-debug.apk` is in Google Drive under `My Drive/projects`. Build a newer one with:
+Build a debug APK with:
 
 ```sh
 pnpm app
