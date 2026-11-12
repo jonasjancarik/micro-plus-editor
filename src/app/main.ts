@@ -1488,6 +1488,10 @@ function renderConnection() {
     connection.dataset.state = 'lost';
     label = 'Not connected';
     banner = "Can't reach the editor app on this computer. Make sure it's still running; this page will reconnect by itself.";
+  } else if (state.resting) {
+    // It let go of the amp while in the background, to save the amp's battery, and is getting it back.
+    connection.dataset.state = 'connecting';
+    label = 'Reconnecting…';
   } else if (known) {
     connection.dataset.state = 'lost';
     label = 'Reconnecting…';

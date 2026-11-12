@@ -54,6 +54,8 @@ export interface Snapshot {
   unscaled: unknown;
   /** Reconnects in a row that failed. After a few, the page offers to choose the amp again. */
   failed_attempts: number;
+  /** The editor let go of the amp on purpose, to save its battery, and hasn't reconnected yet. */
+  resting: boolean;
   last_save: LastSave | null;
   last_undo: LastUndo | null;
   preset_groups: GroupState;
@@ -162,6 +164,11 @@ export class MicroPlusSession implements EditorSession {
   /** Attempts in a row that failed since the amp was last connected. */
   failedAttempts = 0;
   private wakeReset: () => void = () => {};
+  /** Set by rest(): stay disconnected until resume() is called. */
+  private resting = false;
+  private wakeFromRest: () => void = () => {};
+  /** Reconnecting after a rest, so the page needn't say the connection was lost. */
+  private resumed = false;
   private running = false;
   private stopped = false;
   private lastBackupTime = 0;
@@ -220,7 +227,7 @@ export class MicroPlusSession implements EditorSession {
       revision: amp ? this.revision(amp) : null,
       dirty: amp ? amp.dirty || Boolean(order) : false,
       eq: amp?.eq ?? null,
-      failed_attempts: this.failedAttempts,
+      failed_attempts: this.failedAttempts, resting: this.resting || this.resumed,
       models: MODELS, parameter_choices: PARAMETER_CHOICES, unscaled: UNSCALED,
       last_save: this.lastSave, last_undo: this.lastUndo, preset_groups: this.groups.state,
       saved_presets: this.saved.state, compare_presets: this.compare.slots,
@@ -421,6 +428,31 @@ export class MicroPlusSession implements EditorSession {
     }).catch(() => {}); // The page learns of this from the next snapshot.
   }
 
+  /**
+   * Lets go of the amp to save its battery. While connected, its radio wakes every 45 ms and the editor sends
+   * a keep-alive four times a second. Nothing happens while there are unsaved changes, because reconnecting
+   * would lose them. Returns whether the editor is now resting.
+   */
+  rest(): Promise<boolean> {
+    return this.inTurn(async () => {
+      if (!this.running || this.stopped || this.resting) return this.resting;
+      const amp = this.connectedAmp();
+      if (amp && (amp.dirty || this.waitingOrder(amp))) return false;
+      this.resting = true;
+      this.requestReset('the editor was in the background, so it let go of the amp to save its battery');
+      this.wakeRetry(); // Stops waiting to retry a lost connection, too.
+      return true;
+    });
+  }
+
+  /** Reconnects after rest(). */
+  resume(): void {
+    if (!this.resting) return;
+    this.resting = false;
+    this.resumed = true;
+    this.wakeFromRest();
+  }
+
   private recordSave(target: number, name: string, backup: string): void {
     this.savedBeforeLastSave = this.saved.state[String(target)] ?? null;
     this.saved.set(target, name);
@@ -542,6 +574,14 @@ export class MicroPlusSession implements EditorSession {
     this.running = true;
     this.stopped = false;
     while (!this.stopped) {
+      if (this.resting) {
+        this.phase = 'resting';
+        await new Promise<void>((resolve) => {
+          this.wakeFromRest = resolve;
+          if (!this.resting) resolve();
+        });
+        continue;
+      }
       this.resetRequested = false;
       this.phase = 'connecting';
       const choosing = !this.transport.hasDevice();
@@ -558,11 +598,12 @@ export class MicroPlusSession implements EditorSession {
         }
         this.error = messageOf(error);
         this.failedAttempts++;
+        this.resumed = false; // Now it's a lost connection like any other.
       }
       this.amp = null;
       this.connectedSince = null;
       this.phase = 'disconnected';
-      if (!this.stopped) {
+      if (!this.stopped && !this.resting) {
         await new Promise((resolve) => {
           this.wakeRetry = () => resolve(undefined);
           setTimeout(resolve, this.retryMs);
@@ -590,6 +631,7 @@ export class MicroPlusSession implements EditorSession {
   stop(): void {
     this.stopped = true;
     this.requestReset('the page stopped it');
+    this.resume(); // So the loop can end.
   }
 
   /** Gives up on a step of connecting that hangs, so the next attempt can start. */
@@ -626,6 +668,7 @@ export class MicroPlusSession implements EditorSession {
       this.stalled = false;
       this.savedReadFailures = 0;
       this.failedAttempts = 0;
+      this.resumed = false;
       await this.untilReset();
       const seconds = Math.round(Date.now() / 1000 - this.connectedSince);
       console.warn(`Micro Plus connection ended after ${seconds} s because ${this.resetReason}.`);

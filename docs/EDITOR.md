@@ -261,6 +261,15 @@ to leave scheduling margin and continues sending while a switch awaits its
 acknowledgement. Commands are written one at a time, and the page's commands run one at a time. This interval is verified behavior, not a documented
 Fender timing guarantee.
 
+Keeping the connection open costs the amp battery: its radio wakes every 45 ms for the link
+(measured by Maneline on firmware 1.1.11), on top of the heartbeat. So once the editor has been
+in the background for a minute (another tab, a minimised window, another app on the phone), it lets
+go of the amp. It stays connected if there are unsaved changes, because a new connection would lose
+them. When the editor is shown again it reconnects, which usually takes about three seconds. The top
+bar says "Reconnecting…" in the meantime, without the lost-connection warning. A phone that freezes
+the app in the background may never run the timer, and then nothing changes. This has only been
+tested against a simulated amp.
+
 It may not cover every case. In one live test on 30 October 2026, about ten minutes
 into a connection, a switch reached the amp but no notifications arrived for the
 8-second timeout even though heartbeats continued. Reconnecting recovered in about

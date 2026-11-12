@@ -646,6 +646,46 @@ describe('connecting', () => {
     await until(() => session.phase === 'waiting');
   }, 8000);
 
+  it('lets go of the amp to save its battery, and reconnects when asked', async () => {
+    const transport = ampOnBluetooth();
+    const session = open(transport);
+    void session.start();
+    await until(() => session.phase === 'connected');
+    expect(await session.rest()).toBe(true);
+    await until(() => session.phase === 'resting');
+    expect(session.snapshot()).toMatchObject({ connected: false, resting: true, error: null, failed_attempts: 0 });
+    await new Promise((resolve) => setTimeout(resolve, 50)); // Several retry intervals: it must not reconnect by itself.
+    expect(transport.connects).toBe(1);
+    session.resume();
+    expect(session.snapshot().resting).toBe(true); // Until it's back, so the page doesn't call it a lost connection.
+    await until(() => session.snapshot().connected);
+    expect(session.snapshot().resting).toBe(false);
+    expect(transport.connects).toBe(2);
+    session.stop();
+    await until(() => session.phase === 'waiting');
+  }, 8000);
+
+  it('stays connected while there are unsaved changes', async () => {
+    const session = open(ampOnBluetooth());
+    void session.start();
+    await until(() => session.phase === 'connected');
+    session.amp!.dirty = true;
+    expect(await session.rest()).toBe(false);
+    expect(session.snapshot()).toMatchObject({ connected: true, resting: false });
+    session.stop();
+    await until(() => session.phase === 'waiting');
+  });
+
+  it('can be stopped while resting', async () => {
+    const session = open(ampOnBluetooth());
+    void session.start();
+    await until(() => session.phase === 'connected');
+    await session.rest();
+    await until(() => session.phase === 'resting');
+    session.stop();
+    await until(() => session.phase === 'waiting');
+  });
+
   it('goes back to waiting when nothing was chosen', async () => {
     const session = open(ampOnBluetooth({ chosen: false, cancel: new DOMException('User cancelled the requestDevice() chooser.', 'NotFoundError') }));
     await session.start();

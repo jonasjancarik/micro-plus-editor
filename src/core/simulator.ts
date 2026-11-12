@@ -75,7 +75,7 @@ export class SimulatedSession implements EditorSession {
       document: connected ? this.document : null, revision: connected ? this.revision : null,
       dirty: connected ? this.dirty : false,
       eq: connected ? this.eq : null,
-      failed_attempts: connected ? 0 : this.failedAttempts,
+      failed_attempts: connected ? 0 : this.failedAttempts, resting: false,
       models: MODELS, parameter_choices: PARAMETER_CHOICES, unscaled: UNSCALED,
       last_save: this.lastSave, last_undo: this.lastUndo, preset_groups: this.groups.state,
       saved_presets: this.saved.state, compare_presets: this.compare.slots,

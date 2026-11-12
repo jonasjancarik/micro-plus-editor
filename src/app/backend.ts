@@ -9,6 +9,8 @@ import { steadyTimer } from '../transport/steady-timer';
 import { WebBluetoothTransport } from '../transport/web-bluetooth';
 
 const BACKGROUND_CHECK_MS = 20_000;
+/** How long the editor can be in the background before it lets go of the amp. Reconnecting takes about 3 s. */
+const REST_AFTER_MS = 60_000;
 
 export interface Backend {
   read(): Promise<any>;
@@ -71,12 +73,24 @@ class SimulatorBackend extends LocalBackend {
   }
 }
 
-/** A connection can die while a phone has the app frozen, without anything saying so. */
+/**
+ * A connection can die while a phone has the app frozen, without anything saying so. And an amp that stays
+ * connected while nobody is looking at the editor runs its battery down, so after a while in the background
+ * the editor lets go of it, unless there are unsaved changes, and reconnects when it's shown again.
+ */
 function checkAfterBackground(session: MicroPlusSession): void {
   let hiddenAt = 0;
+  let restTimer: ReturnType<typeof setTimeout> | undefined;
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) hiddenAt = performance.now();
-    else if (hiddenAt && performance.now() - hiddenAt >= BACKGROUND_CHECK_MS) void session.checkConnection();
+    clearTimeout(restTimer);
+    if (document.hidden) {
+      hiddenAt = performance.now();
+      restTimer = setTimeout(() => void session.rest(), REST_AFTER_MS);
+    } else if (session.snapshot().resting) {
+      session.resume();
+    } else if (hiddenAt && performance.now() - hiddenAt >= BACKGROUND_CHECK_MS) {
+      void session.checkConnection();
+    }
   });
 }
 
