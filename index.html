@@ -43,6 +43,10 @@
     <span>EQ</span>
     <select id="eq"></select>
   </label>
+  <button id="battery-saver" type="button" aria-pressed="false" aria-label="Save the amp's battery"
+    title="Save the amp's battery: disconnect from it when the editor has been in the background for a minute" hidden>
+    <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.75" y="4.5" width="11" height="7" rx="1.5"/><path d="M14.25 7v2M4.5 7v2M7 7v2"/></svg>
+  </button>
   <div class="theme-switch" role="group" aria-label="Appearance">
     <button type="button" data-theme-choice="auto" aria-label="Match system" title="Match system">
       <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.75" y="2.5" width="12.5" height="8.5" rx="1.5"/><path d="M8 11v2.5M5.25 13.5h5.5"/></svg>
@@ -85,6 +89,7 @@
 <div id="connection-banner" role="status" hidden>
   <span id="connection-banner-text"></span>
   <button id="choose-again" type="button" hidden>Look for your amp again</button>
+  <button id="reconnect" type="button" hidden>Reconnect</button>
 </div>
 <div id="message" role="status" hidden></div>
 

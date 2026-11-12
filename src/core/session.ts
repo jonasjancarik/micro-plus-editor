@@ -624,6 +624,7 @@ export class MicroPlusSession implements EditorSession {
     this.failedAttempts = 0;
     this.error = null;
     this.wakeRetry();
+    this.resume(); // After letting go to save the amp's battery, this is how a browser gets it back.
     if (!this.running) void this.start();
   }
 

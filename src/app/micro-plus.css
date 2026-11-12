@@ -153,12 +153,14 @@ button.icon:hover:not(:disabled) { color: var(--text); }
 #dirty { font-size: 14px; font-weight: 600; color: var(--warn); margin-right: 4px; }
 
 .theme-switch { display: flex; flex: none; gap: 2px; }
-.theme-switch button { display: grid; place-items: center; width: 30px; min-height: 30px; padding: 0; border: 0; border-radius: 7px; background: none; color: var(--muted); }
-.theme-switch button:hover { background: none; color: var(--text); }
-.theme-switch button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); }
-.theme-switch svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+:is(.theme-switch button, #battery-saver) { display: grid; place-items: center; width: 30px; min-height: 30px; padding: 0; border: 0; border-radius: 7px; background: none; color: var(--muted); }
+:is(.theme-switch button, #battery-saver):hover { background: none; color: var(--text); }
+:is(.theme-switch button, #battery-saver)[aria-pressed="true"] { background: var(--surface-2); color: var(--text); }
+#battery-saver { flex: none; }
+#battery-saver[aria-pressed="true"] { color: var(--ok); }
+:is(.theme-switch, #battery-saver) svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 #connection-banner { padding: 9px clamp(16px, 3vw, 40px); font-size: 14px; background: var(--warn-soft); }
-#choose-again { margin-left: 8px; }
+#choose-again, #reconnect { margin-left: 8px; }
 /* Floats over the page, so a passing message doesn't push the board down and back up. */
 #message { position: fixed; z-index: 10; left: 50%; bottom: 18px; transform: translateX(-50%); width: max-content; max-width: min(560px, calc(100vw - 32px));
   padding: 9px 14px; font-size: 14px; background: var(--text); color: var(--bg); border-radius: 8px; box-shadow: 0 6px 20px var(--shadow); }
@@ -449,7 +451,7 @@ dialog input, dialog select { width: 100%; }
   #preset-panel label.check { white-space: nowrap; }
   #topbar { column-gap: 4px; }
   .now { flex-basis: 0; }
-  .theme-switch button { width: 30px; min-height: 40px; }
+  :is(.theme-switch button, #battery-saver) { width: 30px; min-height: 40px; }
   .now { gap: 2px; }
   .now button.icon { width: 30px; }
   #open-presets { flex: 1; justify-content: center; gap: 2px; padding: 3px 6px; }

@@ -21,6 +21,13 @@ export interface Backend {
   unsupported?: string;
   /** Opens the device list to pick the amp again. Absent where that isn't possible. Call it from a click. */
   chooseAgain?(): Promise<void>;
+  /** Whether the editor lets go of the amp after a while in the background. Absent where that isn't possible. */
+  batterySaver?: boolean;
+  setBatterySaver?(on: boolean): void;
+  /** Brings the amp back after the editor let go of it. In a browser, call it from a click. */
+  reconnect?(): Promise<void>;
+  /** Whether it reconnects by itself when shown again, rather than waiting for reconnect() from a click. */
+  reconnectsByItself?: boolean;
   listBackups?(): Promise<BackupEntry[]>;
   readBackup?(name: string): Promise<string>;
 }
@@ -46,12 +53,30 @@ class LocalBackend implements Backend {
   }
 }
 
+const BATTERY_SAVER = 'mmp-battery-saver';
+
 class BluetoothBackend extends LocalBackend {
   unsupported?: string;
+  batterySaver: boolean;
+  reconnectsByItself: boolean;
 
-  constructor(private real: MicroPlusSession, unsupported?: string) {
+  /** findsAmpByItself: whether it can reconnect without the device list, which a browser only opens from a click. */
+  constructor(private real: MicroPlusSession, private findsAmpByItself: boolean, unsupported?: string) {
     super(real);
+    this.reconnectsByItself = findsAmpByItself;
     this.unsupported = unsupported;
+    try { this.batterySaver = localStorage.getItem(BATTERY_SAVER) === '1'; } catch { this.batterySaver = false; }
+    watchBackground(real, this, findsAmpByItself);
+  }
+
+  setBatterySaver(on: boolean) {
+    this.batterySaver = on;
+    try { localStorage.setItem(BATTERY_SAVER, on ? '1' : '0'); } catch { /* Then it's only for this visit. */ }
+  }
+
+  async reconnect() {
+    if (this.findsAmpByItself) this.real.resume();
+    else await this.real.chooseAgain();
   }
 
   connect() {
@@ -75,21 +100,21 @@ class SimulatorBackend extends LocalBackend {
 
 /**
  * A connection can die while a phone has the app frozen, without anything saying so. And an amp that stays
- * connected while nobody is looking at the editor runs its battery down, so where the editor can find the amp
- * again by itself, after a while in the background it lets go of it, unless there are unsaved changes, and
- * reconnects when it's shown again. Chrome on the Mac can't: after letting go, it failed every reconnect with
- * "Bluetooth Device is no longer in range" until the amp was chosen from the device list again.
+ * connected while nobody is looking at the editor runs its battery down, so with the battery saver on, after
+ * a while in the background the editor lets go of it, unless there are unsaved changes. The apps reconnect
+ * when they're shown again. A browser needs a click: after letting go, Chrome on the Mac failed every
+ * reconnect with "Bluetooth Device is no longer in range" until the amp was chosen from the device list again.
  */
-function checkAfterBackground(session: MicroPlusSession, rest: boolean): void {
+function watchBackground(session: MicroPlusSession, backend: BluetoothBackend, findsAmpByItself: boolean): void {
   let hiddenAt = 0;
   let restTimer: ReturnType<typeof setTimeout> | undefined;
   document.addEventListener('visibilitychange', () => {
     clearTimeout(restTimer);
     if (document.hidden) {
       hiddenAt = performance.now();
-      if (rest) restTimer = setTimeout(() => void session.rest(), REST_AFTER_MS);
-    } else if (session.snapshot().resting) {
-      session.resume();
+      if (backend.batterySaver) restTimer = setTimeout(() => void session.rest(), REST_AFTER_MS);
+    } else if (session.phase === 'resting') {
+      if (findsAmpByItself) session.resume(); // Otherwise the page offers a button.
     } else if (hiddenAt && performance.now() - hiddenAt >= BACKGROUND_CHECK_MS) {
       void session.checkConnection();
     }
@@ -102,8 +127,7 @@ async function bluetoothBackend(): Promise<Backend> {
     const store = new CapacitorFileStore();
     const transport = new CapacitorBleTransport();
     const session = await MicroPlusSession.open(transport, { store }, steadyTimer);
-    checkAfterBackground(session, true);
-    const backend = new BluetoothBackend(session);
+    const backend = new BluetoothBackend(session, true);
     if (transport.hasDevice()) backend.connect(); // The app can open it again with no click, unlike a browser.
     return backend;
   }
@@ -113,13 +137,12 @@ async function bluetoothBackend(): Promise<Backend> {
   });
   const transport = new WebBluetoothTransport();
   const session = await MicroPlusSession.open(transport, { store }, steadyTimer);
-  checkAfterBackground(session, false);
   if (navigator.bluetooth) {
-    const backend = new BluetoothBackend(session);
+    const backend = new BluetoothBackend(session, false);
     if (await transport.findRemembered()) backend.connect();
     return backend;
   }
-  return new BluetoothBackend(session, "This browser can't use Bluetooth. Open the editor in Chrome or Edge on a computer or an Android phone, or use the phone app.");
+  return new BluetoothBackend(session, false, "This browser can't use Bluetooth. Open the editor in Chrome or Edge on a computer or an Android phone, or use the phone app.");
 }
 
 export let backend: Backend;

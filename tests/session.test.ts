@@ -676,6 +676,22 @@ describe('connecting', () => {
     await until(() => session.phase === 'waiting');
   });
 
+  it('gets the amp back when it is chosen again while resting, as a browser must', async () => {
+    const transport = ampOnBluetooth();
+    let chosen = 0;
+    transport.chooseAgain = async () => { chosen++; };
+    const session = open(transport);
+    void session.start();
+    await until(() => session.phase === 'connected');
+    await session.rest();
+    await until(() => session.phase === 'resting');
+    await session.chooseAgain();
+    await until(() => session.snapshot().connected);
+    expect([chosen, transport.connects]).toEqual([1, 2]);
+    session.stop();
+    await until(() => session.phase === 'waiting');
+  }, 8000);
+
   it('can be stopped while resting', async () => {
     const session = open(ampOnBluetooth());
     void session.start();

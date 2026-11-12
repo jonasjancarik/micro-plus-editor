@@ -47,10 +47,12 @@ the empty slots from 71, and the amp only saves MODIFY and tap tempo changes its
       day a tab left in the background for 27 minutes found the amp silent when it came back, and
       the amp couldn't be found again until it was switched off and on. The amp also went silent
       once while in use, so its Bluetooth getting stuck is the more likely cause than the hidden tab.
-- [ ] **Letting go in the background:** not used in the browser. On 12 November 2026 Chrome 157 on
-      the Mac let go of the amp a minute after the window was minimised, but couldn't reconnect
-      ("Bluetooth Device is no longer in range") until the amp was chosen again from the device list.
-      The browser version now stays connected; check this in the phone and desktop apps instead.
+- [ ] **Battery saver:** turn on the battery switch in the top bar, leave the editor in the
+      background for over a minute and come back. On 12 November 2026 Chrome 157 on the Mac let go
+      of the amp after a minute but couldn't reconnect by itself ("Bluetooth Device is no longer in
+      range"); choosing the amp from the device list again worked. The browser now asks for that
+      with a **Reconnect** button, which hasn't been tried on the amp yet. Check the apps too: they
+      should reconnect without a click.
 
 Finish by putting the amp back on the preset you normally use.
 

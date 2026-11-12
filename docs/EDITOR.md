@@ -262,18 +262,21 @@ acknowledgement. Commands are written one at a time, and the page's commands run
 Fender timing guarantee.
 
 Keeping the connection open costs the amp battery: its radio wakes every 45 ms for the link
-(measured by Maneline on firmware 1.1.11), on top of the heartbeat. So in the phone and desktop apps,
-once the editor has been in the background for a minute (a minimised window, or another app in front
-on the phone), it lets go of the amp. It stays connected if there are unsaved changes, because a new
-connection would lose them. When the editor is shown again it reconnects, and the top bar says
-"Reconnecting…" in the meantime, without the lost-connection warning. A phone that freezes the app in
-the background may never run the timer, and then nothing changes. The apps' versions of this haven't
-been tried on the real amp yet.
+(measured by Maneline on firmware 1.1.11), on top of the heartbeat. The battery switch in the top bar,
+off by default, makes the editor let go of the amp once it has been in the background for a minute
+(another tab, a minimised window, or another app in front on the phone). It stays connected if there
+are unsaved changes, because a new connection would lose them. The setting is kept on that device.
 
-The browser version stays connected. On 12 November 2026 in Chrome 157 on the Mac it let go of the
-amp as planned, but then failed every reconnect with "Bluetooth Device is no longer in range" until
-the amp was chosen from the device list again, which needs a click. The amp itself was fine. Chrome's
-way around this, watching for the amp's advertising, needs a Chrome flag.
+When the editor is shown again, the phone and desktop apps reconnect by themselves, and the top bar
+says "Reconnecting…" without the lost-connection warning. A phone that freezes the app in the
+background may never run the timer, and then nothing changes. The apps haven't been tried with this
+on the real amp yet.
+
+A browser needs a click instead: the page says it disconnected to save the amp's battery and offers
+**Reconnect**, which opens the device list. On 12 November 2026 in Chrome 157 on the Mac, reconnecting
+without the list failed every time with "Bluetooth Device is no longer in range", while choosing the
+amp from the list worked at once. Chrome's way around the list, watching for the amp's advertising,
+needs a Chrome flag.
 
 It may not cover every case. In one live test on 30 October 2026, about ten minutes
 into a connection, a switch reached the amp but no notifications arrived for the

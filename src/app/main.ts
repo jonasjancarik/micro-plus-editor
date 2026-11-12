@@ -1488,6 +1488,10 @@ function renderConnection() {
     connection.dataset.state = 'lost';
     label = 'Not connected';
     banner = "Can't reach the editor app on this computer. Make sure it's still running; this page will reconnect by itself.";
+  } else if (state.phase === 'resting') {
+    connection.dataset.state = 'connecting';
+    label = 'Disconnected';
+    banner = 'The editor disconnected from your amp while it was in the background, to save the amp’s battery.';
   } else if (state.resting) {
     // It let go of the amp while in the background, to save the amp's battery, and is getting it back.
     connection.dataset.state = 'connecting';
@@ -1509,6 +1513,7 @@ function renderConnection() {
   const stuck = !state.connected && reachable && state.failed_attempts >= CHOOSE_AGAIN_AFTER && Boolean(backend.chooseAgain);
   if (stuck) banner = `${banner} If it's on and still not back, switch it off and on, then look for it again.`.trim();
   $('choose-again').hidden = !stuck;
+  $('reconnect').hidden = state.phase !== 'resting' || !backend.reconnect;
   setText($('connection-text'), label);
   $('connection-banner').hidden = !banner;
   setText($('connection-banner-text'), banner);
@@ -1629,6 +1634,29 @@ $('choose-again').addEventListener('click', async () => {
   }
   readState();
 });
+$('reconnect').addEventListener('click', async () => {
+  try {
+    await backend.reconnect();
+  } catch (error) {
+    if (error?.name !== 'NotFoundError' && !/cancel/i.test(error?.message ?? '')) showMessage(error.message, 'error');
+  }
+  readState();
+});
+function showBatterySaver() {
+  const button = $('battery-saver');
+  button.hidden = !backend.setBatterySaver || Boolean(backend.unsupported);
+  button.setAttribute('aria-pressed', String(Boolean(backend.batterySaver)));
+}
+$('battery-saver').addEventListener('click', () => {
+  const on = !backend.batterySaver;
+  backend.setBatterySaver(on);
+  showBatterySaver();
+  showMessage(on
+    ? `Battery saver on: after a minute in the background, the editor disconnects from your amp, unless you have unsaved changes. ${
+      backend.reconnectsByItself ? 'It reconnects when you come back.' : 'When you come back, choose Reconnect and pick your amp from the list.'}`
+    : 'Battery saver off: the editor stays connected to your amp in the background.');
+});
+showBatterySaver();
 $('copy-target').addEventListener('change', renderCopyChoice);
 // As the amp's display names them.
 const EQ_NAMES = ['Flat', 'Bright cut 1', 'Bright cut 2', 'Low cut 1', 'Low cut 2', 'Bright boost 1', 'Bright boost 2', 'Bass boost 1', 'Bass boost 2'];
