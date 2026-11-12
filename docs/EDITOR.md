@@ -269,8 +269,11 @@ are unsaved changes, because a new connection would lose them. The setting is ke
 
 When the editor is shown again, the phone and desktop apps reconnect by themselves, and the top bar
 says "Reconnecting…" without the lost-connection warning. A phone that freezes the app in the
-background may never run the timer, and then nothing changes. The apps haven't been tried with this
-on the real amp yet.
+background may never run the timer, and then nothing changes. On 12 November 2026 the Mac desktop
+app (Tauri) let go of the real amp a minute after its window was minimised, stopped the heartbeat,
+and reconnected by itself when the window came back. Reconnecting took about 25 seconds, because the
+first two 6-second scans didn't hear the amp, and those failed scans showed the usual "Couldn't find
+your Micro Plus" message. The phone apps haven't been tried with this on the real amp yet.
 
 A browser needs a click instead: the page says it disconnected to save the amp's battery and offers
 **Reconnect**, which opens the device list. On 12 November 2026 in Chrome 157 on the Mac, reconnecting
