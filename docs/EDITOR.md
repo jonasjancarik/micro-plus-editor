@@ -273,7 +273,9 @@ background may never run the timer, and then nothing changes. On 12 November 202
 app (Tauri) let go of the real amp a minute after its window was minimised, stopped the heartbeat,
 and reconnected by itself when the window came back. Reconnecting took about 25 seconds, because the
 first two 6-second scans didn't hear the amp, and those failed scans showed the usual "Couldn't find
-your Micro Plus" message. The phone apps haven't been tried with this on the real amp yet.
+your Micro Plus" message. Since then, failed attempts in the first 30 seconds after coming back keep
+saying "Reconnecting…" and try again; only after that does the page say the amp can't be found. That
+change hasn't been tried on the real amp yet, and neither have the phone apps.
 
 A browser needs a click instead: the page says it disconnected to save the amp's battery and offers
 **Reconnect**, which opens the device list. On 12 November 2026 in Chrome 157 on the Mac, reconnecting

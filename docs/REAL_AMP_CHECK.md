@@ -57,7 +57,8 @@ the empty slots from 71, and the amp only saves MODIFY and tap tempo changes its
       Passed in the Mac desktop app (Tauri) on 12 November 2026: it disconnected 60 seconds after
       the window was minimised, the heartbeat stopped, and it reconnected by itself about 25 seconds
       after the window came back. The first two scans didn't hear the amp and showed "Couldn't find
-      your Micro Plus" before the third found it. Not yet tried on Android or iPad.
+      your Micro Plus" before the third found it. The editor now keeps saying "Reconnecting…" for
+      30 seconds instead; check that no error shows. Not yet tried on Android or iPad.
 
 Finish by putting the amp back on the preset you normally use.
 

@@ -665,6 +665,44 @@ describe('connecting', () => {
     await until(() => session.phase === 'waiting');
   }, 8000);
 
+  it('keeps trying quietly for a while when the amp is slow to be heard again after a rest', async () => {
+    const transport = ampOnBluetooth();
+    const session = open(transport);
+    void session.start();
+    await until(() => session.phase === 'connected');
+    await session.rest();
+    await until(() => session.phase === 'resting');
+    const connect = transport.connect.bind(transport);
+    let misses = 2;
+    transport.connect = async () => {
+      if (misses > 0) { misses--; throw new Error("Couldn't find your Micro Plus."); }
+      return connect();
+    };
+    session.resume();
+    await until(() => misses === 0);
+    expect(session.snapshot()).toMatchObject({ connected: false, resting: true, error: null, failed_attempts: 0 });
+    await until(() => session.snapshot().connected);
+    expect(session.snapshot()).toMatchObject({ resting: false, error: null });
+    session.stop();
+    await until(() => session.phase === 'waiting');
+  }, 8000);
+
+  it('says the amp is lost once quiet retrying after a rest runs out', async () => {
+    const transport = ampOnBluetooth();
+    const session = open(transport);
+    session.resumeQuietMs = 0;
+    void session.start();
+    await until(() => session.phase === 'connected');
+    await session.rest();
+    await until(() => session.phase === 'resting');
+    transport.connect = async () => { throw new Error("Couldn't find your Micro Plus."); };
+    session.resume();
+    await until(() => session.snapshot().failed_attempts > 0);
+    expect(session.snapshot()).toMatchObject({ resting: false, error: "Couldn't find your Micro Plus." });
+    session.stop();
+    await until(() => session.phase === 'waiting');
+  }, 8000);
+
   it('stays connected while there are unsaved changes', async () => {
     const session = open(ampOnBluetooth());
     void session.start();

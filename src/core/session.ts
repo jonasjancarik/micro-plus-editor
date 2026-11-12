@@ -11,6 +11,8 @@ import { NAME, type BleTransport } from '../transport/types';
 export const SAVED_READ_FAILURES = 3; // The amp has been seen to stop answering these while its connection still looks healthy.
 export const READ_RECONNECT_GAP_MS = 300_000; // If reconnecting doesn't help, trying again every few reads wouldn't either.
 const RETRY_MS = 2000;
+/** After a rest, how long failed attempts stay quiet. An amp can take a few scans to be heard again. */
+const RESUME_QUIET_MS = 30_000;
 const CONNECT_TIMEOUT_MS = 30_000; // Chrome has been seen to wait forever when reconnecting to an amp it just lost.
 const NO_ANSWER = "Your Micro Plus didn't answer. The editor keeps trying; if this goes on, switch the amp off and on again.";
 const PRESET_POSITIONS = ['stomp', 'mod', 'amp', 'delay', 'reverb']; // Every preset read from the amp has exactly these.
@@ -155,6 +157,7 @@ export class MicroPlusSession implements EditorSession {
   pendingOrder: { slot: number; generation: string; order: string[] } | null = null;
   savedBeforeLastSave: string | null = null;
   retryMs = RETRY_MS;
+  resumeQuietMs = RESUME_QUIET_MS;
   connectTimeoutMs = CONNECT_TIMEOUT_MS;
 
   private queue: Promise<unknown> = Promise.resolve();
@@ -169,6 +172,7 @@ export class MicroPlusSession implements EditorSession {
   private wakeFromRest: () => void = () => {};
   /** Reconnecting after a rest, so the page needn't say the connection was lost. */
   private resumed = false;
+  private resumedAt = 0;
   private running = false;
   private stopped = false;
   private lastBackupTime = 0;
@@ -450,6 +454,7 @@ export class MicroPlusSession implements EditorSession {
     if (!this.resting) return;
     this.resting = false;
     this.resumed = true;
+    this.resumedAt = performance.now();
     this.wakeFromRest();
   }
 
@@ -596,9 +601,13 @@ export class MicroPlusSession implements EditorSession {
           this.running = false;
           return;
         }
-        this.error = messageOf(error);
-        this.failedAttempts++;
-        this.resumed = false; // Now it's a lost connection like any other.
+        if (this.resumed && performance.now() - this.resumedAt < this.resumeQuietMs) {
+          // Still getting the amp back after a rest: keep saying so, and try again.
+        } else {
+          this.error = messageOf(error);
+          this.failedAttempts++;
+          this.resumed = false; // Now it's a lost connection like any other.
+        }
       }
       this.amp = null;
       this.connectedSince = null;
