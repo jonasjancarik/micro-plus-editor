@@ -339,9 +339,13 @@ firmware 1.1.11), and found the following, which would also apply to Chrome and 
 
 - The amp plays audio over classic Bluetooth and takes control over Bluetooth LE. A normal BlueZ
   disconnect closes both, so closing the editor would also stop audio from the computer. Closing
-  only the LE link needs BlueZ 5.84 or later with `Experimental = true` in `/etc/bluetooth/main.conf`,
-  and a program that uses BlueZ's `Bearer.LE1` interface. Chrome and the desktop app's Bluetooth
-  library don't use it.
+  only the LE link needs `Experimental = true` in `/etc/bluetooth/main.conf` and a program that
+  uses BlueZ's `Bearer.LE1` interface. Chrome and the desktop app's Bluetooth library don't use it.
+  The interface first appeared in BlueZ 5.84, but the Maneline contributor who did the Linux work
+  found it only works properly from about 5.86 or 5.87; they used 5.87 and 5.88. Debian 13 and
+  Raspberry Pi OS still ship 5.82, and the same contributor offers a BlueZ 5.88 backport, linked
+  from [their project page](https://banzhaf.chickenkiller.com/mediawiki/index.php/Projekt_ChordsPlay),
+  which hadn't been tried on a Raspberry Pi as of 12 November 2026.
 - The amp has to be paired over LE as well as for audio. If it was only paired for audio, BlueZ
   connects over classic Bluetooth, which has no control service.
 - When it connects, BlueZ writes to the Client Supported Features characteristic (`0x2b29`) and the
