@@ -1,9 +1,13 @@
 import { NAME, REQUEST, RESPONSE, SERVICE, type BleTransport } from './types';
 
-// The name filter lets the chooser find the amp without relying on a service-UUID scan. On Linux, scanning
-// by service UUID made BlueZ reset an Intel AX201 adapter in Maneline's tests; whether Chrome's combined
-// filter avoids that hasn't been checked. optionalServices lets a device matched by name use the service.
-const CHOOSER: RequestDeviceOptions = { filters: [{ services: [SERVICE] }, { name: NAME }], optionalServices: [SERVICE] };
+// Filtering on the service alone, because matching on the name as well made Chrome list the amp twice, under two
+// addresses. Desktop Linux is the exception: there, scanning by service UUID made BlueZ reset an Intel AX201
+// adapter in Maneline's tests, so the name is matched too. Whether that avoids the reset hasn't been checked.
+// optionalServices lets a device matched by name use the service.
+const DESKTOP_LINUX = typeof navigator !== 'undefined' && /Linux/.test(navigator.userAgent) && !/Android/.test(navigator.userAgent);
+const CHOOSER: RequestDeviceOptions = DESKTOP_LINUX
+  ? { filters: [{ services: [SERVICE] }, { name: NAME }], optionalServices: [SERVICE] }
+  : { filters: [{ services: [SERVICE] }] };
 
 export class WebBluetoothTransport implements BleTransport {
   private device?: BluetoothDevice;

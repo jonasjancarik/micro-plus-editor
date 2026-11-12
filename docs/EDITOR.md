@@ -335,8 +335,9 @@ firmware 1.1.11), and found the following, which would also apply to Chrome and 
   amp never answers, so every later request stalls and BlueZ drops the link after 30 s. The fix is to
   delete that entry from BlueZ's cache file for the amp while `bluetoothd` is stopped, and do it again
   whenever BlueZ rediscovers the amp's services.
-- Scanning by service UUID made BlueZ reset an Intel AX201 adapter. The browser chooser therefore
-  also matches the amp by name.
+- Scanning by service UUID made BlueZ reset an Intel AX201 adapter. On desktop Linux the browser
+  chooser therefore also matches the amp by name. Elsewhere it doesn't, because that made Chrome list
+  the amp twice (see [BLUETOOTH_TEST.md](BLUETOOTH_TEST.md)).
 
 The Linux notes in that pull request have the exact commands.
 
