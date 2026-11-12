@@ -75,17 +75,19 @@ class SimulatorBackend extends LocalBackend {
 
 /**
  * A connection can die while a phone has the app frozen, without anything saying so. And an amp that stays
- * connected while nobody is looking at the editor runs its battery down, so after a while in the background
- * the editor lets go of it, unless there are unsaved changes, and reconnects when it's shown again.
+ * connected while nobody is looking at the editor runs its battery down, so where the editor can find the amp
+ * again by itself, after a while in the background it lets go of it, unless there are unsaved changes, and
+ * reconnects when it's shown again. Chrome on the Mac can't: after letting go, it failed every reconnect with
+ * "Bluetooth Device is no longer in range" until the amp was chosen from the device list again.
  */
-function checkAfterBackground(session: MicroPlusSession): void {
+function checkAfterBackground(session: MicroPlusSession, rest: boolean): void {
   let hiddenAt = 0;
   let restTimer: ReturnType<typeof setTimeout> | undefined;
   document.addEventListener('visibilitychange', () => {
     clearTimeout(restTimer);
     if (document.hidden) {
       hiddenAt = performance.now();
-      restTimer = setTimeout(() => void session.rest(), REST_AFTER_MS);
+      if (rest) restTimer = setTimeout(() => void session.rest(), REST_AFTER_MS);
     } else if (session.snapshot().resting) {
       session.resume();
     } else if (hiddenAt && performance.now() - hiddenAt >= BACKGROUND_CHECK_MS) {
@@ -100,7 +102,7 @@ async function bluetoothBackend(): Promise<Backend> {
     const store = new CapacitorFileStore();
     const transport = new CapacitorBleTransport();
     const session = await MicroPlusSession.open(transport, { store }, steadyTimer);
-    checkAfterBackground(session);
+    checkAfterBackground(session, true);
     const backend = new BluetoothBackend(session);
     if (transport.hasDevice()) backend.connect(); // The app can open it again with no click, unlike a browser.
     return backend;
@@ -111,7 +113,7 @@ async function bluetoothBackend(): Promise<Backend> {
   });
   const transport = new WebBluetoothTransport();
   const session = await MicroPlusSession.open(transport, { store }, steadyTimer);
-  checkAfterBackground(session);
+  checkAfterBackground(session, false);
   if (navigator.bluetooth) {
     const backend = new BluetoothBackend(session);
     if (await transport.findRemembered()) backend.connect();
