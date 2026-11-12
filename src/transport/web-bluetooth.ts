@@ -1,4 +1,9 @@
-import { REQUEST, RESPONSE, SERVICE, type BleTransport } from './types';
+import { NAME, REQUEST, RESPONSE, SERVICE, type BleTransport } from './types';
+
+// The name filter lets the chooser find the amp without relying on a service-UUID scan. On Linux, scanning
+// by service UUID made BlueZ reset an Intel AX201 adapter in Maneline's tests; whether Chrome's combined
+// filter avoids that hasn't been checked. optionalServices lets a device matched by name use the service.
+const CHOOSER: RequestDeviceOptions = { filters: [{ services: [SERVICE] }, { name: NAME }], optionalServices: [SERVICE] };
 
 export class WebBluetoothTransport implements BleTransport {
   private device?: BluetoothDevice;
@@ -19,7 +24,7 @@ export class WebBluetoothTransport implements BleTransport {
   }
 
   async chooseAgain(): Promise<void> {
-    const chosen = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE] }] });
+    const chosen = await navigator.bluetooth.requestDevice(CHOOSER);
     const previous = this.device;
     this.use(chosen);
     if (previous !== chosen) previous?.gatt?.disconnect(); // Ends an attempt that's still waiting on it.
@@ -36,7 +41,7 @@ export class WebBluetoothTransport implements BleTransport {
   }
 
   async connect(): Promise<void> {
-    if (!this.device) this.use(await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE] }] }));
+    if (!this.device) this.use(await navigator.bluetooth.requestDevice(CHOOSER));
     const server = await this.device!.gatt!.connect();
     const service = await server.getPrimaryService(SERVICE);
     this.request = await service.getCharacteristic(REQUEST);

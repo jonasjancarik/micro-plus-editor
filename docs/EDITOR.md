@@ -309,6 +309,28 @@ identities, keep-alives and the page itself against the simulator. `tests/fixtur
 bytes the Python version produced, so the TypeScript code is checked against what already worked
 on the amp.
 
+### Linux
+
+The editor hasn't been tried on Linux. Tim Littlefair's Maneline project got the amp working there
+through BlueZ ([pull request 140](https://github.com/tim-littlefair/maneline/pull/140), BlueZ 5.87,
+firmware 1.1.11), and found the following, which would also apply to Chrome and to the desktop app on Linux:
+
+- The amp plays audio over classic Bluetooth and takes control over Bluetooth LE. A normal BlueZ
+  disconnect closes both, so closing the editor would also stop audio from the computer. Closing
+  only the LE link needs BlueZ 5.84 or later with `Experimental = true` in `/etc/bluetooth/main.conf`,
+  and a program that uses BlueZ's `Bearer.LE1` interface. Chrome and the desktop app's Bluetooth
+  library don't use it.
+- The amp has to be paired over LE as well as for audio. If it was only paired for audio, BlueZ
+  connects over classic Bluetooth, which has no control service.
+- When it connects, BlueZ writes to the Client Supported Features characteristic (`0x2b29`) and the
+  amp never answers, so every later request stalls and BlueZ drops the link after 30 s. The fix is to
+  delete that entry from BlueZ's cache file for the amp while `bluetoothd` is stopped, and do it again
+  whenever BlueZ rediscovers the amp's services.
+- Scanning by service UUID made BlueZ reset an Intel AX201 adapter. The browser chooser therefore
+  also matches the amp by name.
+
+The Linux notes in that pull request have the exact commands.
+
 ### Editing protocol
 
 Command and response IDs were recovered from the protobuf descriptors in the
