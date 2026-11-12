@@ -274,8 +274,8 @@ on the real amp yet.
 
 A browser needs a click instead: the page says it disconnected to save the amp's battery and offers
 **Reconnect**, which opens the device list. On 12 November 2026 in Chrome 157 on the Mac, reconnecting
-without the list failed every time with "Bluetooth Device is no longer in range", while choosing the
-amp from the list worked at once. Chrome's way around the list, watching for the amp's advertising,
+without the list failed every time with "Bluetooth Device is no longer in range", while **Reconnect**
+and choosing the amp connected it again in 3 seconds. Chrome's way around the list, watching for the amp's advertising,
 needs a Chrome flag.
 
 It may not cover every case. In one live test on 30 October 2026, about ten minutes
