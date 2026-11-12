@@ -23,4 +23,14 @@ export interface BleTransport {
    * For when the amp can't be found the old way. A browser only allows it from a click.
    */
   chooseAgain?(): Promise<void>;
+  /**
+   * Sends the packets of one command in order, pausing between them. A transport that sends its own
+   * keep-alives has this, so that a keep-alive can't land between the packets.
+   */
+  writePackets?(packets: Uint8Array[], gapMs: number): Promise<void>;
+  /**
+   * Sends the packet every so many milliseconds from native code, until the returned function is called.
+   * Calls onFailure once if a write fails. For apps whose web view slows timers while hidden.
+   */
+  startKeepAlive?(packet: Uint8Array, everyMs: number, onFailure: (error: Error) => void): () => void;
 }

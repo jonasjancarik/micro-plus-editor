@@ -171,6 +171,7 @@ export class Amp {
   /** Waits for its turn, because a Bluetooth link handles one write at a time. */
   sendPackets(packets: Uint8Array[]): Promise<void> {
     const sending = this.writes.catch(() => {}).then(async () => {
+      if (this.transport.writePackets) return this.transport.writePackets(packets, PACKET_GAP_MS);
       for (const [index, data] of packets.entries()) {
         if (index) await sleep(PACKET_GAP_MS);
         await this.transport.write(data);
@@ -220,6 +221,13 @@ export class Amp {
       this.wake();
       onFailure();
     };
+    if (this.transport.startKeepAlive) {
+      this.stopTimer = this.transport.startKeepAlive(KEEPALIVE, KEEPALIVE_MS, (error) => {
+        this.failure = error;
+        fail();
+      });
+      return;
+    }
     this.lastKeepAlive = performance.now();
     this.stopTimer = timer(async () => {
       if (sending) return;

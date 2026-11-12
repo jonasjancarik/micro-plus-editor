@@ -131,6 +131,16 @@ async function bluetoothBackend(): Promise<Backend> {
     if (transport.hasDevice()) backend.connect(); // The app can open it again with no click, unlike a browser.
     return backend;
   }
+  if ('__TAURI_INTERNALS__' in window) {
+    // Test build: backups are only kept until the app closes.
+    const [{ TauriBleTransport, log }, { MemoryStore }] = await Promise.all([import('../transport/tauri-ble'), import('../core/storage')]);
+    log('editor started in Tauri');
+    const transport = new TauriBleTransport();
+    const session = await MicroPlusSession.open(transport, { store: new MemoryStore() }, steadyTimer);
+    const backend = new BluetoothBackend(session, true);
+    if (transport.hasDevice()) backend.connect();
+    return backend;
+  }
   const store = await OpfsStore.open().catch((error) => {
     console.error('On-device storage is not available:', error);
     return new UnavailableStore();

@@ -1,3 +1,5 @@
 allowBuilds:
   electron: true
   electron-winstaller: false
+minimumReleaseAgeExclude:
+  - '@mnlphlp/plugin-blec@0.19.0'

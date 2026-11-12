@@ -65,6 +65,37 @@ describe('keep-alive', () => {
     await flush();
     expect(clock.stop).toHaveBeenCalled();
   });
+
+  it('leaves the beat to a transport that keeps it natively, and hands it whole commands', async () => {
+    const write = vi.fn(async () => {});
+    const groups: string[][] = [];
+    let failed: (error: Error) => void = () => {};
+    const stopNative = vi.fn();
+    const native: BleTransport = {
+      ...transport(write),
+      writePackets: async (packets, gapMs) => {
+        expect(gapMs).toBe(PACKET_GAP_MS);
+        groups.push(packets.map(hex));
+      },
+      startKeepAlive: (packet, everyMs, onFailure) => {
+        expect([hex(packet), everyMs]).toEqual(['3500050a03c20100', 250]);
+        failed = onFailure;
+        return stopNative;
+      },
+    };
+    const clock = manualTimer();
+    const amp = new Amp(native);
+    amp.startKeepAlive(clock.timer);
+    clock.tick();
+    await flush();
+    const long = fragments(request(SET_PARAMETER, new Uint8Array(300)));
+    await amp.sendPackets(long);
+    expect(groups).toEqual([long.map(hex)]);
+    expect(write).not.toHaveBeenCalled();
+    failed(new Error('gone'));
+    expect(amp.failure?.message).toBe('gone');
+    expect(stopNative).toHaveBeenCalled();
+  });
 });
 
 const preset = (): Preset => ({ nodeType: 'preset', info: { displayName: 'Test' },
